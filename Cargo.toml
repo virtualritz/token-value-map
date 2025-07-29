@@ -1,0 +1,40 @@
+[package]
+name = "token-value-map"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["2d", "vec_variants"]
+lua = ["dep:mlua"]
+serde = ["dep:serde", "ustr/serde"]
+
+# Individual type features
+vector2 = []
+vector3 = []
+matrix3 = []
+normal3 = []
+point3 = []
+matrix4 = []
+vec_variants = []
+
+# Global feature flags
+2d = ["vector2", "matrix3"]
+3d = ["vector3", "matrix4", "normal3", "point3"]
+
+[dependencies]
+anyhow = "1"
+bytemuck = "1"
+derive_more = { version = "2", features = ["as_ref"] }
+enum_dispatch = "0.3"
+frame-tick = { version = "0.1", features = ["float_frame_rate", "serde", "std"] }
+function_name = "0.3"
+hecs = "0.10"
+itertools = "0.14"
+log = "0.4"
+mlua = { version = "0.11", features = ["anyhow", "lua53"], optional = true }
+nalgebra = { version = "0.33", features = ["bytemuck", "serde-serialize"] }
+rayon = "1"
+serde = { version = "1", features = ["derive"], optional = true }
+smallvec = { version = "1", features = ["const_generics", "const_new", "specialization"] }
+strum = { version = "0.27", features = ["derive"] }
+ustr = "1"
