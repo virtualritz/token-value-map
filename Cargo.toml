@@ -1,6 +1,6 @@
 [package]
 name = "token-value-map"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [features]
@@ -28,11 +28,9 @@ derive_more = { version = "2", features = ["as_ref"] }
 enum_dispatch = "0.3"
 frame-tick = { version = "0.1", features = ["float_frame_rate", "serde", "std"] }
 function_name = "0.3"
-hecs = "0.10"
-itertools = "0.14"
 log = "0.4"
 mlua = { version = "0.11", features = ["anyhow", "lua53"], optional = true }
-nalgebra = { version = "0.33", features = ["bytemuck", "serde-serialize"] }
+nalgebra = { version = "0.34", features = ["bytemuck", "serde-serialize"] }
 rayon = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = { version = "1", features = ["const_generics", "const_new", "specialization"] }
