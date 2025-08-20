@@ -24,9 +24,7 @@ impl Shutter {
         if pos < self.opening.start {
             f32::from(pos) / f32::from(self.opening.start)
         } else {
-            1.0f32
-                - f32::from(pos - self.opening.end)
-                    / f32::from(self.opening.end)
+            1.0f32 - f32::from(pos - self.opening.end) / f32::from(self.opening.end)
         }
     }
 

@@ -84,8 +84,8 @@ macro_rules! impl_from_at_time {
 }
 
 impl_from_at_time!(
-    Boolean, Real, Integer, String, Color, BooleanVec, RealVec, IntegerVec,
-    StringVec, ColorVec, Data
+    Boolean, Real, Integer, String, Color, BooleanVec, RealVec, IntegerVec, StringVec, ColorVec,
+    Data
 );
 
 #[cfg(feature = "vector2")]
@@ -188,10 +188,7 @@ impl<T> TimeDataMap<T> {
     }
 
     /// Get surrounding samples for interpolation.
-    pub fn sample_surrounding<const N: usize>(
-        &self,
-        time: Time,
-    ) -> SmallVec<[(Time, &T); N]> {
+    pub fn sample_surrounding<const N: usize>(&self, time: Time) -> SmallVec<[(Time, &T); N]> {
         // Get samples before the time
         let before_count = N / 2;
         let mut result = self
@@ -205,9 +202,7 @@ impl<T> TimeDataMap<T> {
 
         // Get samples at or after the time
         let after_count = N - result.len();
-        result.extend(
-            self.0.range(time..).take(after_count).map(|(t, v)| (*t, v)),
-        );
+        result.extend(self.0.range(time..).take(after_count).map(|(t, v)| (*t, v)));
 
         result
     }
@@ -338,15 +333,7 @@ where
 }
 
 #[inline(always)]
-fn quadratic_interp<V, T>(
-    x0: T,
-    x1: T,
-    x2: T,
-    y0: &V,
-    y1: &V,
-    y2: &V,
-    x: T,
-) -> V
+fn quadratic_interp<V, T>(x0: T, x1: T, x2: T, y0: &V, y1: &V, y2: &V, x: T) -> V
 where
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
     T: Into<f32>,
@@ -442,8 +429,7 @@ fn decompose_matrix(
     // Perform Singular Data Decomposition (SVD) to separate rotation and
     // stretch.
     let svd = nalgebra::SVD::new(linear_part, true, true);
-    let rotation =
-        nalgebra::Rotation2::from_matrix(&svd.u.unwrap().into_owned());
+    let rotation = nalgebra::Rotation2::from_matrix(&svd.u.unwrap().into_owned());
 
     // Construct the stretch matrix from singular values.
     let singular_values = svd.singular_values;

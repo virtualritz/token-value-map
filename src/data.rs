@@ -19,9 +19,7 @@ use strum::IntoDiscriminant;
 /// [`String`]), vector types ([`Vector2`], [`Vector3`], [`Color`],
 /// [`Matrix3`]), and collections of these types ([`BooleanVec`],
 /// [`IntegerVec`], etc.).
-#[derive(
-    Debug, Clone, PartialEq, strum::AsRefStr, strum::EnumDiscriminants,
-)]
+#[derive(Debug, Clone, PartialEq, strum::AsRefStr, strum::EnumDiscriminants)]
 #[strum_discriminants(name(DataType))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Data {
@@ -178,11 +176,10 @@ impl Data {
             Data::Boolean(value) => Ok(if value.0 { 1 } else { 0 }),
             Data::Real(value) => Ok((value.0 + 0.5) as i32),
             // FIXME: this may wrap around.
-            Data::Integer(value) => {
-                value.0.try_into().map_err(|e: std::num::TryFromIntError| {
-                    anyhow!("Integer conversion error: {}", e)
-                })
-            }
+            Data::Integer(value) => value
+                .0
+                .try_into()
+                .map_err(|e: std::num::TryFromIntError| anyhow!("Integer conversion error: {}", e)),
             _ => Err(anyhow!(
                 "{}: called on incompatible data type '{:?}'",
                 function_name!(),
@@ -537,8 +534,7 @@ impl TryFrom<Vec<&str>> for Data {
     type Error = anyhow::Error;
 
     fn try_from(v: Vec<&str>) -> Result<Self> {
-        let string_vec: Vec<std::string::String> =
-            v.into_iter().map(|s| s.to_string()).collect();
+        let string_vec: Vec<std::string::String> = v.into_iter().map(|s| s.to_string()).collect();
         Ok(Data::StringVec(StringVec::new(string_vec)?))
     }
 }
@@ -716,51 +712,44 @@ impl Hash for Data {
             Data::StringVec(StringVec(v)) => v.hash(state),
             Data::ColorVec(ColorVec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|c| {
-                    c.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|c| c.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             Data::Vector2Vec(Vector2Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|v| {
-                    v.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
             Data::Vector3Vec(Vector3Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|v| {
-                    v.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
             Data::Matrix3Vec(Matrix3Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|m| {
-                    m.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|m| m.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
             Data::Normal3Vec(Normal3Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|v| {
-                    v.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
             Data::Point3Vec(Point3Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|p| {
-                    p.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|p| p.iter().for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             Data::Matrix4Vec(Matrix4Vec(v)) => {
                 v.len().hash(state);
-                v.iter().for_each(|m| {
-                    m.iter().for_each(|v| v.to_bits().hash(state))
-                });
+                v.iter()
+                    .for_each(|m| m.iter().for_each(|v| v.to_bits().hash(state)));
             }
         }
     }
@@ -774,36 +763,20 @@ impl Data {
             Data::BooleanVec(BooleanVec(v)) => v.resize(target_len, false),
             Data::IntegerVec(IntegerVec(v)) => v.resize(target_len, 0),
             Data::RealVec(RealVec(v)) => v.resize(target_len, 0.0),
-            Data::StringVec(StringVec(v)) => {
-                v.resize(target_len, std::string::String::new())
-            }
-            Data::ColorVec(ColorVec(v)) => {
-                v.resize(target_len, [0.0, 0.0, 0.0, 1.0])
-            }
+            Data::StringVec(StringVec(v)) => v.resize(target_len, std::string::String::new()),
+            Data::ColorVec(ColorVec(v)) => v.resize(target_len, [0.0, 0.0, 0.0, 1.0]),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            Data::Vector2Vec(Vector2Vec(v)) => {
-                v.resize(target_len, nalgebra::Vector2::zeros())
-            }
+            Data::Vector2Vec(Vector2Vec(v)) => v.resize(target_len, nalgebra::Vector2::zeros()),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            Data::Vector3Vec(Vector3Vec(v)) => {
-                v.resize(target_len, nalgebra::Vector3::zeros())
-            }
+            Data::Vector3Vec(Vector3Vec(v)) => v.resize(target_len, nalgebra::Vector3::zeros()),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            Data::Matrix3Vec(Matrix3Vec(v)) => {
-                v.resize(target_len, nalgebra::Matrix3::zeros())
-            }
+            Data::Matrix3Vec(Matrix3Vec(v)) => v.resize(target_len, nalgebra::Matrix3::zeros()),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            Data::Normal3Vec(Normal3Vec(v)) => {
-                v.resize(target_len, nalgebra::Vector3::zeros())
-            }
+            Data::Normal3Vec(Normal3Vec(v)) => v.resize(target_len, nalgebra::Vector3::zeros()),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            Data::Point3Vec(Point3Vec(v)) => {
-                v.resize(target_len, nalgebra::Point3::origin())
-            }
+            Data::Point3Vec(Point3Vec(v)) => v.resize(target_len, nalgebra::Point3::origin()),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            Data::Matrix4Vec(Matrix4Vec(v)) => {
-                v.resize(target_len, nalgebra::Matrix4::zeros())
-            }
+            Data::Matrix4Vec(Matrix4Vec(v)) => v.resize(target_len, nalgebra::Matrix4::zeros()),
             _ => {} // Non-vector types are ignored
         }
     }
@@ -815,9 +788,7 @@ impl Data {
             (v, target) if v.data_type() == target => Ok(v.clone()),
 
             // To Integer conversions
-            (Data::Real(Real(f)), DataType::Integer) => {
-                Ok(Data::Integer(Integer(*f as i64)))
-            }
+            (Data::Real(Real(f)), DataType::Integer) => Ok(Data::Integer(Integer(*f as i64))),
             (Data::Boolean(Boolean(b)), DataType::Integer) => {
                 Ok(Data::Integer(Integer(if *b { 1 } else { 0 })))
             }
@@ -827,9 +798,7 @@ impl Data {
                 .map_err(|_| anyhow!("Cannot parse '{}' as Integer", s)),
 
             // To Real conversions
-            (Data::Integer(Integer(i)), DataType::Real) => {
-                Ok(Data::Real(Real(*i as f64)))
-            }
+            (Data::Integer(Integer(i)), DataType::Real) => Ok(Data::Real(Real(*i as f64))),
             (Data::Boolean(Boolean(b)), DataType::Real) => {
                 Ok(Data::Real(Real(if *b { 1.0 } else { 0.0 })))
             }
@@ -839,20 +808,11 @@ impl Data {
                 .map_err(|_| anyhow!("Cannot parse '{}' as Real", s)),
 
             // To Boolean conversions
-            (Data::Integer(Integer(i)), DataType::Boolean) => {
-                Ok(Data::Boolean(Boolean(*i != 0)))
-            }
-            (Data::Real(Real(f)), DataType::Boolean) => {
-                Ok(Data::Boolean(Boolean(*f != 0.0)))
-            }
-            (Data::String(String(s)), DataType::Boolean) => match s
-                .to_lowercase()
-                .as_str()
-            {
+            (Data::Integer(Integer(i)), DataType::Boolean) => Ok(Data::Boolean(Boolean(*i != 0))),
+            (Data::Real(Real(f)), DataType::Boolean) => Ok(Data::Boolean(Boolean(*f != 0.0))),
+            (Data::String(String(s)), DataType::Boolean) => match s.to_lowercase().as_str() {
                 "true" | "yes" | "1" | "on" => Ok(Data::Boolean(Boolean(true))),
-                "false" | "no" | "0" | "off" | "" => {
-                    Ok(Data::Boolean(Boolean(false)))
-                }
+                "false" | "no" | "0" | "off" | "" => Ok(Data::Boolean(Boolean(false))),
                 _ => Err(anyhow!("Cannot parse '{}' as Boolean", s)),
             },
 
@@ -860,9 +820,7 @@ impl Data {
             (Data::Integer(Integer(i)), DataType::String) => {
                 Ok(Data::String(String(i.to_string())))
             }
-            (Data::Real(Real(f)), DataType::String) => {
-                Ok(Data::String(String(f.to_string())))
-            }
+            (Data::Real(Real(f)), DataType::String) => Ok(Data::String(String(f.to_string()))),
             (Data::Boolean(Boolean(b)), DataType::String) => {
                 Ok(Data::String(String(b.to_string())))
             }
@@ -871,20 +829,23 @@ impl Data {
                 Ok(Data::String(String(format!("[{}, {}]", v[0], v[1]))))
             }
             #[cfg(feature = "vector3")]
-            (Data::Vector3(Vector3(v)), DataType::String) => Ok(Data::String(
-                String(format!("[{}, {}, {}]", v[0], v[1], v[2])),
-            )),
-            (Data::Color(Color(c)), DataType::String) => Ok(Data::String(
-                String(format!("[{}, {}, {}, {}]", c[0], c[1], c[2], c[3])),
-            )),
+            (Data::Vector3(Vector3(v)), DataType::String) => Ok(Data::String(String(format!(
+                "[{}, {}, {}]",
+                v[0], v[1], v[2]
+            )))),
+            (Data::Color(Color(c)), DataType::String) => Ok(Data::String(String(format!(
+                "[{}, {}, {}, {}]",
+                c[0], c[1], c[2], c[3]
+            )))),
             #[cfg(feature = "matrix3")]
             (Data::Matrix3(Matrix3(m)), DataType::String) => {
                 Ok(Data::String(String(format!("{m:?}"))))
             }
             #[cfg(feature = "normal3")]
-            (Data::Normal3(Normal3(v)), DataType::String) => Ok(Data::String(
-                String(format!("[{}, {}, {}]", v[0], v[1], v[2])),
-            )),
+            (Data::Normal3(Normal3(v)), DataType::String) => Ok(Data::String(String(format!(
+                "[{}, {}, {}]",
+                v[0], v[1], v[2]
+            )))),
             #[cfg(feature = "point3")]
             (Data::Point3(Point3(p)), DataType::String) => {
                 Ok(Data::String(String(format!("[{}, {}, {}]", p.x, p.y, p.z))))
@@ -907,8 +868,7 @@ impl Data {
             }
             #[cfg(feature = "vector2")]
             (Data::String(String(s)), DataType::Vector2) => {
-                parse_to_array::<f32, 2>(s)
-                    .map(|v| Data::Vector2(Vector2(v.into())))
+                parse_to_array::<f32, 2>(s).map(|v| Data::Vector2(Vector2(v.into())))
             }
 
             // To Vec3 conversions
@@ -923,13 +883,12 @@ impl Data {
                 Ok(Data::Vector3(Vector3(nalgebra::Vector3::new(v, v, v))))
             }
             #[cfg(all(feature = "vector2", feature = "vector3"))]
-            (Data::Vector2(Vector2(v)), DataType::Vector3) => Ok(
-                Data::Vector3(Vector3(nalgebra::Vector3::new(v.x, v.y, 0.0))),
-            ),
+            (Data::Vector2(Vector2(v)), DataType::Vector3) => Ok(Data::Vector3(Vector3(
+                nalgebra::Vector3::new(v.x, v.y, 0.0),
+            ))),
             #[cfg(feature = "vector3")]
             (Data::String(String(s)), DataType::Vector3) => {
-                parse_to_array::<f32, 3>(s)
-                    .map(|v| Data::Vector3(Vector3(v.into())))
+                parse_to_array::<f32, 3>(s).map(|v| Data::Vector3(Vector3(v.into())))
             }
 
             // To Color conversions
@@ -953,11 +912,9 @@ impl Data {
             (Data::Normal3(Normal3(v)), DataType::Color) => {
                 Ok(Data::Color(Color([v.x, v.y, v.z, 1.0])))
             }
-            (Data::String(String(s)), DataType::Color) => {
-                parse_color_from_string(s)
-                    .map(|c| Data::Color(Color(c)))
-                    .ok_or_else(|| anyhow!("Cannot parse '{}' as Color", s))
-            }
+            (Data::String(String(s)), DataType::Color) => parse_color_from_string(s)
+                .map(|c| Data::Color(Color(c)))
+                .ok_or_else(|| anyhow!("Cannot parse '{}' as Color", s)),
 
             // To Mat3 conversions
             #[cfg(feature = "matrix3")]
@@ -975,11 +932,9 @@ impl Data {
                 ))))
             }
             #[cfg(all(feature = "vector3", feature = "matrix3"))]
-            (Data::Vector3(Vector3(v)), DataType::Matrix3) => {
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::new(
-                    v.x, 0.0, 0.0, 0.0, v.y, 0.0, 0.0, 0.0, v.z,
-                ))))
-            }
+            (Data::Vector3(Vector3(v)), DataType::Matrix3) => Ok(Data::Matrix3(Matrix3(
+                nalgebra::Matrix3::new(v.x, 0.0, 0.0, 0.0, v.y, 0.0, 0.0, 0.0, v.z),
+            ))),
             #[cfg(feature = "matrix3")]
             (Data::String(String(s)), DataType::Matrix3) => {
                 // Try to parse as a single value first for diagonal matrix
@@ -989,11 +944,8 @@ impl Data {
                     )))
                 } else {
                     // Parse as 9 separate values
-                    parse_to_array::<f32, 9>(s).map(|m| {
-                        Data::Matrix3(Matrix3(
-                            nalgebra::Matrix3::from_row_slice(&m),
-                        ))
-                    })
+                    parse_to_array::<f32, 9>(s)
+                        .map(|m| Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(&m))))
                 }
             }
 
@@ -1013,13 +965,8 @@ impl Data {
                 Ok(Data::Normal3(Normal3(v.normalize())))
             }
             #[cfg(feature = "normal3")]
-            (Data::String(String(s)), DataType::Normal3) => {
-                parse_to_array::<f32, 3>(s).map(|v| {
-                    Data::Normal3(Normal3(
-                        nalgebra::Vector3::from(v).normalize(),
-                    ))
-                })
-            }
+            (Data::String(String(s)), DataType::Normal3) => parse_to_array::<f32, 3>(s)
+                .map(|v| Data::Normal3(Normal3(nalgebra::Vector3::from(v).normalize()))),
 
             // To Point3 conversions
             #[cfg(feature = "point3")]
@@ -1038,8 +985,7 @@ impl Data {
             }
             #[cfg(feature = "point3")]
             (Data::String(String(s)), DataType::Point3) => {
-                parse_to_array::<f32, 3>(s)
-                    .map(|v| Data::Point3(Point3(nalgebra::Point3::from(v))))
+                parse_to_array::<f32, 3>(s).map(|v| Data::Point3(Point3(nalgebra::Point3::from(v))))
             }
 
             // To Matrix4 conversions
@@ -1047,16 +993,14 @@ impl Data {
             (Data::Integer(Integer(i)), DataType::Matrix4) => {
                 let v = *i as f64;
                 Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
-                    v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0,
-                    0.0, 0.0, 1.0,
+                    v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, 1.0,
                 ))))
             }
             #[cfg(feature = "matrix4")]
             (Data::Real(Real(f)), DataType::Matrix4) => {
                 let v = *f;
                 Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
-                    v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0,
-                    0.0, 0.0, 1.0,
+                    v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, 1.0,
                 ))))
             }
             #[cfg(all(feature = "matrix3", feature = "matrix4"))]
@@ -1089,20 +1033,13 @@ impl Data {
                     )))
                 } else {
                     // Parse as 16 separate values
-                    parse_to_array::<f64, 16>(s).map(|m| {
-                        Data::Matrix4(Matrix4(
-                            nalgebra::Matrix4::from_row_slice(&m),
-                        ))
-                    })
+                    parse_to_array::<f64, 16>(s)
+                        .map(|m| Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(&m))))
                 }
             }
 
             // Unsupported conversions
-            _ => Err(anyhow!(
-                "Cannot convert {:?} to {:?}",
-                self.data_type(),
-                to
-            )),
+            _ => Err(anyhow!("Cannot convert {:?} to {:?}", self.data_type(), to)),
         }
     }
 }
@@ -1185,8 +1122,7 @@ where
     <T as FromStr>::Err: Display,
 {
     // Strip brackets first
-    let cleaned_input =
-        input.trim().trim_start_matches('[').trim_end_matches(']');
+    let cleaned_input = input.trim().trim_start_matches('[').trim_end_matches(']');
 
     let mut result = cleaned_input
         .split(&[',', ' '][..])

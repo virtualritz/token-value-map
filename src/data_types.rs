@@ -136,9 +136,7 @@ impl From<[f32; 4]> for Color {
 impl From<Data> for Color {
     fn from(data: Data) -> Self {
         match data {
-            Data::Boolean(b) => {
-                Color([b.0.into(), b.0.into(), b.0.into(), 1.0])
-            }
+            Data::Boolean(b) => Color([b.0.into(), b.0.into(), b.0.into(), 1.0]),
             Data::Real(r) => Color([r.0 as _, r.0 as _, r.0 as _, 1.0]),
             Data::Integer(i) => Color([i.0 as _, i.0 as _, i.0 as _, 1.0]),
             Data::String(s) => Color([s.0.parse::<f32>().unwrap_or(0.0); 4]),
@@ -147,21 +145,11 @@ impl From<Data> for Color {
             Data::Vector2(v) => Color([v.0.x, v.0.y, 0.0, 1.0]),
             #[cfg(feature = "vector3")]
             Data::Vector3(v) => Color([v.0.x, v.0.y, v.0.z, 1.0]),
-            Data::BooleanVec(v) => {
-                Color([v.0[0].into(), v.0[1].into(), v.0[2].into(), 1.0])
-            }
-            Data::RealVec(v) => {
-                Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0])
-            }
-            Data::IntegerVec(v) => {
-                Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0])
-            }
-            Data::StringVec(v) => {
-                Color([v.0[0].parse::<f32>().unwrap_or(0.0); 4])
-            }
-            Data::ColorVec(v) => {
-                Color([v.0[0][0], v.0[0][1], v.0[0][2], v.0[0][3]])
-            }
+            Data::BooleanVec(v) => Color([v.0[0].into(), v.0[1].into(), v.0[2].into(), 1.0]),
+            Data::RealVec(v) => Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
+            Data::IntegerVec(v) => Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
+            Data::StringVec(v) => Color([v.0[0].parse::<f32>().unwrap_or(0.0); 4]),
+            Data::ColorVec(v) => Color([v.0[0][0], v.0[0][1], v.0[0][2], v.0[0][3]]),
             _ => panic!("Cannot convert {data:?} to Color"),
         }
     }
@@ -1029,9 +1017,7 @@ impl Add for ColorVec {
             self.0
                 .into_iter()
                 .zip(other.0)
-                .map(|(a, b)| {
-                    [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]]
-                })
+                .map(|(a, b)| [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]])
                 .collect(),
         )
     }
@@ -1048,9 +1034,7 @@ impl Sub for ColorVec {
             self.0
                 .into_iter()
                 .zip(other.0)
-                .map(|(a, b)| {
-                    [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]]
-                })
+                .map(|(a, b)| [a[0] - b[0], a[1] - b[1], a[2] - b[2], a[3] - b[3]])
                 .collect(),
         )
     }

@@ -1,8 +1,5 @@
 use crate::{
-    macros::{
-        impl_animated_data_insert, impl_data_type_ops,
-        impl_sample_for_animated_data,
-    },
+    macros::{impl_animated_data_insert, impl_data_type_ops, impl_sample_for_animated_data},
     *,
 };
 use anyhow::Result;
@@ -121,80 +118,40 @@ impl From<(Time, Value)> for AnimatedData {
 impl From<(Time, Data)> for AnimatedData {
     fn from((time, data): (Time, Data)) -> Self {
         match data {
-            Data::Boolean(v) => {
-                AnimatedData::Boolean(TimeDataMap::from((time, v)))
-            }
-            Data::Integer(v) => {
-                AnimatedData::Integer(TimeDataMap::from((time, v)))
-            }
+            Data::Boolean(v) => AnimatedData::Boolean(TimeDataMap::from((time, v))),
+            Data::Integer(v) => AnimatedData::Integer(TimeDataMap::from((time, v))),
             Data::Real(v) => AnimatedData::Real(TimeDataMap::from((time, v))),
-            Data::String(v) => {
-                AnimatedData::String(TimeDataMap::from((time, v)))
-            }
+            Data::String(v) => AnimatedData::String(TimeDataMap::from((time, v))),
             Data::Color(v) => AnimatedData::Color(TimeDataMap::from((time, v))),
             #[cfg(feature = "vector2")]
-            Data::Vector2(v) => {
-                AnimatedData::Vector2(TimeDataMap::from((time, v)))
-            }
+            Data::Vector2(v) => AnimatedData::Vector2(TimeDataMap::from((time, v))),
             #[cfg(feature = "vector3")]
-            Data::Vector3(v) => {
-                AnimatedData::Vector3(TimeDataMap::from((time, v)))
-            }
+            Data::Vector3(v) => AnimatedData::Vector3(TimeDataMap::from((time, v))),
             #[cfg(feature = "matrix3")]
-            Data::Matrix3(v) => {
-                AnimatedData::Matrix3(TimeDataMap::from((time, v)))
-            }
+            Data::Matrix3(v) => AnimatedData::Matrix3(TimeDataMap::from((time, v))),
             #[cfg(feature = "normal3")]
-            Data::Normal3(v) => {
-                AnimatedData::Normal3(TimeDataMap::from((time, v)))
-            }
+            Data::Normal3(v) => AnimatedData::Normal3(TimeDataMap::from((time, v))),
             #[cfg(feature = "point3")]
-            Data::Point3(v) => {
-                AnimatedData::Point3(TimeDataMap::from((time, v)))
-            }
+            Data::Point3(v) => AnimatedData::Point3(TimeDataMap::from((time, v))),
             #[cfg(feature = "matrix4")]
-            Data::Matrix4(v) => {
-                AnimatedData::Matrix4(TimeDataMap::from((time, v)))
-            }
-            Data::BooleanVec(v) => {
-                AnimatedData::BooleanVec(TimeDataMap::from((time, v)))
-            }
-            Data::IntegerVec(v) => {
-                AnimatedData::IntegerVec(TimeDataMap::from((time, v)))
-            }
-            Data::RealVec(v) => {
-                AnimatedData::RealVec(TimeDataMap::from((time, v)))
-            }
-            Data::ColorVec(v) => {
-                AnimatedData::ColorVec(TimeDataMap::from((time, v)))
-            }
-            Data::StringVec(v) => {
-                AnimatedData::StringVec(TimeDataMap::from((time, v)))
-            }
+            Data::Matrix4(v) => AnimatedData::Matrix4(TimeDataMap::from((time, v))),
+            Data::BooleanVec(v) => AnimatedData::BooleanVec(TimeDataMap::from((time, v))),
+            Data::IntegerVec(v) => AnimatedData::IntegerVec(TimeDataMap::from((time, v))),
+            Data::RealVec(v) => AnimatedData::RealVec(TimeDataMap::from((time, v))),
+            Data::ColorVec(v) => AnimatedData::ColorVec(TimeDataMap::from((time, v))),
+            Data::StringVec(v) => AnimatedData::StringVec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            Data::Vector2Vec(v) => {
-                AnimatedData::Vector2Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Vector2Vec(v) => AnimatedData::Vector2Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            Data::Vector3Vec(v) => {
-                AnimatedData::Vector3Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Vector3Vec(v) => AnimatedData::Vector3Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            Data::Matrix3Vec(v) => {
-                AnimatedData::Matrix3Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Matrix3Vec(v) => AnimatedData::Matrix3Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            Data::Normal3Vec(v) => {
-                AnimatedData::Normal3Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Normal3Vec(v) => AnimatedData::Normal3Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            Data::Point3Vec(v) => {
-                AnimatedData::Point3Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Point3Vec(v) => AnimatedData::Point3Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            Data::Matrix4Vec(v) => {
-                AnimatedData::Matrix4Vec(TimeDataMap::from((time, v)))
-            }
+            Data::Matrix4Vec(v) => AnimatedData::Matrix4Vec(TimeDataMap::from((time, v))),
         }
     }
 }
@@ -339,92 +296,46 @@ impl AnimatedData {
 
     pub fn sample_at(&self, time: Time) -> Option<Data> {
         match self {
-            AnimatedData::Boolean(map) => {
-                map.get(&time).map(|v| Data::Boolean(v.clone()))
-            }
-            AnimatedData::Integer(map) => {
-                map.get(&time).map(|v| Data::Integer(v.clone()))
-            }
-            AnimatedData::Real(map) => {
-                map.get(&time).map(|v| Data::Real(v.clone()))
-            }
-            AnimatedData::String(map) => {
-                map.get(&time).map(|v| Data::String(v.clone()))
-            }
-            AnimatedData::Color(map) => {
-                map.get(&time).map(|v| Data::Color(v.clone()))
-            }
+            AnimatedData::Boolean(map) => map.get(&time).map(|v| Data::Boolean(v.clone())),
+            AnimatedData::Integer(map) => map.get(&time).map(|v| Data::Integer(v.clone())),
+            AnimatedData::Real(map) => map.get(&time).map(|v| Data::Real(v.clone())),
+            AnimatedData::String(map) => map.get(&time).map(|v| Data::String(v.clone())),
+            AnimatedData::Color(map) => map.get(&time).map(|v| Data::Color(v.clone())),
             #[cfg(feature = "vector2")]
-            AnimatedData::Vector2(map) => {
-                map.get(&time).map(|v| Data::Vector2(v.clone()))
-            }
+            AnimatedData::Vector2(map) => map.get(&time).map(|v| Data::Vector2(v.clone())),
             #[cfg(feature = "vector3")]
-            AnimatedData::Vector3(map) => {
-                map.get(&time).map(|v| Data::Vector3(v.clone()))
-            }
+            AnimatedData::Vector3(map) => map.get(&time).map(|v| Data::Vector3(v.clone())),
             #[cfg(feature = "matrix3")]
-            AnimatedData::Matrix3(map) => {
-                map.get(&time).map(|v| Data::Matrix3(v.clone()))
-            }
+            AnimatedData::Matrix3(map) => map.get(&time).map(|v| Data::Matrix3(v.clone())),
             #[cfg(feature = "normal3")]
-            AnimatedData::Normal3(map) => {
-                map.get(&time).map(|v| Data::Normal3(v.clone()))
-            }
+            AnimatedData::Normal3(map) => map.get(&time).map(|v| Data::Normal3(v.clone())),
             #[cfg(feature = "point3")]
-            AnimatedData::Point3(map) => {
-                map.get(&time).map(|v| Data::Point3(v.clone()))
-            }
+            AnimatedData::Point3(map) => map.get(&time).map(|v| Data::Point3(v.clone())),
             #[cfg(feature = "matrix4")]
-            AnimatedData::Matrix4(map) => {
-                map.get(&time).map(|v| Data::Matrix4(v.clone()))
-            }
-            AnimatedData::BooleanVec(map) => {
-                map.get(&time).map(|v| Data::BooleanVec(v.clone()))
-            }
-            AnimatedData::IntegerVec(map) => {
-                map.get(&time).map(|v| Data::IntegerVec(v.clone()))
-            }
-            AnimatedData::RealVec(map) => {
-                map.get(&time).map(|v| Data::RealVec(v.clone()))
-            }
-            AnimatedData::ColorVec(map) => {
-                map.get(&time).map(|v| Data::ColorVec(v.clone()))
-            }
-            AnimatedData::StringVec(map) => {
-                map.get(&time).map(|v| Data::StringVec(v.clone()))
-            }
+            AnimatedData::Matrix4(map) => map.get(&time).map(|v| Data::Matrix4(v.clone())),
+            AnimatedData::BooleanVec(map) => map.get(&time).map(|v| Data::BooleanVec(v.clone())),
+            AnimatedData::IntegerVec(map) => map.get(&time).map(|v| Data::IntegerVec(v.clone())),
+            AnimatedData::RealVec(map) => map.get(&time).map(|v| Data::RealVec(v.clone())),
+            AnimatedData::ColorVec(map) => map.get(&time).map(|v| Data::ColorVec(v.clone())),
+            AnimatedData::StringVec(map) => map.get(&time).map(|v| Data::StringVec(v.clone())),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            AnimatedData::Vector2Vec(map) => {
-                map.get(&time).map(|v| Data::Vector2Vec(v.clone()))
-            }
+            AnimatedData::Vector2Vec(map) => map.get(&time).map(|v| Data::Vector2Vec(v.clone())),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            AnimatedData::Vector3Vec(map) => {
-                map.get(&time).map(|v| Data::Vector3Vec(v.clone()))
-            }
+            AnimatedData::Vector3Vec(map) => map.get(&time).map(|v| Data::Vector3Vec(v.clone())),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            AnimatedData::Matrix3Vec(map) => {
-                map.get(&time).map(|v| Data::Matrix3Vec(v.clone()))
-            }
+            AnimatedData::Matrix3Vec(map) => map.get(&time).map(|v| Data::Matrix3Vec(v.clone())),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            AnimatedData::Normal3Vec(map) => {
-                map.get(&time).map(|v| Data::Normal3Vec(v.clone()))
-            }
+            AnimatedData::Normal3Vec(map) => map.get(&time).map(|v| Data::Normal3Vec(v.clone())),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            AnimatedData::Point3Vec(map) => {
-                map.get(&time).map(|v| Data::Point3Vec(v.clone()))
-            }
+            AnimatedData::Point3Vec(map) => map.get(&time).map(|v| Data::Point3Vec(v.clone())),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            AnimatedData::Matrix4Vec(map) => {
-                map.get(&time).map(|v| Data::Matrix4Vec(v.clone()))
-            }
+            AnimatedData::Matrix4Vec(map) => map.get(&time).map(|v| Data::Matrix4Vec(v.clone())),
         }
     }
 
     pub fn interpolate(&self, time: Time) -> Data {
         match self {
-            AnimatedData::Boolean(map) => {
-                Data::Boolean(map.closest_sample(time).clone())
-            }
+            AnimatedData::Boolean(map) => Data::Boolean(map.closest_sample(time).clone()),
             AnimatedData::Integer(map) => {
                 if map.is_animated() {
                     Data::Integer(map.interpolate(time))
@@ -439,9 +350,7 @@ impl AnimatedData {
                     Data::Real(map.0.values().next().unwrap().clone())
                 }
             }
-            AnimatedData::String(map) => {
-                Data::String(map.closest_sample(time).clone())
-            }
+            AnimatedData::String(map) => Data::String(map.closest_sample(time).clone()),
             AnimatedData::Color(map) => {
                 if map.is_animated() {
                     Data::Color(map.interpolate(time))
@@ -497,9 +406,7 @@ impl AnimatedData {
                     Data::Matrix4(map.0.values().next().unwrap().clone())
                 }
             }
-            AnimatedData::BooleanVec(map) => {
-                Data::BooleanVec(map.closest_sample(time).clone())
-            }
+            AnimatedData::BooleanVec(map) => Data::BooleanVec(map.closest_sample(time).clone()),
             AnimatedData::IntegerVec(map) => {
                 if map.is_animated() {
                     Data::IntegerVec(map.interpolate(time))
@@ -521,9 +428,7 @@ impl AnimatedData {
                     Data::ColorVec(map.0.values().next().unwrap().clone())
                 }
             }
-            AnimatedData::StringVec(map) => {
-                Data::StringVec(map.closest_sample(time).clone())
-            }
+            AnimatedData::StringVec(map) => Data::StringVec(map.closest_sample(time).clone()),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             AnimatedData::Vector2Vec(map) => {
                 if map.is_animated() {

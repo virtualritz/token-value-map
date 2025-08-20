@@ -36,9 +36,7 @@ impl Value {
             samples.into_iter().map(|(t, v)| (t, v.into())).collect();
 
         if samples_vec.is_empty() {
-            return Err(anyhow!(
-                "Cannot create animated value with no samples"
-            ));
+            return Err(anyhow!("Cannot create animated value with no samples"));
         }
 
         // Get the data type from the first sample
@@ -86,9 +84,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Boolean(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Boolean(TimeDataMap::from_iter(typed_samples))
@@ -98,9 +94,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Integer(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Integer(TimeDataMap::from_iter(typed_samples))
@@ -110,9 +104,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Real(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Real(TimeDataMap::from_iter(typed_samples))
@@ -122,9 +114,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::String(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::String(TimeDataMap::from_iter(typed_samples))
@@ -134,9 +124,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Color(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Color(TimeDataMap::from_iter(typed_samples))
@@ -147,9 +135,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Vector2(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Vector2(TimeDataMap::from_iter(typed_samples))
@@ -160,9 +146,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Vector3(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Vector3(TimeDataMap::from_iter(typed_samples))
@@ -173,9 +157,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Matrix3(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Matrix3(TimeDataMap::from_iter(typed_samples))
@@ -186,9 +168,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Normal3(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Normal3(TimeDataMap::from_iter(typed_samples))
@@ -199,9 +179,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Point3(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Point3(TimeDataMap::from_iter(typed_samples))
@@ -212,9 +190,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Matrix4(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Matrix4(TimeDataMap::from_iter(typed_samples))
@@ -224,9 +200,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::BooleanVec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::BooleanVec(TimeDataMap::from_iter(typed_samples))
@@ -236,9 +210,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::IntegerVec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::IntegerVec(TimeDataMap::from_iter(typed_samples))
@@ -248,9 +220,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::RealVec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::RealVec(TimeDataMap::from_iter(typed_samples))
@@ -260,9 +230,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::ColorVec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::ColorVec(TimeDataMap::from_iter(typed_samples))
@@ -272,9 +240,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::StringVec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::StringVec(TimeDataMap::from_iter(typed_samples))
@@ -285,9 +251,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Vector2Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Vector2Vec(TimeDataMap::from_iter(typed_samples))
@@ -298,9 +262,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Vector3Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Vector3Vec(TimeDataMap::from_iter(typed_samples))
@@ -311,9 +273,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Matrix3Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Matrix3Vec(TimeDataMap::from_iter(typed_samples))
@@ -324,9 +284,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Normal3Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Normal3Vec(TimeDataMap::from_iter(typed_samples))
@@ -337,9 +295,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Point3Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Point3Vec(TimeDataMap::from_iter(typed_samples))
@@ -350,9 +306,7 @@ impl Value {
                     .into_iter()
                     .map(|(t, data)| match data {
                         Data::Matrix4Vec(v) => (t, v),
-                        _ => unreachable!(
-                            "Type validation should have caught this"
-                        ),
+                        _ => unreachable!("Type validation should have caught this"),
                     })
                     .collect();
                 AnimatedData::Matrix4Vec(TimeDataMap::from_iter(typed_samples))
@@ -363,11 +317,7 @@ impl Value {
     }
 
     /// Add a sample at a specific time, checking length constraints
-    pub fn add_sample<V: Into<Data>>(
-        &mut self,
-        time: Time,
-        val: V,
-    ) -> Result<()> {
+    pub fn add_sample<V: Into<Data>>(&mut self, time: Time, val: V) -> Result<()> {
         let value = val.into();
 
         match self {
@@ -442,10 +392,7 @@ impl Value {
     }
 
     /// Get surrounding samples for interpolation.
-    pub fn sample_surrounding<const N: usize>(
-        &self,
-        time: Time,
-    ) -> SmallVec<[(Time, Data); N]> {
+    pub fn sample_surrounding<const N: usize>(&self, time: Time) -> SmallVec<[(Time, Data); N]> {
         let mut result = SmallVec::<[(Time, Data); N]>::new_const();
         match self {
             Value::Uniform(v) => result.push((time, v.clone())),
@@ -525,19 +472,13 @@ impl_sample_for_value!(Matrix4, Matrix4);
 
 // Special implementations for Real and Integer that handle type conversion
 impl Sample<Real> for Value {
-    fn sample(
-        &self,
-        shutter: &Shutter,
-        samples: NonZeroU16,
-    ) -> Result<Vec<(Real, SampleWeight)>> {
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<(Real, SampleWeight)>> {
         match self {
             Value::Uniform(data) => {
                 let value = Real(data.to_f32()? as f64);
                 Ok(vec![(value, 1.0)])
             }
-            Value::Animated(animated_data) => {
-                animated_data.sample(shutter, samples)
-            }
+            Value::Animated(animated_data) => animated_data.sample(shutter, samples),
         }
     }
 }
@@ -553,9 +494,7 @@ impl Sample<Integer> for Value {
                 let value = Integer(data.to_i64()?);
                 Ok(vec![(value, 1.0)])
             }
-            Value::Animated(animated_data) => {
-                animated_data.sample(shutter, samples)
-            }
+            Value::Animated(animated_data) => animated_data.sample(shutter, samples),
         }
     }
 }
