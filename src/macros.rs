@@ -93,9 +93,7 @@ macro_rules! impl_data_arithmetic {
 
             fn $op_method(self, other: Data) -> Data {
                 match (&self, &other) {
-                    (Data::Real(a), Data::Real(b)) => {
-                        Data::Real(a.clone().$op_method(b.clone()))
-                    }
+                    (Data::Real(a), Data::Real(b)) => Data::Real(a.clone().$op_method(b.clone())),
                     (Data::Integer(a), Data::Integer(b)) => {
                         Data::Integer(a.clone().$op_method(b.clone()))
                     }
@@ -288,9 +286,7 @@ macro_rules! impl_sample_for_value {
             ) -> Result<Vec<($type, SampleWeight)>> {
                 match self {
                     Value::Uniform(data) => match data {
-                        Data::$data_variant(value) => {
-                            Ok(vec![(value.clone(), 1.0)])
-                        }
+                        Data::$data_variant(value) => Ok(vec![(value.clone(), 1.0)]),
                         _ => Err(anyhow!(
                             concat!(
                                 "Sample<",
@@ -302,9 +298,7 @@ macro_rules! impl_sample_for_value {
                             data.data_type()
                         )),
                     },
-                    Value::Animated(animated_data) => {
-                        animated_data.sample(shutter, samples)
-                    }
+                    Value::Animated(animated_data) => animated_data.sample(shutter, samples),
                 }
             }
         }

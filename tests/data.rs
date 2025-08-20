@@ -29,9 +29,7 @@ fn test_non_empty_vec_try_from_accepted() {
     #[cfg(all(feature = "vector2", feature = "vec_variants"))]
     assert!(Data::try_from(vec![nalgebra::Vector2::new(1.0f32, 2.0)]).is_ok());
     #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-    assert!(
-        Data::try_from(vec![nalgebra::Vector3::new(1.0f32, 2.0, 3.0)]).is_ok()
-    );
+    assert!(Data::try_from(vec![nalgebra::Vector3::new(1.0f32, 2.0, 3.0)]).is_ok());
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
     assert!(Data::try_from(vec![nalgebra::Matrix3::identity()]).is_ok());
 }

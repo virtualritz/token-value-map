@@ -27,9 +27,7 @@ fn test_non_empty_vec_creation() {
     #[cfg(all(feature = "vector2", feature = "vec_variants"))]
     assert!(Vector2Vec::new(vec![nalgebra::Vector2::new(1.0, 2.0)]).is_ok());
     #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-    assert!(
-        Vector3Vec::new(vec![nalgebra::Vector3::new(1.0, 2.0, 3.0)]).is_ok()
-    );
+    assert!(Vector3Vec::new(vec![nalgebra::Vector3::new(1.0, 2.0, 3.0)]).is_ok());
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
     assert!(Matrix3Vec::new(vec![nalgebra::Matrix3::identity()]).is_ok());
 }

@@ -15,11 +15,7 @@ pub trait Sample<T> {
     ///
     /// Returns a vector of value-weight pairs for the specified number of
     /// samples distributed across the shutter's time range.
-    fn sample(
-        &self,
-        shutter: &Shutter,
-        samples: NonZeroU16,
-    ) -> Result<Vec<(T, SampleWeight)>>;
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<(T, SampleWeight)>>;
 }
 
 macro_rules! impl_sample {
@@ -33,8 +29,7 @@ macro_rules! impl_sample {
                 Ok((0..samples.into())
                     .into_par_iter()
                     .map(|t| {
-                        let time = shutter
-                            .evaluate(t as f32 / u16::from(samples) as f32);
+                        let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
                         (interpolate(&self.0, time), shutter.opening(time))
                     })
                     .collect::<Vec<_>>())
@@ -82,8 +77,7 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
         Ok((0..samples.into())
             .into_par_iter()
             .map(|t| {
-                let time =
-                    shutter.evaluate(t as f32 / u16::from(samples) as f32);
+                let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
                 (
                     Matrix3(recompose_matrix(
                         interpolate(&translations, time),

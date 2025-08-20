@@ -279,8 +279,7 @@ fn test_value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
 #[test]
 fn test_value_empty_animated_creation() {
     // Creating animated value with no samples should fail
-    let empty_result: anyhow::Result<Value> =
-        Value::animated(Vec::<(Time, f64)>::new());
+    let empty_result: anyhow::Result<Value> = Value::animated(Vec::<(Time, f64)>::new());
     assert!(empty_result.is_err());
 }
 
@@ -330,8 +329,7 @@ fn test_data_type_dispatch() {
     assert_eq!(uniform_value.type_name(), "real");
 
     // Test that data_type() works for Value (animated)
-    let animated_value =
-        Value::animated(vec![(Time::from_secs(0.0), 1.0)]).unwrap();
+    let animated_value = Value::animated(vec![(Time::from_secs(0.0), 1.0)]).unwrap();
     assert_eq!(animated_value.data_type(), DataType::Real);
     assert_eq!(animated_value.type_name(), "real");
 
@@ -342,8 +340,7 @@ fn test_data_type_dispatch() {
 
     #[cfg(feature = "vector3")]
     {
-        let vec3_data =
-            Data::Vector3(Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)));
+        let vec3_data = Data::Vector3(Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)));
         assert_eq!(vec3_data.data_type(), DataType::Vector3);
         assert_eq!(vec3_data.type_name(), "vec3");
     }
@@ -371,10 +368,7 @@ fn test_sample_trait_implementations() -> anyhow::Result<()> {
         let samples: Vec<(Vector3, SampleWeight)> =
             uniform_vector.sample(&shutter, NonZeroU16::new(3).unwrap())?;
         assert_eq!(samples.len(), 1);
-        assert_eq!(
-            samples[0].0,
-            Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0))
-        );
+        assert_eq!(samples[0].0, Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)));
         assert_eq!(samples[0].1, 1.0);
     }
 

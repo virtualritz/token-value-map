@@ -16,9 +16,7 @@ pub fn from_lua(data: LuaData) -> Result<Data, LuaError> {
             Ok(Data::Integer(Integer(long)))
         }
         LuaData::Number(double) => Ok(Data::Real(Real(double))),
-        LuaData::String(string) => {
-            Ok(Data::String(String(string.to_string_lossy())))
-        }
+        LuaData::String(string) => Ok(Data::String(String(string.to_string_lossy()))),
         LuaData::Table(table) => {
             let table = table
                 // This will recursively call `from_lua()` on each
@@ -97,9 +95,7 @@ pub fn from_lua(data: LuaData) -> Result<Data, LuaError> {
         t => Err(LuaError::FromLuaConversionError {
             from: "unsupported",
             to: "Data".into(),
-            message: Some(format!(
-                "cannot convert unsupported type {t:?} to Data"
-            )),
+            message: Some(format!("cannot convert unsupported type {t:?} to Data")),
         }),
     }
 }
@@ -117,9 +113,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
             Ok(Data::Integer(Integer(long)))
         }
         LuaData::Number(double) => Ok(Data::Real(Real(double))),
-        LuaData::String(string) => {
-            Ok(Data::String(String(string.to_string_lossy())))
-        }
+        LuaData::String(string) => Ok(Data::String(String(string.to_string_lossy()))),
         LuaData::Table(table) => {
             let table = table
                 // This will recursively call `from_lua_err()` on each
@@ -135,23 +129,17 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Boolean)
-                                    .map_err(|e| {
-                                        LuaError::FromLuaConversionError {
-                                            from: "table element",
-                                            to: "Boolean".into(),
-                                            message: Some(format!(
-                                                "conversion failed: {e}"
-                                            )),
-                                        }
+                                    .map_err(|e| LuaError::FromLuaConversionError {
+                                        from: "table element",
+                                        to: "Boolean".into(),
+                                        message: Some(format!("conversion failed: {e}")),
                                     })
                                     .and_then(|converted| {
                                         converted.to_bool().map_err(|e| {
                                             LuaError::FromLuaConversionError {
                                                 from: "converted value",
                                                 to: "bool".into(),
-                                                message: Some(format!(
-                                                    "accessor failed: {e}"
-                                                )),
+                                                message: Some(format!("accessor failed: {e}")),
                                             }
                                         })
                                     })
@@ -164,23 +152,17 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Integer)
-                                    .map_err(|e| {
-                                        LuaError::FromLuaConversionError {
-                                            from: "table element",
-                                            to: "Integer".into(),
-                                            message: Some(format!(
-                                                "conversion failed: {e}"
-                                            )),
-                                        }
+                                    .map_err(|e| LuaError::FromLuaConversionError {
+                                        from: "table element",
+                                        to: "Integer".into(),
+                                        message: Some(format!("conversion failed: {e}")),
                                     })
                                     .and_then(|converted| {
                                         converted.to_i64().map_err(|e| {
                                             LuaError::FromLuaConversionError {
                                                 from: "converted value",
                                                 to: "i64".into(),
-                                                message: Some(format!(
-                                                    "accessor failed: {e}"
-                                                )),
+                                                message: Some(format!("accessor failed: {e}")),
                                             }
                                         })
                                     })
@@ -193,23 +175,17 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Real)
-                                    .map_err(|e| {
-                                        LuaError::FromLuaConversionError {
-                                            from: "table element",
-                                            to: "Real".into(),
-                                            message: Some(format!(
-                                                "conversion failed: {e}"
-                                            )),
-                                        }
+                                    .map_err(|e| LuaError::FromLuaConversionError {
+                                        from: "table element",
+                                        to: "Real".into(),
+                                        message: Some(format!("conversion failed: {e}")),
                                     })
                                     .and_then(|converted| {
                                         converted.to_f64().map_err(|e| {
                                             LuaError::FromLuaConversionError {
                                                 from: "converted value",
                                                 to: "f64".into(),
-                                                message: Some(format!(
-                                                    "accessor failed: {e}"
-                                                )),
+                                                message: Some(format!("accessor failed: {e}")),
                                             }
                                         })
                                     })
@@ -218,23 +194,17 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                         result.map(|vec| Data::RealVec(RealVec(vec)))
                     }
                     DataType::String => {
-                        let result: Result<Vec<std::string::String>, LuaError> =
-                            table
-                                .into_iter()
-                                .map(|v| match v {
-                                    Data::String(s) => Ok(s.0),
-                                    _ => {
-                                        Err(LuaError::FromLuaConversionError {
-                                            from: "table element",
-                                            to: "String".into(),
-                                            message: Some(
-                                                "expected String data type"
-                                                    .into(),
-                                            ),
-                                        })
-                                    }
-                                })
-                                .collect();
+                        let result: Result<Vec<std::string::String>, LuaError> = table
+                            .into_iter()
+                            .map(|v| match v {
+                                Data::String(s) => Ok(s.0),
+                                _ => Err(LuaError::FromLuaConversionError {
+                                    from: "table element",
+                                    to: "String".into(),
+                                    message: Some("expected String data type".into()),
+                                }),
+                            })
+                            .collect();
                         result.map(|vec| Data::StringVec(StringVec(vec)))
                     }
                     _ => Err(LuaError::FromLuaConversionError {
@@ -254,9 +224,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
         t => Err(LuaError::FromLuaConversionError {
             from: "unsupported",
             to: "Data".into(),
-            message: Some(format!(
-                "cannot convert unsupported type {t:?} to Data"
-            )),
+            message: Some(format!("cannot convert unsupported type {t:?} to Data")),
         }),
     }
 }
