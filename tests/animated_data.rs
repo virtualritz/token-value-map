@@ -5,7 +5,7 @@ use std::{
 use token_value_map::*;
 
 #[test]
-fn test_animated_data_creation() {
+fn animated_data_creation() {
     // Note: AnimatedData can only be created with samples via
     // Value::animated() These tests now verify data types through
     // populated instances
@@ -35,7 +35,7 @@ fn test_animated_data_creation() {
 }
 
 #[test]
-fn test_animated_data_insert_and_sample() {
+fn animated_data_insert_and_sample() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -62,7 +62,7 @@ fn test_animated_data_insert_and_sample() {
 }
 
 #[test]
-fn test_animated_data_type_safety() {
+fn animated_data_type_safety() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -84,7 +84,7 @@ fn test_animated_data_type_safety() {
 }
 
 #[test]
-fn test_animated_data_boolean_no_interpolation() {
+fn animated_data_boolean_no_interpolation() {
     let mut bool_data = AnimatedData::Boolean(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Boolean(false),
@@ -104,7 +104,7 @@ fn test_animated_data_boolean_no_interpolation() {
 
 #[test]
 #[cfg(feature = "vector3")]
-fn test_animated_data_vector_interpolation() {
+fn animated_data_vector_interpolation() {
     let mut vec3_data = AnimatedData::Vector3(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Vector3(nalgebra::Vector3::new(0.0, 0.0, 0.0)),
@@ -125,7 +125,7 @@ fn test_animated_data_vector_interpolation() {
 }
 
 #[test]
-fn test_animated_data_single_sample() {
+fn animated_data_single_sample() {
     let real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(42.0),
@@ -140,7 +140,7 @@ fn test_animated_data_single_sample() {
 }
 
 #[test]
-fn test_animated_data_hash_consistency() {
+fn animated_data_hash_consistency() {
     let mut real_data1 = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -168,7 +168,7 @@ fn test_animated_data_hash_consistency() {
 }
 
 #[test]
-fn test_animated_data_generic_insert() {
+fn animated_data_generic_insert() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -190,7 +190,7 @@ fn test_animated_data_generic_insert() {
 }
 
 #[test]
-fn test_animated_data_generic_insert_type_mismatch() {
+fn animated_data_generic_insert_type_mismatch() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -205,7 +205,7 @@ fn test_animated_data_generic_insert_type_mismatch() {
 }
 
 #[test]
-fn test_animated_data_generic_insert_all_types() {
+fn animated_data_generic_insert_all_types() {
     // Test that generic insert works for all types
     let mut boolean_data = AnimatedData::Boolean(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
@@ -271,7 +271,7 @@ fn test_animated_data_generic_insert_all_types() {
 }
 
 #[test]
-fn test_from_time_data_scalar_types() {
+fn from_time_data_scalar_types() {
     // Test Boolean
     let boolean_animated = AnimatedData::from((Time::from_secs(1.0), Data::Boolean(Boolean(true))));
     assert_eq!(boolean_animated.data_type(), DataType::Boolean);
@@ -313,7 +313,7 @@ fn test_from_time_data_scalar_types() {
 }
 
 #[test]
-fn test_from_time_data_vector_types() {
+fn from_time_data_vector_types() {
     // Test Color
     let color_animated = AnimatedData::from((
         Time::from_secs(1.0),
@@ -374,7 +374,7 @@ fn test_from_time_data_vector_types() {
 }
 
 #[test]
-fn test_from_time_data_vec_types() {
+fn from_time_data_vec_types() {
     // Test BooleanVec
     let boolean_vec_animated = AnimatedData::from((
         Time::from_secs(1.0),
@@ -451,7 +451,7 @@ fn test_from_time_data_vec_types() {
 }
 
 #[test]
-fn test_from_time_data_interpolation_works() {
+fn from_time_data_interpolation_works() {
     // Create animated data using From and test that interpolation still works
     let mut real_animated = AnimatedData::from((Time::from_secs(0.0), Data::Real(Real(0.0))));
 
@@ -479,7 +479,149 @@ fn test_from_time_data_interpolation_works() {
 }
 
 #[test]
-fn test_from_time_value_delegates_to_from_time_data() {
+#[cfg(feature = "matrix3")]
+fn matrix3_interpolation_over_time() {
+    // Test Matrix3 interpolation with identity and rotation matrices.
+    let mut matrix3_data = AnimatedData::Matrix3(TimeDataMap::from_iter(vec![(
+        Time::from_secs(0.0),
+        Matrix3(nalgebra::Matrix3::identity()),
+    )]));
+
+    // Add a 90-degree rotation matrix around Z axis at t=1.0.
+    let rotation_90 = nalgebra::Matrix3::new(0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    matrix3_data
+        .insert_matrix3(Time::from_secs(1.0), Matrix3(rotation_90))
+        .unwrap();
+
+    // Add a 180-degree rotation matrix at t=2.0.
+    let rotation_180 = nalgebra::Matrix3::new(-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0);
+    matrix3_data
+        .insert_matrix3(Time::from_secs(2.0), Matrix3(rotation_180))
+        .unwrap();
+
+    assert_eq!(matrix3_data.len(), 3);
+    assert!(matrix3_data.is_animated());
+
+    // Test exact samples.
+    assert_eq!(
+        matrix3_data.sample_at(Time::from_secs(0.0)),
+        Some(Data::Matrix3(Matrix3(nalgebra::Matrix3::identity())))
+    );
+    assert_eq!(
+        matrix3_data.sample_at(Time::from_secs(1.0)),
+        Some(Data::Matrix3(Matrix3(rotation_90)))
+    );
+    assert_eq!(
+        matrix3_data.sample_at(Time::from_secs(2.0)),
+        Some(Data::Matrix3(Matrix3(rotation_180)))
+    );
+
+    // Test interpolation at t=0.5 (halfway between identity and 90-degree rotation).
+    let interpolated = matrix3_data.interpolate(Time::from_secs(0.5));
+    if let Data::Matrix3(Matrix3(mat)) = interpolated {
+        // With 3 samples, quadratic interpolation is used.
+        // The interpolated values are different from simple linear interpolation.
+        assert!((mat[(0, 0)] - 0.5).abs() < 0.01);
+        assert!((mat[(1, 0)] - 0.75).abs() < 0.01); // Quadratic gives 0.75 not 0.5.
+        assert!((mat[(0, 1)] - (-0.75)).abs() < 0.01); // Quadratic gives -0.75 not -0.5.
+        assert!((mat[(1, 1)] - 0.5).abs() < 0.01);
+        assert!((mat[(2, 2)] - 1.0).abs() < 0.01);
+    } else {
+        panic!("Expected Matrix3 data");
+    }
+
+    // Test interpolation at t=1.5 (halfway between 90 and 180 degrees).
+    let interpolated = matrix3_data.interpolate(Time::from_secs(1.5));
+    if let Data::Matrix3(Matrix3(mat)) = interpolated {
+        // With 3 samples, quadratic interpolation is used.
+        // Based on quadratic interpolation between rotation matrices.
+        assert!((mat[(0, 0)] - (-0.5)).abs() < 0.01);
+        assert!((mat[(1, 0)] - 0.75).abs() < 0.01); // Quadratic result.
+        assert!((mat[(0, 1)] - (-0.75)).abs() < 0.01); // Quadratic result.
+        assert!((mat[(1, 1)] - (-0.5)).abs() < 0.01);
+        assert!((mat[(2, 2)] - 1.0).abs() < 0.01);
+    } else {
+        panic!("Expected Matrix3 data");
+    }
+}
+
+#[test]
+#[cfg(feature = "matrix4")]
+fn matrix4_interpolation_over_time() {
+    // Test Matrix4 interpolation with transformation matrices.
+    let mut matrix4_data = AnimatedData::Matrix4(TimeDataMap::from_iter(vec![(
+        Time::from_secs(0.0),
+        Matrix4(nalgebra::Matrix4::identity()),
+    )]));
+
+    // Add a translation matrix at t=1.0.
+    let translation = nalgebra::Matrix4::new(
+        1.0, 0.0, 0.0, 10.0, 0.0, 1.0, 0.0, 20.0, 0.0, 0.0, 1.0, 30.0, 0.0, 0.0, 0.0, 1.0,
+    );
+    matrix4_data
+        .insert_matrix4(Time::from_secs(1.0), Matrix4(translation))
+        .unwrap();
+
+    // Add a scaled translation matrix at t=2.0.
+    let scaled_translation = nalgebra::Matrix4::new(
+        2.0, 0.0, 0.0, 20.0, 0.0, 2.0, 0.0, 40.0, 0.0, 0.0, 2.0, 60.0, 0.0, 0.0, 0.0, 1.0,
+    );
+    matrix4_data
+        .insert_matrix4(Time::from_secs(2.0), Matrix4(scaled_translation))
+        .unwrap();
+
+    assert_eq!(matrix4_data.len(), 3);
+    assert!(matrix4_data.is_animated());
+
+    // Test exact samples.
+    assert_eq!(
+        matrix4_data.sample_at(Time::from_secs(0.0)),
+        Some(Data::Matrix4(Matrix4(nalgebra::Matrix4::identity())))
+    );
+    assert_eq!(
+        matrix4_data.sample_at(Time::from_secs(1.0)),
+        Some(Data::Matrix4(Matrix4(translation)))
+    );
+    assert_eq!(
+        matrix4_data.sample_at(Time::from_secs(2.0)),
+        Some(Data::Matrix4(Matrix4(scaled_translation)))
+    );
+
+    // Test interpolation at t=0.5 (halfway between identity and translation).
+    let interpolated = matrix4_data.interpolate(Time::from_secs(0.5));
+    if let Data::Matrix4(Matrix4(mat)) = interpolated {
+        // With 3 samples, quadratic interpolation is used.
+        // The scale values are also affected by quadratic interpolation.
+        assert!((mat[(0, 0)] - 0.875).abs() < 0.01); // Quadratic gives 0.875.
+        assert!((mat[(1, 1)] - 0.875).abs() < 0.01);
+        assert!((mat[(2, 2)] - 0.875).abs() < 0.01);
+        assert!((mat[(0, 3)] - 5.0).abs() < 0.01); // Translation X.
+        assert!((mat[(1, 3)] - 10.0).abs() < 0.01); // Translation Y.
+        assert!((mat[(2, 3)] - 15.0).abs() < 0.01); // Translation Z.
+        assert!((mat[(3, 3)] - 1.0).abs() < 0.01);
+    } else {
+        panic!("Expected Matrix4 data");
+    }
+
+    // Test interpolation at t=1.5 (halfway between translation and scaled translation).
+    let interpolated = matrix4_data.interpolate(Time::from_secs(1.5));
+    if let Data::Matrix4(Matrix4(mat)) = interpolated {
+        // With 3 samples, quadratic interpolation is used.
+        // The scale values are affected by quadratic interpolation.
+        assert!((mat[(0, 0)] - 1.375).abs() < 0.01); // Quadratic gives 1.375.
+        assert!((mat[(1, 1)] - 1.375).abs() < 0.01);
+        assert!((mat[(2, 2)] - 1.375).abs() < 0.01);
+        assert!((mat[(0, 3)] - 15.0).abs() < 0.01); // Translation X.
+        assert!((mat[(1, 3)] - 30.0).abs() < 0.01); // Translation Y.
+        assert!((mat[(2, 3)] - 45.0).abs() < 0.01); // Translation Z.
+        assert!((mat[(3, 3)] - 1.0).abs() < 0.01);
+    } else {
+        panic!("Expected Matrix4 data");
+    }
+}
+
+#[test]
+fn from_time_value_delegates_to_from_time_data() {
     // Test that From<(Time, Value)> correctly delegates to From<(Time, Data)>
     // for uniform values
     let uniform_value = Value::uniform(42.0);
