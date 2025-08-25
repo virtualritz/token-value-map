@@ -2,7 +2,7 @@ use core::num::NonZeroU16;
 use token_value_map::*;
 
 #[test]
-fn test_value_from_primitives() {
+fn value_from_primitives() {
     let _: Data = 42i64.into();
     let _: Data = 3.14f64.into();
     let _: Data = true.into();
@@ -19,7 +19,7 @@ fn test_value_from_primitives() {
 }
 
 #[test]
-fn test_value_to_primitives() {
+fn value_to_primitives() {
     let v: Data = 42i64.into();
     assert_eq!(i64::try_from(v).unwrap(), 42);
 
@@ -28,7 +28,7 @@ fn test_value_to_primitives() {
 }
 
 #[test]
-fn test_data_type() {
+fn data_type() {
     assert_eq!(Data::from(42i64).data_type(), DataType::Integer);
     assert_eq!(Data::from(3.14).data_type(), DataType::Real);
     assert_eq!(Data::from(true).data_type(), DataType::Boolean);
@@ -36,7 +36,7 @@ fn test_data_type() {
 }
 
 #[test]
-fn test_try_convert() {
+fn try_convert() {
     // Integer to other types
     let v = Data::from(42i64);
     assert_eq!(v.try_convert(DataType::Real).unwrap(), Data::from(42.0));
@@ -98,7 +98,7 @@ fn test_try_convert() {
 }
 
 #[test]
-fn test_string_parsing() {
+fn string_parsing() {
     // Vec2 parsing
     #[cfg(feature = "vector2")]
     {
@@ -126,7 +126,7 @@ fn test_string_parsing() {
 }
 
 #[test]
-fn test_attribute_value() -> anyhow::Result<()> {
+fn attribute_value() -> anyhow::Result<()> {
     let av = Value::animated(vec![
         (Time::from_secs(0.0), 0.0),
         (Time::from_secs(1.0), 1.0),
@@ -143,7 +143,7 @@ fn test_attribute_value() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_token_value_map() -> anyhow::Result<()> {
+fn token_value_map() -> anyhow::Result<()> {
     let mut map = TokenValueMap::new();
 
     #[cfg(feature = "vector3")]
@@ -167,7 +167,7 @@ fn test_token_value_map() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_value_with_animated_data() -> anyhow::Result<()> {
+fn value_with_animated_data() -> anyhow::Result<()> {
     // Test creating animated real values
     let animated_real = Value::animated(vec![
         (Time::from_secs(0.0), 1.0),
@@ -191,7 +191,7 @@ fn test_value_with_animated_data() -> anyhow::Result<()> {
 
 #[test]
 #[cfg(feature = "vector3")]
-fn test_value_with_animated_vectors() -> anyhow::Result<()> {
+fn value_with_animated_vectors() -> anyhow::Result<()> {
     // Test animated Vector3
     let animated_vec3 = Value::animated(vec![
         (Time::from_secs(0.0), [0.0f32, 0.0, 0.0]),
@@ -216,7 +216,7 @@ fn test_value_with_animated_vectors() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_value_add_sample_conversion() -> anyhow::Result<()> {
+fn value_add_sample_conversion() -> anyhow::Result<()> {
     // Start with uniform value and add sample to make it animated
     let mut value = Value::uniform(1.0);
     assert!(!value.is_animated());
@@ -241,7 +241,7 @@ fn test_value_add_sample_conversion() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_value_type_safety() -> anyhow::Result<()> {
+fn value_type_safety() -> anyhow::Result<()> {
     // Test that adding different types fails
     let mut real_value = Value::animated(vec![(Time::from_secs(0.0), 1.0)])?;
 
@@ -259,7 +259,7 @@ fn test_value_type_safety() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
+fn value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
     // Boolean values should not interpolate, just use closest sample
     let animated_bool = Value::animated(vec![
         (Time::from_secs(0.0), false),
@@ -277,14 +277,14 @@ fn test_value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_value_empty_animated_creation() {
+fn value_empty_animated_creation() {
     // Creating animated value with no samples should fail
     let empty_result: anyhow::Result<Value> = Value::animated(Vec::<(Time, f64)>::new());
     assert!(empty_result.is_err());
 }
 
 #[test]
-fn test_value_uses_generic_insert() -> anyhow::Result<()> {
+fn value_uses_generic_insert() -> anyhow::Result<()> {
     // This test verifies that the simplified implementation using generic
     // insert works
     let animated_mixed = Value::animated(vec![
@@ -309,7 +309,7 @@ fn test_value_uses_generic_insert() -> anyhow::Result<()> {
 }
 
 #[test]
-fn test_data_type_dispatch() {
+fn data_type_dispatch() {
     // Test that data_type() works for Data
     let data = Data::Real(Real(42.0));
     assert_eq!(data.data_type(), DataType::Real);
@@ -347,7 +347,7 @@ fn test_data_type_dispatch() {
 }
 
 #[test]
-fn test_sample_trait_implementations() -> anyhow::Result<()> {
+fn sample_trait_implementations() -> anyhow::Result<()> {
     // Test uniform Value sampling - should always return 1 sample with the
     // uniform value
     let uniform_real = Value::uniform(42.0);

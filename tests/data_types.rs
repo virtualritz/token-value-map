@@ -1,7 +1,7 @@
 use token_value_map::*;
 
 #[test]
-fn test_empty_vec_validation() {
+fn empty_vec_validation() {
     // Test that empty vectors are rejected
     assert!(IntegerVec::new(vec![]).is_err());
     assert!(RealVec::new(vec![]).is_err());
@@ -17,7 +17,7 @@ fn test_empty_vec_validation() {
 }
 
 #[test]
-fn test_non_empty_vec_creation() {
+fn non_empty_vec_creation() {
     // Test that non-empty vectors are accepted
     assert!(IntegerVec::new(vec![1]).is_ok());
     assert!(RealVec::new(vec![1.0]).is_ok());
@@ -33,7 +33,7 @@ fn test_non_empty_vec_creation() {
 }
 
 #[test]
-fn test_vec_error_messages() {
+fn vec_error_messages() {
     // Test that error messages are descriptive
     let err = IntegerVec::new(vec![]).unwrap_err();
     assert!(err.to_string().contains("IntegerVec cannot be empty"));

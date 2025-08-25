@@ -2,7 +2,7 @@ use anyhow::Result;
 use token_value_map::*;
 
 #[test]
-fn test_vec_to_matrix3_conversions() -> Result<()> {
+fn vec_to_matrix3_conversions() -> Result<()> {
     // RealVec to Matrix3
     let real_vec = Data::RealVec(RealVec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]));
     let matrix3 = real_vec.try_convert(DataType::Matrix3)?;
@@ -32,7 +32,7 @@ fn test_vec_to_matrix3_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_vec_to_matrix4_conversions() -> Result<()> {
+fn vec_to_matrix4_conversions() -> Result<()> {
     // RealVec to Matrix4
     let real_vec = Data::RealVec(RealVec(vec![
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
@@ -60,7 +60,7 @@ fn test_vec_to_matrix4_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_vec_to_vector_conversions() -> Result<()> {
+fn vec_to_vector_conversions() -> Result<()> {
     // RealVec to Vector2
     #[cfg(feature = "vector2")]
     {
@@ -103,7 +103,7 @@ fn test_vec_to_vector_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_vec_to_color_conversions() -> Result<()> {
+fn vec_to_color_conversions() -> Result<()> {
     // RealVec to Color (RGB)
     let real_vec = Data::RealVec(RealVec(vec![0.5, 0.6, 0.7]));
     let color = real_vec.try_convert(DataType::Color)?;
@@ -144,7 +144,7 @@ fn test_vec_to_color_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_matrix_to_vec_conversions() -> Result<()> {
+fn matrix_to_vec_conversions() -> Result<()> {
     // Matrix3 to RealVec
     #[cfg(feature = "matrix3")]
     {
@@ -189,7 +189,7 @@ fn test_matrix_to_vec_conversions() -> Result<()> {
 }
 
 #[test]
-fn test_vector_to_vec_conversions() -> Result<()> {
+fn vector_to_vec_conversions() -> Result<()> {
     // Vector3 to RealVec
     #[cfg(feature = "vector3")]
     {
@@ -235,7 +235,7 @@ fn test_vector_to_vec_conversions() -> Result<()> {
 
 #[test]
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-fn test_vec_to_vec_variants_conversions() -> Result<()> {
+fn vec_to_vec_variants_conversions() -> Result<()> {
     // RealVec to Vector3Vec
     let real_vec = Data::RealVec(RealVec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0]));
     let vec3_vec = real_vec.try_convert(DataType::Vector3Vec)?;
@@ -271,7 +271,7 @@ fn test_vec_to_vec_variants_conversions() -> Result<()> {
 
 #[test]
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-fn test_vec_to_matrix_vec_conversions() -> Result<()> {
+fn vec_to_matrix_vec_conversions() -> Result<()> {
     // RealVec to Matrix3Vec
     let real_vec = Data::RealVec(RealVec(vec![
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,
@@ -293,7 +293,7 @@ fn test_vec_to_matrix_vec_conversions() -> Result<()> {
 
 #[test]
 #[cfg(all(feature = "vector3", feature = "matrix3"))]
-fn test_vector3_vec_to_matrix3() -> Result<()> {
+fn vector3_vec_to_matrix3() -> Result<()> {
     // Vector3Vec to Matrix3 (using 3 vectors as columns)
     #[cfg(feature = "vec_variants")]
     {
@@ -320,7 +320,7 @@ fn test_vector3_vec_to_matrix3() -> Result<()> {
 }
 
 #[test]
-fn test_color_vec_to_matrix() -> Result<()> {
+fn color_vec_to_matrix() -> Result<()> {
     // ColorVec to Matrix3 (using RGB components of 3 colors as rows)
     #[cfg(feature = "matrix3")]
     {

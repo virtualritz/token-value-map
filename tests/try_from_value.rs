@@ -2,7 +2,7 @@ use anyhow::Result;
 use token_value_map::*;
 
 #[test]
-fn test_try_from_value_basic_types() -> Result<()> {
+fn try_from_value_basic_types() -> Result<()> {
     // Test Boolean
     let value = Value::uniform(true);
     let boolean: Boolean = value.try_into()?;
@@ -27,7 +27,7 @@ fn test_try_from_value_basic_types() -> Result<()> {
 }
 
 #[test]
-fn test_try_from_value_with_conversion() -> Result<()> {
+fn try_from_value_with_conversion() -> Result<()> {
     // Test converting a Real to Integer through try_convert
     let value = Value::uniform(42.7f64);
     let integer: Integer = value.try_into()?;
@@ -47,7 +47,7 @@ fn test_try_from_value_with_conversion() -> Result<()> {
 }
 
 #[test]
-fn test_try_from_value_vector_types() -> Result<()> {
+fn try_from_value_vector_types() -> Result<()> {
     // Test Color
     let value = Value::uniform([1.0, 0.5, 0.0, 1.0]);
     let color: Color = value.try_into()?;
@@ -76,7 +76,7 @@ fn test_try_from_value_vector_types() -> Result<()> {
 }
 
 #[test]
-fn test_try_from_value_animated_fails() {
+fn try_from_value_animated_fails() {
     // Test that animated values cannot be converted to simple types
     let animated = Value::animated(vec![
         (frame_tick::Tick::new(0), 1.0),
@@ -95,7 +95,7 @@ fn test_try_from_value_animated_fails() {
 }
 
 #[test]
-fn test_try_from_value_conversion_errors() {
+fn try_from_value_conversion_errors() {
     // Test conversion that should fail (vec types don't support all
     // conversions)
     let value = Value::uniform(42i64);
@@ -106,7 +106,7 @@ fn test_try_from_value_conversion_errors() {
 }
 
 #[test]
-fn test_try_from_value_ref_basic_types() -> Result<()> {
+fn try_from_value_ref_basic_types() -> Result<()> {
     // Test Boolean
     let value = Value::uniform(true);
     let boolean: Boolean = (&value).try_into()?;
@@ -131,7 +131,7 @@ fn test_try_from_value_ref_basic_types() -> Result<()> {
 }
 
 #[test]
-fn test_try_from_value_ref_with_conversion() -> Result<()> {
+fn try_from_value_ref_with_conversion() -> Result<()> {
     // Test converting a Real to Integer through try_convert
     let value = Value::uniform(42.7f64);
     let integer: Integer = (&value).try_into()?;
@@ -151,7 +151,7 @@ fn test_try_from_value_ref_with_conversion() -> Result<()> {
 }
 
 #[test]
-fn test_try_from_value_ref_animated_fails() {
+fn try_from_value_ref_animated_fails() {
     // Test that animated values cannot be converted to simple types
     let animated = Value::animated(vec![
         (frame_tick::Tick::new(0), 1.0),

@@ -179,6 +179,21 @@ impl_animated_data_insert!(
     insert_matrix3, Matrix3, Matrix3;
 );
 
+#[cfg(feature = "normal3")]
+impl_animated_data_insert!(
+    insert_normal3, Normal3, Normal3;
+);
+
+#[cfg(feature = "point3")]
+impl_animated_data_insert!(
+    insert_point3, Point3, Point3;
+);
+
+#[cfg(feature = "matrix4")]
+impl_animated_data_insert!(
+    insert_matrix4, Matrix4, Matrix4;
+);
+
 impl AnimatedData {
     /// Generic insert method that takes `Data` and matches the type to the
     /// `AnimatedData` variant.
