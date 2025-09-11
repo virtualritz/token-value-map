@@ -1,5 +1,4 @@
 use crate::*;
-use derive_more as dm;
 use enum_dispatch::enum_dispatch;
 
 use std::{
@@ -13,11 +12,80 @@ pub use sample::*;
 
 /// A mapping from time to data values with interpolation support.
 ///
-/// [`TimeDataMap`] `struct` stores time-value pairs in a `BTreeMap` for
+/// [`TimeDataMap`] stores time-value pairs in a [`BTreeMap`] for
 /// efficient time-based queries and supports various interpolation methods.
-#[derive(Clone, Debug, Eq, PartialEq, Hash, dm::AsRef)]
+///
+/// When the `interpolation` feature is enabled, each value can have an
+/// associated interpolation specification for advanced animation curves.
+#[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct TimeDataMap<T>(pub BTreeMap<Time, T>);
+pub struct TimeDataMap<T> {
+    /// The time-value pairs with optional interpolation keys.
+    ///
+    /// Without `interpolation` feature: BTreeMap<Time, T>
+    /// With `interpolation` feature: BTreeMap<Time, (T, Option<Key<T>>)>
+    #[cfg(not(feature = "interpolation"))]
+    pub values: BTreeMap<Time, T>,
+    #[cfg(feature = "interpolation")]
+    pub values: BTreeMap<Time, (T, Option<crate::Key<T>>)>,
+}
+
+// Manual Eq implementation.
+impl<T: Eq> Eq for TimeDataMap<T> {}
+
+// AsRef implementation for backward compatibility.
+#[cfg(not(feature = "interpolation"))]
+impl<T> AsRef<BTreeMap<Time, T>> for TimeDataMap<T> {
+    fn as_ref(&self) -> &BTreeMap<Time, T> {
+        &self.values
+    }
+}
+
+// AIDEV-NOTE: These methods provide backward compatibility for code that
+// previously accessed the BTreeMap directly via .0 field.
+// With interpolation feature, these return a view without interpolation specs.
+impl<T> TimeDataMap<T> {
+    /// Get an iterator over time-value pairs.
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = (&Time, &T)> {
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.iter()
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.iter().map(|(t, (v, _))| (t, v))
+        }
+    }
+
+    /// Check if empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty()
+    }
+
+    /// Get the number of entries.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.values.len()
+    }
+}
+
+// Constructor for backward compatibility.
+impl<T> From<BTreeMap<Time, T>> for TimeDataMap<T> {
+    fn from(values: BTreeMap<Time, T>) -> Self {
+        #[cfg(not(feature = "interpolation"))]
+        {
+            Self { values }
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            Self {
+                values: values.into_iter().map(|(k, v)| (k, (v, None))).collect(),
+            }
+        }
+    }
+}
 
 /// Control operations `trait` for time data maps.
 #[enum_dispatch]
@@ -30,20 +98,17 @@ pub trait TimeDataMapControl<T> {
     fn is_animated(&self) -> bool;
 }
 
-impl<T> TimeDataMapControl<T> for TimeDataMap<T>
-where
-    T: AsRef<TimeDataMap<T>>,
-{
+impl<T> TimeDataMapControl<T> for TimeDataMap<T> {
     fn len(&self) -> usize {
-        self.as_ref().len()
+        self.values.len()
     }
 
     fn is_empty(&self) -> bool {
-        self.as_ref().is_empty()
+        self.values.is_empty()
     }
 
     fn is_animated(&self) -> bool {
-        1 < self.as_ref().len()
+        1 < self.values.len()
     }
 }
 
@@ -52,22 +117,43 @@ where
     T: crate::DataTypeOps,
 {
     fn data_type(&self) -> DataType {
-        // Use the first element to determine the type, or return a default if
-        // empty
-        self.0
-            .values()
-            .next()
-            .map(|v| v.data_type())
-            .unwrap_or(DataType::Real) // Default fallback, though this shouldn't happen in practice
+        // Use the first element to determine the type, or return a default if empty.
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values
+                .values()
+                .next()
+                .map(|v| v.data_type())
+                .unwrap_or(DataType::Real)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values
+                .values()
+                .next()
+                .map(|(v, _)| v.data_type())
+                .unwrap_or(DataType::Real)
+        }
     }
 
     fn type_name(&self) -> &'static str {
-        // Use the first element to determine the type name
-        self.0
-            .values()
-            .next()
-            .map(|v| v.type_name())
-            .unwrap_or("unknown") // Default fallback
+        // Use the first element to determine the type name.
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values
+                .values()
+                .next()
+                .map(|v| v.type_name())
+                .unwrap_or("unknown")
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values
+                .values()
+                .next()
+                .map(|(v, _)| v.type_name())
+                .unwrap_or("unknown")
+        }
     }
 }
 
@@ -76,7 +162,7 @@ macro_rules! impl_from_at_time {
         $(
             impl From<(Time, $t)> for TimeDataMap<$t> {
                 fn from((time, value): (Time, $t)) -> Self {
-                    TimeDataMap(BTreeMap::from([(time, value)]))
+                    TimeDataMap::from(BTreeMap::from([(time, value)]))
                 }
             }
         )+
@@ -115,12 +201,28 @@ impl_from_at_time!(Point3Vec);
 impl_from_at_time!(Matrix4Vec);
 
 impl<T> TimeDataMap<T> {
+    /// Insert a value at the given time.
     pub fn insert(&mut self, time: Time, value: T) {
-        self.0.insert(time, value);
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.insert(time, value);
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.insert(time, (value, None));
+        }
     }
 
+    /// Get a value at the exact time.
     pub fn get(&self, time: &Time) -> Option<&T> {
-        self.0.get(time)
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.get(time)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.get(time).map(|(v, _)| v)
+        }
     }
 }
 
@@ -129,7 +231,56 @@ where
     T: Clone + Add<Output = T> + Mul<f32, Output = T> + Sub<Output = T>,
 {
     pub fn interpolate(&self, time: Time) -> T {
-        interpolate(&self.0, time)
+        #[cfg(not(feature = "interpolation"))]
+        {
+            interpolate(&self.values, time)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            // Extract just the values for interpolation.
+            // AIDEV-TODO: Use interpolation specs when available.
+            let values_only: BTreeMap<Time, T> = self
+                .values
+                .iter()
+                .map(|(k, (v, _))| (*k, v.clone()))
+                .collect();
+            interpolate(&values_only, time)
+        }
+    }
+}
+
+// Interpolation-specific methods.
+#[cfg(feature = "interpolation")]
+impl<T> TimeDataMap<T> {
+    /// Insert a value with interpolation specification.
+    ///
+    /// Sets both the value at the given time and how it should interpolate
+    /// to neighboring keyframes.
+    pub fn insert_with_interpolation(&mut self, time: Time, value: T, spec: crate::Key<T>) {
+        self.values.insert(time, (value, Some(spec)));
+    }
+
+    /// Get interpolation spec at a given time.
+    ///
+    /// Returns `None` if no interpolation metadata exists or no spec at this time.
+    pub fn get_interpolation(&self, time: &Time) -> Option<&crate::Key<T>> {
+        self.values.get(time)?.1.as_ref()
+    }
+
+    /// Clear all interpolation metadata.
+    ///
+    /// After calling this, all interpolation reverts to automatic mode.
+    pub fn clear_interpolation(&mut self) {
+        for (_, interp) in self.values.values_mut() {
+            *interp = None;
+        }
+    }
+
+    /// Check if using custom interpolation.
+    ///
+    /// Returns `true` if any interpolation metadata is present.
+    pub fn has_interpolation(&self) -> bool {
+        self.values.values().any(|(_, interp)| interp.is_some())
     }
 }
 
@@ -141,7 +292,7 @@ where
     where
         I: IntoIterator<Item = (Time, V)>,
     {
-        Self(BTreeMap::from_iter(
+        Self::from(BTreeMap::from_iter(
             iter.into_iter().map(|(t, v)| (t, v.into())),
         ))
     }
@@ -149,62 +300,136 @@ where
 
 impl<T> TimeDataMap<T> {
     pub fn closest_sample(&self, time: Time) -> &T {
-        let mut range = self.0.range(time..);
-        let greater_or_equal = range.next();
+        #[cfg(not(feature = "interpolation"))]
+        {
+            let mut range = self.values.range(time..);
+            let greater_or_equal = range.next();
 
-        let mut range = self.0.range(..time);
-        let less_than = range.next_back();
+            let mut range = self.values.range(..time);
+            let less_than = range.next_back();
 
-        match (less_than, greater_or_equal) {
-            (Some((lower_k, lower_v)), Some((upper_k, upper_v))) => {
-                if (time.as_ref() - lower_k.as_ref()).abs()
-                    <= (upper_k.as_ref() - time.as_ref()).abs()
-                {
-                    lower_v
-                } else {
-                    upper_v
+            match (less_than, greater_or_equal) {
+                (Some((lower_k, lower_v)), Some((upper_k, upper_v))) => {
+                    if (time.as_ref() - lower_k.as_ref()).abs()
+                        <= (upper_k.as_ref() - time.as_ref()).abs()
+                    {
+                        lower_v
+                    } else {
+                        upper_v
+                    }
+                }
+                (Some(entry), None) | (None, Some(entry)) => entry.1,
+                (None, None) => {
+                    unreachable!("TimeDataMap can never be empty")
                 }
             }
-            (Some(entry), None) | (None, Some(entry)) => entry.1,
-            (None, None) => {
-                unreachable!("TimeDataMap can never be empty")
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            let mut range = self.values.range(time..);
+            let greater_or_equal = range.next();
+
+            let mut range = self.values.range(..time);
+            let less_than = range.next_back();
+
+            match (less_than, greater_or_equal) {
+                (Some((lower_k, (lower_v, _))), Some((upper_k, (upper_v, _)))) => {
+                    if (time.as_ref() - lower_k.as_ref()).abs()
+                        <= (upper_k.as_ref() - time.as_ref()).abs()
+                    {
+                        lower_v
+                    } else {
+                        upper_v
+                    }
+                }
+                (Some((_, (v, _))), None) | (None, Some((_, (v, _)))) => v,
+                (None, None) => {
+                    unreachable!("TimeDataMap can never be empty")
+                }
             }
         }
     }
 
-    /// Sample value at exact time (no interpolation)
+    /// Sample value at exact time (no interpolation).
     pub fn sample_at(&self, time: Time) -> Option<&T> {
-        self.0.get(&time)
+        self.get(&time)
     }
 
-    /// Get the value at or before the given time
+    /// Get the value at or before the given time.
     pub fn sample_at_or_before(&self, time: Time) -> Option<&T> {
-        self.0.range(..=time).next_back().map(|(_, v)| v)
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.range(..=time).next_back().map(|(_, v)| v)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.range(..=time).next_back().map(|(_, (v, _))| v)
+        }
     }
 
-    /// Get the value at or after the given time
+    /// Get the value at or after the given time.
     pub fn sample_at_or_after(&self, time: Time) -> Option<&T> {
-        self.0.range(time..).next().map(|(_, v)| v)
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.range(time..).next().map(|(_, v)| v)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.range(time..).next().map(|(_, (v, _))| v)
+        }
     }
 
     /// Get surrounding samples for interpolation.
+    ///
+    /// Returns up to N samples centered around the given time for
+    /// use in interpolation algorithms.
     pub fn sample_surrounding<const N: usize>(&self, time: Time) -> SmallVec<[(Time, &T); N]> {
-        // Get samples before the time
+        // Get samples before the time.
         let before_count = N / 2;
-        let mut result = self
-            .0
-            .range(..time)
-            .rev()
-            .take(before_count)
-            .map(|(t, v)| (*t, v))
-            .collect::<SmallVec<[_; N]>>();
-        result.reverse();
 
-        // Get samples at or after the time
-        let after_count = N - result.len();
-        result.extend(self.0.range(time..).take(after_count).map(|(t, v)| (*t, v)));
+        #[cfg(not(feature = "interpolation"))]
+        {
+            let mut result = self
+                .values
+                .range(..time)
+                .rev()
+                .take(before_count)
+                .map(|(t, v)| (*t, v))
+                .collect::<SmallVec<[_; N]>>();
+            result.reverse();
 
-        result
+            // Get samples at or after the time.
+            let after_count = N - result.len();
+            result.extend(
+                self.values
+                    .range(time..)
+                    .take(after_count)
+                    .map(|(t, v)| (*t, v)),
+            );
+            result
+        }
+
+        #[cfg(feature = "interpolation")]
+        {
+            let mut result = self
+                .values
+                .range(..time)
+                .rev()
+                .take(before_count)
+                .map(|(t, (v, _))| (*t, v))
+                .collect::<SmallVec<[_; N]>>();
+            result.reverse();
+
+            // Get samples at or after the time.
+            let after_count = N - result.len();
+            result.extend(
+                self.values
+                    .range(time..)
+                    .take(after_count)
+                    .map(|(t, (v, _))| (*t, v)),
+            );
+            result
+        }
     }
 }
 

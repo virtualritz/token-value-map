@@ -24,6 +24,12 @@
 //! Use the [`Sample`] trait with a [`Shutter`] to generate motion blur samples
 //! for animated values during rendering.
 //!
+//! # Interpolation (Optional Feature)
+//!
+//! When the `interpolation` feature is enabled, [`TimeDataMap`] supports
+//! advanced interpolation modes including bezier curves with tangent control.
+//! This enables integration with professional animation systems like Dopamine.
+//!
 //! # Examples
 //!
 //! ```rust
@@ -58,6 +64,8 @@ use macros::impl_sample_for_value;
 mod animated_data;
 mod data;
 mod data_types;
+#[cfg(feature = "interpolation")]
+mod interpolation;
 #[cfg(feature = "lua")]
 mod lua;
 mod shutter;
@@ -68,6 +76,8 @@ mod value;
 pub use animated_data::*;
 pub use data::*;
 pub use data_types::*;
+#[cfg(feature = "interpolation")]
+pub use interpolation::*;
 #[cfg(feature = "lua")]
 pub use lua::*;
 pub use shutter::*;

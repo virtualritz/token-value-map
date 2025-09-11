@@ -30,7 +30,7 @@ macro_rules! impl_sample {
                     .into_par_iter()
                     .map(|t| {
                         let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
-                        (interpolate(&self.0, time), shutter.opening(time))
+                        (self.interpolate(time), shutter.opening(time))
                     })
                     .collect::<Vec<_>>())
             }
@@ -66,8 +66,18 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
         let mut rotations = BTreeMap::new();
         let mut stretches = BTreeMap::new();
 
-        for (time, matrix) in self.0.iter() {
-            let (translate, rotate, stretch) = decompose_matrix(&matrix.0);
+        #[cfg(not(feature = "interpolation"))]
+        for (time, matrix) in self.values.iter() {
+            let crate::Matrix3(inner) = matrix;
+            let (translate, rotate, stretch) = decompose_matrix(inner);
+            translations.insert(*time, translate);
+            rotations.insert(*time, rotate);
+            stretches.insert(*time, stretch);
+        }
+        #[cfg(feature = "interpolation")]
+        for (time, (matrix, _spec)) in self.values.iter() {
+            let crate::Matrix3(inner) = matrix;
+            let (translate, rotate, stretch) = decompose_matrix(inner);
             translations.insert(*time, translate);
             rotations.insert(*time, rotate);
             stretches.insert(*time, stretch);
@@ -79,7 +89,7 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
             .map(|t| {
                 let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
                 (
-                    Matrix3(recompose_matrix(
+                    crate::Matrix3(recompose_matrix(
                         interpolate(&translations, time),
                         interpolate_spherical_linear(&rotations, time),
                         interpolate(&stretches, time),

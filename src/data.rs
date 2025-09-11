@@ -1361,6 +1361,50 @@ impl Data {
                 Ok(Data::Matrix4Vec(Matrix4Vec(matrices)))
             }
 
+            // Vec to Vec conversions
+            #[cfg(feature = "vec_variants")]
+            (Data::RealVec(RealVec(vec)), DataType::IntegerVec) => {
+                // AIDEV-NOTE: Converting RealVec to IntegerVec by rounding each element.
+                Ok(Data::IntegerVec(IntegerVec(
+                    vec.iter().map(|&f| f.round() as i64).collect(),
+                )))
+            }
+            #[cfg(feature = "vec_variants")]
+            (Data::IntegerVec(IntegerVec(vec)), DataType::RealVec) => {
+                // AIDEV-NOTE: Converting IntegerVec to RealVec by casting each element.
+                Ok(Data::RealVec(RealVec(
+                    vec.iter().map(|&i| i as f64).collect(),
+                )))
+            }
+            #[cfg(feature = "vec_variants")]
+            (Data::BooleanVec(BooleanVec(vec)), DataType::IntegerVec) => {
+                // AIDEV-NOTE: Converting BooleanVec to IntegerVec (true -> 1, false -> 0).
+                Ok(Data::IntegerVec(IntegerVec(
+                    vec.iter().map(|&b| if b { 1 } else { 0 }).collect(),
+                )))
+            }
+            #[cfg(feature = "vec_variants")]
+            (Data::IntegerVec(IntegerVec(vec)), DataType::BooleanVec) => {
+                // AIDEV-NOTE: Converting IntegerVec to BooleanVec (0 -> false, non-0 -> true).
+                Ok(Data::BooleanVec(BooleanVec(
+                    vec.iter().map(|&i| i != 0).collect(),
+                )))
+            }
+            #[cfg(feature = "vec_variants")]
+            (Data::BooleanVec(BooleanVec(vec)), DataType::RealVec) => {
+                // AIDEV-NOTE: Converting BooleanVec to RealVec (true -> 1.0, false -> 0.0).
+                Ok(Data::RealVec(RealVec(
+                    vec.iter().map(|&b| if b { 1.0 } else { 0.0 }).collect(),
+                )))
+            }
+            #[cfg(feature = "vec_variants")]
+            (Data::RealVec(RealVec(vec)), DataType::BooleanVec) => {
+                // AIDEV-NOTE: Converting RealVec to BooleanVec (0.0 -> false, non-0.0 -> true).
+                Ok(Data::BooleanVec(BooleanVec(
+                    vec.iter().map(|&f| f != 0.0).collect(),
+                )))
+            }
+
             // Unsupported conversions
             _ => Err(anyhow!("Cannot convert {:?} to {:?}", self.data_type(), to)),
         }

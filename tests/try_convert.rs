@@ -31,8 +31,72 @@ fn vec_to_matrix3_conversions() -> Result<()> {
     Ok(())
 }
 
+#[cfg(feature = "vec_variants")]
+#[test]
+fn test_vec_to_vec_conversions() -> Result<()> {
+    use token_value_map::BooleanVec;
+
+    // Test RealVec to IntegerVec conversion
+    let real_vec = Data::RealVec(RealVec(vec![1.2, 2.7, -3.5, 0.0, 5.9]));
+    let int_vec = real_vec.try_convert(DataType::IntegerVec)?;
+    if let Data::IntegerVec(IntegerVec(v)) = int_vec {
+        assert_eq!(v, vec![1, 3, -4, 0, 6]); // Rounded values
+    } else {
+        panic!("Expected IntegerVec");
+    }
+
+    // Test IntegerVec to RealVec conversion
+    let int_vec = Data::IntegerVec(IntegerVec(vec![1, 2, -3, 0, 5]));
+    let real_vec = int_vec.try_convert(DataType::RealVec)?;
+    if let Data::RealVec(RealVec(v)) = real_vec {
+        assert_eq!(v, vec![1.0, 2.0, -3.0, 0.0, 5.0]);
+    } else {
+        panic!("Expected RealVec");
+    }
+
+    // Test BooleanVec to IntegerVec conversion
+    let bool_vec = Data::BooleanVec(BooleanVec(vec![true, false, true, false]));
+    let int_vec = bool_vec.try_convert(DataType::IntegerVec)?;
+    if let Data::IntegerVec(IntegerVec(v)) = int_vec {
+        assert_eq!(v, vec![1, 0, 1, 0]);
+    } else {
+        panic!("Expected IntegerVec");
+    }
+
+    // Test IntegerVec to BooleanVec conversion
+    let int_vec = Data::IntegerVec(IntegerVec(vec![0, 1, -5, 0, 100]));
+    let bool_vec = int_vec.try_convert(DataType::BooleanVec)?;
+    if let Data::BooleanVec(BooleanVec(v)) = bool_vec {
+        assert_eq!(v, vec![false, true, true, false, true]);
+    } else {
+        panic!("Expected BooleanVec");
+    }
+
+    // Test BooleanVec to RealVec conversion
+    let bool_vec = Data::BooleanVec(BooleanVec(vec![true, false, true]));
+    let real_vec = bool_vec.try_convert(DataType::RealVec)?;
+    if let Data::RealVec(RealVec(v)) = real_vec {
+        assert_eq!(v, vec![1.0, 0.0, 1.0]);
+    } else {
+        panic!("Expected RealVec");
+    }
+
+    // Test RealVec to BooleanVec conversion
+    let real_vec = Data::RealVec(RealVec(vec![0.0, 1.5, -0.5, 0.0, 0.001]));
+    let bool_vec = real_vec.try_convert(DataType::BooleanVec)?;
+    if let Data::BooleanVec(BooleanVec(v)) = bool_vec {
+        assert_eq!(v, vec![false, true, true, false, true]);
+    } else {
+        panic!("Expected BooleanVec");
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "matrix4")]
 #[test]
 fn vec_to_matrix4_conversions() -> Result<()> {
+    use token_value_map::Matrix4;
     // RealVec to Matrix4
     let real_vec = Data::RealVec(RealVec(vec![
         1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0,

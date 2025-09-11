@@ -1,5 +1,6 @@
 use crate::{
     macros::{impl_animated_data_insert, impl_data_type_ops, impl_sample_for_animated_data},
+    time_data_map::TimeDataMapControl,
     *,
 };
 use anyhow::Result;
@@ -86,15 +87,15 @@ pub trait AnimatedDataOps {
 
 impl<T> AnimatedDataOps for TimeDataMap<T> {
     fn len(&self) -> usize {
-        self.0.len()
+        self.values.len()
     }
 
     fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.values.is_empty()
     }
 
     fn is_animated(&self) -> bool {
-        self.0.len() > 1
+        self.values.len() > 1
     }
 }
 
@@ -352,144 +353,144 @@ impl AnimatedData {
         match self {
             AnimatedData::Boolean(map) => Data::Boolean(map.closest_sample(time).clone()),
             AnimatedData::Integer(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Integer(map.interpolate(time))
                 } else {
-                    Data::Integer(map.0.values().next().unwrap().clone())
+                    Data::Integer(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::Real(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Real(map.interpolate(time))
                 } else {
-                    Data::Real(map.0.values().next().unwrap().clone())
+                    Data::Real(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::String(map) => Data::String(map.closest_sample(time).clone()),
             AnimatedData::Color(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Color(map.interpolate(time))
                 } else {
-                    Data::Color(map.0.values().next().unwrap().clone())
+                    Data::Color(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "vector2")]
             AnimatedData::Vector2(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Vector2(map.interpolate(time))
                 } else {
-                    Data::Vector2(map.0.values().next().unwrap().clone())
+                    Data::Vector2(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "vector3")]
             AnimatedData::Vector3(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Vector3(map.interpolate(time))
                 } else {
-                    Data::Vector3(map.0.values().next().unwrap().clone())
+                    Data::Vector3(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "matrix3")]
             AnimatedData::Matrix3(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Matrix3(map.interpolate(time))
                 } else {
-                    Data::Matrix3(map.0.values().next().unwrap().clone())
+                    Data::Matrix3(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "normal3")]
             AnimatedData::Normal3(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Normal3(map.interpolate(time))
                 } else {
-                    Data::Normal3(map.0.values().next().unwrap().clone())
+                    Data::Normal3(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "point3")]
             AnimatedData::Point3(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Point3(map.interpolate(time))
                 } else {
-                    Data::Point3(map.0.values().next().unwrap().clone())
+                    Data::Point3(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(feature = "matrix4")]
             AnimatedData::Matrix4(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Matrix4(map.interpolate(time))
                 } else {
-                    Data::Matrix4(map.0.values().next().unwrap().clone())
+                    Data::Matrix4(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::BooleanVec(map) => Data::BooleanVec(map.closest_sample(time).clone()),
             AnimatedData::IntegerVec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::IntegerVec(map.interpolate(time))
                 } else {
-                    Data::IntegerVec(map.0.values().next().unwrap().clone())
+                    Data::IntegerVec(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::RealVec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::RealVec(map.interpolate(time))
                 } else {
-                    Data::RealVec(map.0.values().next().unwrap().clone())
+                    Data::RealVec(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::ColorVec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::ColorVec(map.interpolate(time))
                 } else {
-                    Data::ColorVec(map.0.values().next().unwrap().clone())
+                    Data::ColorVec(map.iter().next().unwrap().1.clone())
                 }
             }
             AnimatedData::StringVec(map) => Data::StringVec(map.closest_sample(time).clone()),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             AnimatedData::Vector2Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Vector2Vec(map.interpolate(time))
                 } else {
-                    Data::Vector2Vec(map.0.values().next().unwrap().clone())
+                    Data::Vector2Vec(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
             AnimatedData::Vector3Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Vector3Vec(map.interpolate(time))
                 } else {
-                    Data::Vector3Vec(map.0.values().next().unwrap().clone())
+                    Data::Vector3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
             AnimatedData::Matrix3Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Matrix3Vec(map.interpolate(time))
                 } else {
-                    Data::Matrix3Vec(map.0.values().next().unwrap().clone())
+                    Data::Matrix3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
             AnimatedData::Normal3Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Normal3Vec(map.interpolate(time))
                 } else {
-                    Data::Normal3Vec(map.0.values().next().unwrap().clone())
+                    Data::Normal3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
             AnimatedData::Point3Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Point3Vec(map.interpolate(time))
                 } else {
-                    Data::Point3Vec(map.0.values().next().unwrap().clone())
+                    Data::Point3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             AnimatedData::Matrix4Vec(map) => {
-                if map.is_animated() {
+                if TimeDataMapControl::is_animated(map) {
                     Data::Matrix4Vec(map.interpolate(time))
                 } else {
-                    Data::Matrix4Vec(map.0.values().next().unwrap().clone())
+                    Data::Matrix4Vec(map.iter().next().unwrap().1.clone())
                 }
             }
         }
@@ -501,191 +502,367 @@ impl Hash for AnimatedData {
         std::mem::discriminant(self).hash(state);
         match self {
             AnimatedData::Boolean(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
                 }
             }
             AnimatedData::Integer(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
                 }
             }
             AnimatedData::Real(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.to_bits().hash(state);
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.to_bits().hash(state);
+                    spec.hash(state);
+                }
             }
             AnimatedData::String(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
+                }
             }
             AnimatedData::Color(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "vector2")]
             AnimatedData::Vector2(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "vector3")]
             AnimatedData::Vector3(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "matrix3")]
             AnimatedData::Matrix3(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "normal3")]
             AnimatedData::Normal3(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "point3")]
             AnimatedData::Point3(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.coords.iter().for_each(|v| v.to_bits().hash(state));
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.coords.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
                 }
             }
             #[cfg(feature = "matrix4")]
             AnimatedData::Matrix4(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
+                }
             }
             AnimatedData::BooleanVec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
                 }
             }
             AnimatedData::IntegerVec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
+                }
             }
             AnimatedData::RealVec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    spec.hash(state);
+                }
             }
             AnimatedData::ColorVec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|c| {
                         c.iter().for_each(|v| v.to_bits().hash(state));
                     });
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|c| {
+                        c.iter().for_each(|v| v.to_bits().hash(state));
+                    });
+                    spec.hash(state);
+                }
             }
             AnimatedData::StringVec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.hash(state);
+                    spec.hash(state);
                 }
             }
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             AnimatedData::Vector2Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
                         v.iter().for_each(|f| f.to_bits().hash(state));
                     });
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|v| {
+                        v.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
                 }
             }
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
             AnimatedData::Vector3Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
                         v.iter().for_each(|f| f.to_bits().hash(state));
                     });
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|v| {
+                        v.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
+                }
             }
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
             AnimatedData::Matrix3Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
                         m.iter().for_each(|f| f.to_bits().hash(state));
                     });
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|m| {
+                        m.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
+                }
             }
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
             AnimatedData::Normal3Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
                         v.iter().for_each(|f| f.to_bits().hash(state));
                     });
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|v| {
+                        v.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
+                }
             }
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
             AnimatedData::Point3Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|p| {
                         p.coords.iter().for_each(|f| f.to_bits().hash(state));
                     });
                 }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|p| {
+                        p.coords.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
+                }
             }
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             AnimatedData::Matrix4Vec(map) => {
-                map.0.len().hash(state);
-                for (time, value) in &map.0 {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
                         m.iter().for_each(|f| f.to_bits().hash(state));
                     });
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.0.len().hash(state);
+                    value.0.iter().for_each(|m| {
+                        m.iter().for_each(|f| f.to_bits().hash(state));
+                    });
+                    spec.hash(state);
                 }
             }
         }
