@@ -21,6 +21,80 @@ macro_rules! impl_data_ops {
     };
 }
 
+// AIDEV-NOTE: Macro to reduce duplication for nalgebra-based types.
+// Implements Add, Sub, Mul<f32>, and Mul<f64> for wrapper types.
+macro_rules! impl_nalgebra_arithmetic {
+    // For f32-based types
+    ($type:ty) => {
+        impl Add for $type {
+            type Output = $type;
+
+            fn add(self, other: $type) -> $type {
+                Self(self.0 + other.0)
+            }
+        }
+
+        impl Sub for $type {
+            type Output = $type;
+
+            fn sub(self, other: $type) -> $type {
+                Self(self.0 - other.0)
+            }
+        }
+
+        impl Mul<f32> for $type {
+            type Output = $type;
+
+            fn mul(self, scalar: f32) -> $type {
+                Self(self.0 * scalar)
+            }
+        }
+
+        impl Mul<f64> for $type {
+            type Output = $type;
+
+            fn mul(self, scalar: f64) -> $type {
+                Self(self.0 * scalar as f32)
+            }
+        }
+    };
+
+    // For f64-based types
+    ($type:ty, f64) => {
+        impl Add for $type {
+            type Output = $type;
+
+            fn add(self, other: $type) -> $type {
+                Self(self.0 + other.0)
+            }
+        }
+
+        impl Sub for $type {
+            type Output = $type;
+
+            fn sub(self, other: $type) -> $type {
+                Self(self.0 - other.0)
+            }
+        }
+
+        impl Mul<f32> for $type {
+            type Output = $type;
+
+            fn mul(self, scalar: f32) -> $type {
+                Self(self.0 * scalar as f64)
+            }
+        }
+
+        impl Mul<f64> for $type {
+            type Output = $type;
+
+            fn mul(self, scalar: f64) -> $type {
+                Self(self.0 * scalar)
+            }
+        }
+    };
+}
+
 /// A boolean value wrapper.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -399,40 +473,7 @@ impl Eq for Matrix4Vec {}
 
 // Arithmetic operations for new types
 #[cfg(feature = "normal3")]
-impl Add for Normal3 {
-    type Output = Normal3;
-
-    fn add(self, other: Normal3) -> Normal3 {
-        Normal3(self.0 + other.0)
-    }
-}
-
-#[cfg(feature = "normal3")]
-impl Sub for Normal3 {
-    type Output = Normal3;
-
-    fn sub(self, other: Normal3) -> Normal3 {
-        Normal3(self.0 - other.0)
-    }
-}
-
-#[cfg(feature = "normal3")]
-impl Mul<f32> for Normal3 {
-    type Output = Normal3;
-
-    fn mul(self, scalar: f32) -> Normal3 {
-        Normal3(self.0 * scalar)
-    }
-}
-
-#[cfg(feature = "normal3")]
-impl Mul<f64> for Normal3 {
-    type Output = Normal3;
-
-    fn mul(self, scalar: f64) -> Normal3 {
-        Normal3(self.0 * scalar as f32)
-    }
-}
+impl_nalgebra_arithmetic!(Normal3);
 
 #[cfg(feature = "point3")]
 impl Add for Point3 {
@@ -471,40 +512,7 @@ impl Mul<f64> for Point3 {
 }
 
 #[cfg(feature = "matrix4")]
-impl Add for Matrix4 {
-    type Output = Matrix4;
-
-    fn add(self, other: Matrix4) -> Matrix4 {
-        Matrix4(self.0 + other.0)
-    }
-}
-
-#[cfg(feature = "matrix4")]
-impl Sub for Matrix4 {
-    type Output = Matrix4;
-
-    fn sub(self, other: Matrix4) -> Matrix4 {
-        Matrix4(self.0 - other.0)
-    }
-}
-
-#[cfg(feature = "matrix4")]
-impl Mul<f32> for Matrix4 {
-    type Output = Matrix4;
-
-    fn mul(self, scalar: f32) -> Matrix4 {
-        Matrix4(self.0 * scalar as f64)
-    }
-}
-
-#[cfg(feature = "matrix4")]
-impl Mul<f64> for Matrix4 {
-    type Output = Matrix4;
-
-    fn mul(self, scalar: f64) -> Matrix4 {
-        Matrix4(self.0 * scalar)
-    }
-}
+impl_nalgebra_arithmetic!(Matrix4, f64);
 
 // Arithmetic trait implementations for interpolation
 impl Add for Real {
@@ -786,114 +794,15 @@ impl Mul<f64> for Color {
 
 // Vector2 arithmetic operations
 #[cfg(feature = "vector2")]
-impl Add for Vector2 {
-    type Output = Vector2;
-
-    fn add(self, other: Vector2) -> Vector2 {
-        Vector2(self.0 + other.0)
-    }
-}
-
-#[cfg(feature = "vector2")]
-impl Sub for Vector2 {
-    type Output = Vector2;
-
-    fn sub(self, other: Vector2) -> Vector2 {
-        Vector2(self.0 - other.0)
-    }
-}
-
-#[cfg(feature = "vector2")]
-impl Mul<f32> for Vector2 {
-    type Output = Vector2;
-
-    fn mul(self, scalar: f32) -> Vector2 {
-        Vector2(self.0 * scalar)
-    }
-}
-
-#[cfg(feature = "vector2")]
-impl Mul<f64> for Vector2 {
-    type Output = Vector2;
-
-    fn mul(self, scalar: f64) -> Vector2 {
-        Vector2(self.0 * scalar as f32)
-    }
-}
+impl_nalgebra_arithmetic!(Vector2);
 
 // Vector3 arithmetic operations
 #[cfg(feature = "vector3")]
-impl Add for Vector3 {
-    type Output = Vector3;
-
-    fn add(self, other: Vector3) -> Vector3 {
-        Vector3(self.0 + other.0)
-    }
-}
-
-#[cfg(feature = "vector3")]
-impl Sub for Vector3 {
-    type Output = Vector3;
-
-    fn sub(self, other: Vector3) -> Vector3 {
-        Vector3(self.0 - other.0)
-    }
-}
-
-#[cfg(feature = "vector3")]
-impl Mul<f32> for Vector3 {
-    type Output = Vector3;
-
-    fn mul(self, scalar: f32) -> Vector3 {
-        Vector3(self.0 * scalar)
-    }
-}
-
-#[cfg(feature = "vector3")]
-impl Mul<f64> for Vector3 {
-    type Output = Vector3;
-
-    fn mul(self, scalar: f64) -> Vector3 {
-        Vector3(self.0 * scalar as f32)
-    }
-}
+impl_nalgebra_arithmetic!(Vector3);
 
 // Matrix3 arithmetic operations
 #[cfg(feature = "matrix3")]
-impl Add for Matrix3 {
-    type Output = Matrix3;
-
-    fn add(self, other: Matrix3) -> Matrix3 {
-        Matrix3(self.0 + other.0)
-    }
-}
-
-#[cfg(feature = "matrix3")]
-impl Sub for Matrix3 {
-    type Output = Matrix3;
-
-    fn sub(self, other: Matrix3) -> Matrix3 {
-        Matrix3(self.0 - other.0)
-    }
-}
-
-#[cfg(feature = "matrix3")]
-impl Mul<f32> for Matrix3 {
-    type Output = Matrix3;
-
-    fn mul(self, scalar: f32) -> Matrix3 {
-        Matrix3(self.0 * scalar)
-    }
-}
-
-#[cfg(feature = "matrix3")]
-impl Mul<f64> for Matrix3 {
-    type Output = Matrix3;
-
-    fn mul(self, scalar: f64) -> Matrix3 {
-        Matrix3(self.0 * scalar as f32)
-    }
-}
+impl_nalgebra_arithmetic!(Matrix3);
 
 // Vector types arithmetic operations
 impl Add for RealVec {

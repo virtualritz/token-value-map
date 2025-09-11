@@ -7,6 +7,8 @@ edition = "2024"
 default = ["2d", "vec_variants"]
 lua = ["dep:mlua"]
 serde = ["dep:serde", "ustr/serde"]
+interpolation = ["dep:uniform-cubic-splines"]
+dopamine-compat = ["interpolation"]
 
 # Individual type features
 vector2 = []
@@ -35,4 +37,5 @@ rayon = "1"
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = { version = "1", features = ["const_generics", "const_new", "specialization"] }
 strum = { version = "0.27", features = ["derive"] }
+uniform-cubic-splines = { version = "0.5", optional = true }
 ustr = "1"
