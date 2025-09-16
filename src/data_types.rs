@@ -1812,14 +1812,19 @@ impl Div<f64> for Matrix4Vec {
 
 impl Hash for Real {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.to_bits().hash(state);
+        // Normalize -0.0 to 0.0 for consistent hashing
+        // Check if the value is zero (either -0.0 or 0.0) and normalize to 0.0
+        let normalized = if self.0 == 0.0 { 0.0_f64 } else { self.0 };
+        normalized.to_bits().hash(state);
     }
 }
 
 impl Hash for Color {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for &component in &self.0 {
-            component.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let normalized = if component == 0.0 { 0.0_f32 } else { component };
+            normalized.to_bits().hash(state);
         }
     }
 }
@@ -1827,25 +1832,34 @@ impl Hash for Color {
 #[cfg(feature = "vector2")]
 impl Hash for Vector2 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.x.to_bits().hash(state);
-        self.0.y.to_bits().hash(state);
+        // Normalize -0.0 to 0.0 for consistent hashing
+        let x = if self.0.x == 0.0 { 0.0_f32 } else { self.0.x };
+        let y = if self.0.y == 0.0 { 0.0_f32 } else { self.0.y };
+        x.to_bits().hash(state);
+        y.to_bits().hash(state);
     }
 }
 
 #[cfg(feature = "vector3")]
 impl Hash for Vector3 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.x.to_bits().hash(state);
-        self.0.y.to_bits().hash(state);
-        self.0.z.to_bits().hash(state);
+        // Normalize -0.0 to 0.0 for consistent hashing
+        let x = if self.0.x == 0.0 { 0.0_f32 } else { self.0.x };
+        let y = if self.0.y == 0.0 { 0.0_f32 } else { self.0.y };
+        let z = if self.0.z == 0.0 { 0.0_f32 } else { self.0.z };
+        x.to_bits().hash(state);
+        y.to_bits().hash(state);
+        z.to_bits().hash(state);
     }
 }
 
 #[cfg(feature = "matrix3")]
 impl Hash for Matrix3 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for element in self.0.iter() {
-            element.to_bits().hash(state);
+        for &element in self.0.iter() {
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let normalized = if element == 0.0 { 0.0_f32 } else { element };
+            normalized.to_bits().hash(state);
         }
     }
 }
@@ -1854,7 +1868,9 @@ impl Hash for RealVec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for &element in &self.0 {
-            element.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let normalized = if element == 0.0 { 0.0_f64 } else { element };
+            normalized.to_bits().hash(state);
         }
     }
 }
@@ -1864,7 +1880,9 @@ impl Hash for ColorVec {
         self.0.len().hash(state);
         for color in &self.0 {
             for &component in color {
-                component.to_bits().hash(state);
+                // Normalize -0.0 to 0.0 for consistent hashing
+                let normalized = if component == 0.0 { 0.0_f32 } else { component };
+                normalized.to_bits().hash(state);
             }
         }
     }
@@ -1875,8 +1893,11 @@ impl Hash for Vector2Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for vector in &self.0 {
-            vector.x.to_bits().hash(state);
-            vector.y.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let x = if vector.x == 0.0 { 0.0_f32 } else { vector.x };
+            let y = if vector.y == 0.0 { 0.0_f32 } else { vector.y };
+            x.to_bits().hash(state);
+            y.to_bits().hash(state);
         }
     }
 }
@@ -1886,9 +1907,13 @@ impl Hash for Vector3Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for vector in &self.0 {
-            vector.x.to_bits().hash(state);
-            vector.y.to_bits().hash(state);
-            vector.z.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let x = if vector.x == 0.0 { 0.0_f32 } else { vector.x };
+            let y = if vector.y == 0.0 { 0.0_f32 } else { vector.y };
+            let z = if vector.z == 0.0 { 0.0_f32 } else { vector.z };
+            x.to_bits().hash(state);
+            y.to_bits().hash(state);
+            z.to_bits().hash(state);
         }
     }
 }
@@ -1898,8 +1923,10 @@ impl Hash for Matrix3Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for matrix in &self.0 {
-            for element in matrix.iter() {
-                element.to_bits().hash(state);
+            for &element in matrix.iter() {
+                // Normalize -0.0 to 0.0 for consistent hashing
+                let normalized = if element == 0.0 { 0.0_f32 } else { element };
+                normalized.to_bits().hash(state);
             }
         }
     }
@@ -1909,26 +1936,36 @@ impl Hash for Matrix3Vec {
 #[cfg(feature = "normal3")]
 impl Hash for Normal3 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.x.to_bits().hash(state);
-        self.0.y.to_bits().hash(state);
-        self.0.z.to_bits().hash(state);
+        // Normalize -0.0 to 0.0 for consistent hashing
+        let x = if self.0.x == 0.0 { 0.0_f32 } else { self.0.x };
+        let y = if self.0.y == 0.0 { 0.0_f32 } else { self.0.y };
+        let z = if self.0.z == 0.0 { 0.0_f32 } else { self.0.z };
+        x.to_bits().hash(state);
+        y.to_bits().hash(state);
+        z.to_bits().hash(state);
     }
 }
 
 #[cfg(feature = "point3")]
 impl Hash for Point3 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.0.x.to_bits().hash(state);
-        self.0.y.to_bits().hash(state);
-        self.0.z.to_bits().hash(state);
+        // Normalize -0.0 to 0.0 for consistent hashing
+        let x = if self.0.x == 0.0 { 0.0_f32 } else { self.0.x };
+        let y = if self.0.y == 0.0 { 0.0_f32 } else { self.0.y };
+        let z = if self.0.z == 0.0 { 0.0_f32 } else { self.0.z };
+        x.to_bits().hash(state);
+        y.to_bits().hash(state);
+        z.to_bits().hash(state);
     }
 }
 
 #[cfg(feature = "matrix4")]
 impl Hash for Matrix4 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for element in self.0.iter() {
-            element.to_bits().hash(state);
+        for &element in self.0.iter() {
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let normalized = if element == 0.0 { 0.0_f64 } else { element };
+            normalized.to_bits().hash(state);
         }
     }
 }
@@ -1938,9 +1975,13 @@ impl Hash for Normal3Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for vector in &self.0 {
-            vector.x.to_bits().hash(state);
-            vector.y.to_bits().hash(state);
-            vector.z.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let x = if vector.x == 0.0 { 0.0_f32 } else { vector.x };
+            let y = if vector.y == 0.0 { 0.0_f32 } else { vector.y };
+            let z = if vector.z == 0.0 { 0.0_f32 } else { vector.z };
+            x.to_bits().hash(state);
+            y.to_bits().hash(state);
+            z.to_bits().hash(state);
         }
     }
 }
@@ -1950,9 +1991,13 @@ impl Hash for Point3Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for point in &self.0 {
-            point.x.to_bits().hash(state);
-            point.y.to_bits().hash(state);
-            point.z.to_bits().hash(state);
+            // Normalize -0.0 to 0.0 for consistent hashing
+            let x = if point.x == 0.0 { 0.0_f32 } else { point.x };
+            let y = if point.y == 0.0 { 0.0_f32 } else { point.y };
+            let z = if point.z == 0.0 { 0.0_f32 } else { point.z };
+            x.to_bits().hash(state);
+            y.to_bits().hash(state);
+            z.to_bits().hash(state);
         }
     }
 }
@@ -1962,8 +2007,10 @@ impl Hash for Matrix4Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for matrix in &self.0 {
-            for element in matrix.iter() {
-                element.to_bits().hash(state);
+            for &element in matrix.iter() {
+                // Normalize -0.0 to 0.0 for consistent hashing
+                let normalized = if element == 0.0 { 0.0_f64 } else { element };
+                normalized.to_bits().hash(state);
             }
         }
     }
