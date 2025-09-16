@@ -1,4 +1,3 @@
-use anyhow::Result;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
@@ -6,7 +5,7 @@ use std::{
 use token_value_map::*;
 
 #[test]
-fn animated_data_creation() -> Result<()> {
+fn animated_data_creation() {
     // Note: AnimatedData can only be created with samples via
     // Value::animated() These tests now verify data types through
     // populated instances
@@ -33,20 +32,22 @@ fn animated_data_creation() -> Result<()> {
         assert_eq!(vector3_data.data_type(), DataType::Vector3);
         assert!(!vector3_data.is_empty());
     }
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_insert_and_sample() -> Result<()> {
+fn animated_data_insert_and_sample() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
     )]));
 
     // Insert additional samples
-    real_data.insert_real(Time::from_secs(1.0), Real(2.0))?;
-    real_data.insert_real(Time::from_secs(2.0), Real(3.0))?;
+    real_data
+        .insert_real(Time::from_secs(1.0), Real(2.0))
+        .unwrap();
+    real_data
+        .insert_real(Time::from_secs(2.0), Real(3.0))
+        .unwrap();
 
     assert_eq!(real_data.len(), 3);
     assert!(real_data.is_animated());
@@ -58,12 +59,10 @@ fn animated_data_insert_and_sample() -> Result<()> {
     // Test interpolation
     let interpolated = real_data.interpolate(Time::from_secs(0.5));
     assert_eq!(interpolated, Data::Real(Real(1.5)));
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_type_safety() -> Result<()> {
+fn animated_data_type_safety() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -82,18 +81,18 @@ fn animated_data_type_safety() -> Result<()> {
             .insert_integer(Time::from_secs(0.0), Integer(1))
             .is_err()
     );
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_boolean_no_interpolation() -> Result<()> {
+fn animated_data_boolean_no_interpolation() {
     let mut bool_data = AnimatedData::Boolean(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Boolean(false),
     )]));
 
-    bool_data.insert_boolean(Time::from_secs(1.0), Boolean(true))?;
+    bool_data
+        .insert_boolean(Time::from_secs(1.0), Boolean(true))
+        .unwrap();
 
     // Boolean values should use closest sample, not interpolation
     let sample = bool_data.interpolate(Time::from_secs(0.3));
@@ -101,34 +100,32 @@ fn animated_data_boolean_no_interpolation() -> Result<()> {
 
     let sample = bool_data.interpolate(Time::from_secs(0.7));
     assert_eq!(sample, Data::Boolean(Boolean(true)));
-
-    Ok(())
 }
 
 #[test]
 #[cfg(feature = "vector3")]
-fn animated_data_vector_interpolation() -> Result<()> {
+fn animated_data_vector_interpolation() {
     let mut vec3_data = AnimatedData::Vector3(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Vector3(nalgebra::Vector3::new(0.0, 0.0, 0.0)),
     )]));
 
-    vec3_data.insert_vector3(
-        Time::from_secs(1.0),
-        Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)),
-    )?;
+    vec3_data
+        .insert_vector3(
+            Time::from_secs(1.0),
+            Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)),
+        )
+        .unwrap();
 
     let interpolated = vec3_data.interpolate(Time::from_secs(0.5));
     assert_eq!(
         interpolated,
         Data::Vector3(Vector3(nalgebra::Vector3::new(0.5, 1.0, 1.5)))
     );
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_single_sample() -> Result<()> {
+fn animated_data_single_sample() {
     let real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(42.0),
@@ -140,12 +137,10 @@ fn animated_data_single_sample() -> Result<()> {
     // Any time should return the single value
     let sample = real_data.interpolate(Time::from_secs(100.0));
     assert_eq!(sample, Data::Real(Real(42.0)));
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_hash_consistency() -> Result<()> {
+fn animated_data_hash_consistency() {
     let mut real_data1 = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -155,8 +150,13 @@ fn animated_data_hash_consistency() -> Result<()> {
         Real(1.0),
     )]));
 
-    real_data1.insert_real(Time::from_secs(1.0), Real(2.0))?;
-    real_data2.insert_real(Time::from_secs(1.0), Real(2.0))?;
+    real_data1
+        .insert_real(Time::from_secs(1.0), Real(2.0))
+        .unwrap();
+
+    real_data2
+        .insert_real(Time::from_secs(1.0), Real(2.0))
+        .unwrap();
 
     let mut hasher1 = DefaultHasher::new();
     let mut hasher2 = DefaultHasher::new();
@@ -165,12 +165,10 @@ fn animated_data_hash_consistency() -> Result<()> {
     real_data2.hash(&mut hasher2);
 
     assert_eq!(hasher1.finish(), hasher2.finish());
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_generic_insert() -> Result<()> {
+fn animated_data_generic_insert() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -189,12 +187,10 @@ fn animated_data_generic_insert() -> Result<()> {
     // Test interpolation
     let interpolated = real_data.interpolate(Time::from_secs(0.5));
     assert_eq!(interpolated, Data::Real(Real(1.5)));
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_generic_insert_type_mismatch() -> Result<()> {
+fn animated_data_generic_insert_type_mismatch() {
     let mut real_data = AnimatedData::Real(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
         Real(1.0),
@@ -206,12 +202,10 @@ fn animated_data_generic_insert_type_mismatch() -> Result<()> {
 
     // Should still have the original sample
     assert!(!real_data.is_empty());
-
-    Ok(())
 }
 
 #[test]
-fn animated_data_generic_insert_all_types() -> Result<()> {
+fn animated_data_generic_insert_all_types() {
     // Test that generic insert works for all types
     let mut boolean_data = AnimatedData::Boolean(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
@@ -264,22 +258,20 @@ fn animated_data_generic_insert_all_types() -> Result<()> {
 
     let mut real_vec_data = AnimatedData::RealVec(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
-        RealVec::new(vec![1.0, 2.0, 3.0])?,
+        RealVec::new(vec![1.0, 2.0, 3.0]).unwrap(),
     )]));
     assert!(
         real_vec_data
             .try_insert(
                 Time::from_secs(1.0),
-                Data::RealVec(RealVec::new(vec![4.0, 5.0, 6.0])?)
+                Data::RealVec(RealVec::new(vec![4.0, 5.0, 6.0]).unwrap())
             )
             .is_ok()
     );
-
-    Ok(())
 }
 
 #[test]
-fn from_time_data_scalar_types() -> Result<()> {
+fn from_time_data_scalar_types() {
     // Test Boolean
     let boolean_animated = AnimatedData::from((Time::from_secs(1.0), Data::Boolean(Boolean(true))));
     assert_eq!(boolean_animated.data_type(), DataType::Boolean);
@@ -318,12 +310,10 @@ fn from_time_data_scalar_types() -> Result<()> {
         string_animated.sample_at(Time::from_secs(4.0)),
         Some(Data::String(String("hello".to_string())))
     );
-
-    Ok(())
 }
 
 #[test]
-fn from_time_data_vector_types() -> Result<()> {
+fn from_time_data_vector_types() {
     // Test Color
     let color_animated = AnimatedData::from((
         Time::from_secs(1.0),
@@ -381,16 +371,14 @@ fn from_time_data_vector_types() -> Result<()> {
             Some(Data::Matrix3(Matrix3(matrix)))
         );
     }
-
-    Ok(())
 }
 
 #[test]
-fn from_time_data_vec_types() -> Result<()> {
+fn from_time_data_vec_types() {
     // Test BooleanVec
     let boolean_vec_animated = AnimatedData::from((
         Time::from_secs(1.0),
-        Data::BooleanVec(BooleanVec::new(vec![true, false, true])?),
+        Data::BooleanVec(BooleanVec::new(vec![true, false, true]).unwrap()),
     ));
     assert_eq!(boolean_vec_animated.data_type(), DataType::BooleanVec);
     assert_eq!(boolean_vec_animated.len(), 1);
@@ -398,7 +386,7 @@ fn from_time_data_vec_types() -> Result<()> {
     // Test IntegerVec
     let integer_vec_animated = AnimatedData::from((
         Time::from_secs(2.0),
-        Data::IntegerVec(IntegerVec::new(vec![1, 2, 3])?),
+        Data::IntegerVec(IntegerVec::new(vec![1, 2, 3]).unwrap()),
     ));
     assert_eq!(integer_vec_animated.data_type(), DataType::IntegerVec);
     assert_eq!(integer_vec_animated.len(), 1);
@@ -406,7 +394,7 @@ fn from_time_data_vec_types() -> Result<()> {
     // Test RealVec
     let real_vec_animated = AnimatedData::from((
         Time::from_secs(3.0),
-        Data::RealVec(RealVec::new(vec![1.0, 2.0, 3.0])?),
+        Data::RealVec(RealVec::new(vec![1.0, 2.0, 3.0]).unwrap()),
     ));
     assert_eq!(real_vec_animated.data_type(), DataType::RealVec);
     assert_eq!(real_vec_animated.len(), 1);
@@ -414,7 +402,7 @@ fn from_time_data_vec_types() -> Result<()> {
     // Test StringVec
     let string_vec_animated = AnimatedData::from((
         Time::from_secs(4.0),
-        Data::StringVec(StringVec::new(vec!["a".to_string(), "b".to_string()])?),
+        Data::StringVec(StringVec::new(vec!["a".to_string(), "b".to_string()]).unwrap()),
     ));
     assert_eq!(string_vec_animated.data_type(), DataType::StringVec);
     assert_eq!(string_vec_animated.len(), 1);
@@ -422,10 +410,7 @@ fn from_time_data_vec_types() -> Result<()> {
     // Test ColorVec
     let color_vec_animated = AnimatedData::from((
         Time::from_secs(5.0),
-        Data::ColorVec(ColorVec::new(vec![
-            [1.0, 0.0, 0.0, 1.0],
-            [0.0, 1.0, 0.0, 1.0],
-        ])?),
+        Data::ColorVec(ColorVec::new(vec![[1.0, 0.0, 0.0, 1.0], [0.0, 1.0, 0.0, 1.0]]).unwrap()),
     ));
     assert_eq!(color_vec_animated.data_type(), DataType::ColorVec);
     assert_eq!(color_vec_animated.len(), 1);
@@ -435,7 +420,7 @@ fn from_time_data_vec_types() -> Result<()> {
     {
         let vector2_vec_animated = AnimatedData::from((
             Time::from_secs(6.0),
-            Data::Vector2Vec(Vector2Vec::new(vec![nalgebra::Vector2::new(1.0, 2.0)])?),
+            Data::Vector2Vec(Vector2Vec::new(vec![nalgebra::Vector2::new(1.0, 2.0)]).unwrap()),
         ));
         assert_eq!(vector2_vec_animated.data_type(), DataType::Vector2Vec);
         assert_eq!(vector2_vec_animated.len(), 1);
@@ -446,9 +431,7 @@ fn from_time_data_vec_types() -> Result<()> {
     {
         let vector3_vec_animated = AnimatedData::from((
             Time::from_secs(7.0),
-            Data::Vector3Vec(Vector3Vec::new(vec![nalgebra::Vector3::new(
-                1.0, 2.0, 3.0,
-            )])?),
+            Data::Vector3Vec(Vector3Vec::new(vec![nalgebra::Vector3::new(1.0, 2.0, 3.0)]).unwrap()),
         ));
         assert_eq!(vector3_vec_animated.data_type(), DataType::Vector3Vec);
         assert_eq!(vector3_vec_animated.len(), 1);
@@ -460,22 +443,22 @@ fn from_time_data_vec_types() -> Result<()> {
         let matrix = nalgebra::Matrix3::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
         let matrix3_vec_animated = AnimatedData::from((
             Time::from_secs(8.0),
-            Data::Matrix3Vec(Matrix3Vec::new(vec![matrix])?),
+            Data::Matrix3Vec(Matrix3Vec::new(vec![matrix]).unwrap()),
         ));
         assert_eq!(matrix3_vec_animated.data_type(), DataType::Matrix3Vec);
         assert_eq!(matrix3_vec_animated.len(), 1);
     }
-
-    Ok(())
 }
 
 #[test]
-fn from_time_data_interpolation_works() -> Result<()> {
+fn from_time_data_interpolation_works() {
     // Create animated data using From and test that interpolation still works
     let mut real_animated = AnimatedData::from((Time::from_secs(0.0), Data::Real(Real(0.0))));
 
     // Add another sample using try_insert
-    real_animated.try_insert(Time::from_secs(2.0), Data::Real(Real(2.0)))?;
+    real_animated
+        .try_insert(Time::from_secs(2.0), Data::Real(Real(2.0)))
+        .unwrap();
 
     assert_eq!(real_animated.len(), 2);
     assert!(real_animated.is_animated());
@@ -493,13 +476,11 @@ fn from_time_data_interpolation_works() -> Result<()> {
         real_animated.sample_at(Time::from_secs(2.0)),
         Some(Data::Real(Real(2.0)))
     );
-
-    Ok(())
 }
 
 #[test]
 #[cfg(feature = "matrix3")]
-fn matrix3_interpolation_over_time() -> Result<()> {
+fn matrix3_interpolation_over_time() {
     // Test Matrix3 interpolation with identity and rotation matrices.
     let mut matrix3_data = AnimatedData::Matrix3(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
@@ -508,11 +489,15 @@ fn matrix3_interpolation_over_time() -> Result<()> {
 
     // Add a 90-degree rotation matrix around Z axis at t=1.0.
     let rotation_90 = nalgebra::Matrix3::new(0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
-    matrix3_data.insert_matrix3(Time::from_secs(1.0), Matrix3(rotation_90))?;
+    matrix3_data
+        .insert_matrix3(Time::from_secs(1.0), Matrix3(rotation_90))
+        .unwrap();
 
     // Add a 180-degree rotation matrix at t=2.0.
     let rotation_180 = nalgebra::Matrix3::new(-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0);
-    matrix3_data.insert_matrix3(Time::from_secs(2.0), Matrix3(rotation_180))?;
+    matrix3_data
+        .insert_matrix3(Time::from_secs(2.0), Matrix3(rotation_180))
+        .unwrap();
 
     assert_eq!(matrix3_data.len(), 3);
     assert!(matrix3_data.is_animated());
@@ -558,13 +543,11 @@ fn matrix3_interpolation_over_time() -> Result<()> {
     } else {
         panic!("Expected Matrix3 data");
     }
-
-    Ok(())
 }
 
 #[test]
 #[cfg(feature = "matrix4")]
-fn matrix4_interpolation_over_time() -> Result<()> {
+fn matrix4_interpolation_over_time() {
     // Test Matrix4 interpolation with transformation matrices.
     let mut matrix4_data = AnimatedData::Matrix4(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
@@ -575,13 +558,17 @@ fn matrix4_interpolation_over_time() -> Result<()> {
     let translation = nalgebra::Matrix4::new(
         1.0, 0.0, 0.0, 10.0, 0.0, 1.0, 0.0, 20.0, 0.0, 0.0, 1.0, 30.0, 0.0, 0.0, 0.0, 1.0,
     );
-    matrix4_data.insert_matrix4(Time::from_secs(1.0), Matrix4(translation))?;
+    matrix4_data
+        .insert_matrix4(Time::from_secs(1.0), Matrix4(translation))
+        .unwrap();
 
     // Add a scaled translation matrix at t=2.0.
     let scaled_translation = nalgebra::Matrix4::new(
         2.0, 0.0, 0.0, 20.0, 0.0, 2.0, 0.0, 40.0, 0.0, 0.0, 2.0, 60.0, 0.0, 0.0, 0.0, 1.0,
     );
-    matrix4_data.insert_matrix4(Time::from_secs(2.0), Matrix4(scaled_translation))?;
+    matrix4_data
+        .insert_matrix4(Time::from_secs(2.0), Matrix4(scaled_translation))
+        .unwrap();
 
     assert_eq!(matrix4_data.len(), 3);
     assert!(matrix4_data.is_animated());
@@ -631,12 +618,10 @@ fn matrix4_interpolation_over_time() -> Result<()> {
     } else {
         panic!("Expected Matrix4 data");
     }
-
-    Ok(())
 }
 
 #[test]
-fn from_time_value_delegates_to_from_time_data() -> Result<()> {
+fn from_time_value_delegates_to_from_time_data() {
     // Test that From<(Time, Value)> correctly delegates to From<(Time, Data)>
     // for uniform values
     let uniform_value = Value::uniform(42.0);
@@ -655,6 +640,4 @@ fn from_time_value_delegates_to_from_time_data() -> Result<()> {
         animated_from_value.sample_at(Time::from_secs(1.0)),
         animated_from_data.sample_at(Time::from_secs(1.0))
     );
-
-    Ok(())
 }

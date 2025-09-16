@@ -540,7 +540,32 @@ where
             let (x1, y1) = window[1];
             linear_interp(x0, x1, y0, y1, time)
         }
-        _ => unreachable!("Interpolation window must have at least 2 elements"),
+        1 => {
+            // Single keyframe - return its value.
+            window[0].1.clone()
+        }
+        0 => {
+            // This shouldn't happen given the checks above, but be defensive.
+            panic!("Interpolation window is empty - this is a bug in token-value-map")
+        }
+        _ => {
+            // Window has more than 4 elements - shouldn't happen but use first 4.
+            let (t0, p0) = window[0];
+            let (t1, p1) = window[1];
+            let (t2, p2) = window[2];
+            let (t3, p3) = window[3];
+            hermite_interp(HermiteParams {
+                t0,
+                t1,
+                t2,
+                t3,
+                p0,
+                p1,
+                p2,
+                p3,
+                t: time,
+            })
+        }
     }
 }
 

@@ -76,22 +76,24 @@ fn try_from_value_vector_types() -> Result<()> {
 }
 
 #[test]
-fn try_from_value_animated_fails() {
+fn try_from_value_animated_fails() -> Result<()> {
     // Test that animated values cannot be converted to simple types
     let animated = Value::animated(vec![
         (frame_tick::Tick::new(0), 1.0),
         (frame_tick::Tick::new(10), 2.0),
-    ])
-    .unwrap();
+    ])?;
 
     let result: Result<Real> = animated.try_into();
     assert!(result.is_err());
     assert!(
         result
+            .as_ref()
             .unwrap_err()
             .to_string()
             .contains("Cannot convert animated value")
     );
+
+    Ok(())
 }
 
 #[test]
@@ -151,20 +153,22 @@ fn try_from_value_ref_with_conversion() -> Result<()> {
 }
 
 #[test]
-fn try_from_value_ref_animated_fails() {
+fn try_from_value_ref_animated_fails() -> Result<()> {
     // Test that animated values cannot be converted to simple types
     let animated = Value::animated(vec![
         (frame_tick::Tick::new(0), 1.0),
         (frame_tick::Tick::new(10), 2.0),
-    ])
-    .unwrap();
+    ])?;
 
     let result: Result<Real> = (&animated).try_into();
     assert!(result.is_err());
     assert!(
         result
+            .as_ref()
             .unwrap_err()
             .to_string()
             .contains("Cannot convert animated value")
     );
+
+    Ok(())
 }

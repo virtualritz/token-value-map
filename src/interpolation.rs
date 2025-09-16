@@ -77,7 +77,7 @@ pub(crate) mod bezier_helpers {
     ///
     /// Given two keyframes with speed values, calculates the control points
     /// for a cubic bezier curve between them.
-    pub fn control_points_from_speed<T>(
+    pub fn _control_points_from_speed<T>(
         t1: f32,
         v1: &T,
         speed1: &T,
@@ -101,7 +101,7 @@ pub(crate) mod bezier_helpers {
     /// Evaluate a cubic bezier at time t.
     ///
     /// Uses De Casteljau's algorithm for robust evaluation.
-    pub fn evaluate_bezier<T>(t: f32, p0: (f32, T), p1: (f32, T), p2: (f32, T), p3: (f32, T)) -> T
+    pub fn _evaluate_bezier<T>(t: f32, p0: (f32, T), p1: (f32, T), p2: (f32, T), p3: (f32, T)) -> T
     where
         T: Clone + std::ops::Add<Output = T> + std::ops::Mul<f32, Output = T>,
     {

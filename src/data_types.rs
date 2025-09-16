@@ -148,6 +148,18 @@ impl From<Data> for Real {
     }
 }
 
+impl From<f64> for Real {
+    fn from(value: f64) -> Self {
+        Real(value)
+    }
+}
+
+impl From<f32> for Real {
+    fn from(value: f32) -> Self {
+        Real(value as f64)
+    }
+}
+
 /// A UTF-8 string wrapper.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -256,6 +268,30 @@ pub struct Matrix3(pub nalgebra::Matrix3<f32>);
 #[cfg(feature = "matrix3")]
 impl Eq for Matrix3 {}
 
+#[cfg(feature = "matrix3")]
+impl From<Vec<f32>> for Matrix3 {
+    fn from(vec: Vec<f32>) -> Self {
+        assert_eq!(vec.len(), 9, "Matrix3 requires exactly 9 elements");
+        Matrix3(nalgebra::Matrix3::from_row_slice(&vec))
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl From<Vec<f64>> for Matrix3 {
+    fn from(vec: Vec<f64>) -> Self {
+        assert_eq!(vec.len(), 9, "Matrix3 requires exactly 9 elements");
+        let vec_f32: Vec<f32> = vec.into_iter().map(|v| v as f32).collect();
+        Matrix3(nalgebra::Matrix3::from_row_slice(&vec_f32))
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl From<[f32; 9]> for Matrix3 {
+    fn from(arr: [f32; 9]) -> Self {
+        Matrix3(nalgebra::Matrix3::from_row_slice(&arr))
+    }
+}
+
 /// A 3D normal vector.
 #[cfg(feature = "normal3")]
 #[derive(Clone, Debug, PartialEq)]
@@ -297,6 +333,18 @@ impl IntegerVec {
     }
 }
 
+impl From<Vec<i64>> for IntegerVec {
+    fn from(vec: Vec<i64>) -> Self {
+        IntegerVec(vec)
+    }
+}
+
+impl From<Vec<i32>> for IntegerVec {
+    fn from(vec: Vec<i32>) -> Self {
+        IntegerVec(vec.into_iter().map(|v| v as i64).collect())
+    }
+}
+
 /// A vector of real values.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -308,6 +356,18 @@ impl RealVec {
             return Err(anyhow!("RealVec cannot be empty"));
         }
         Ok(RealVec(vec))
+    }
+}
+
+impl From<Vec<f64>> for RealVec {
+    fn from(vec: Vec<f64>) -> Self {
+        RealVec(vec)
+    }
+}
+
+impl From<Vec<f32>> for RealVec {
+    fn from(vec: Vec<f32>) -> Self {
+        RealVec(vec.into_iter().map(|v| v as f64).collect())
     }
 }
 
