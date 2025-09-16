@@ -4,7 +4,7 @@ use token_value_map::{AnimatedData, Data, Time, Value};
 #[test]
 fn single_keyframe_interpolation() -> Result<()> {
     // Test with a single keyframe at time 0.
-    let mut animated = AnimatedData::from((Time::from_secs(0.0), Data::Real(42.0.into())));
+    let animated = AnimatedData::from((Time::from_secs(0.0), Data::Real(42.0.into())));
 
     // Interpolating at the exact keyframe time should return the keyframe value.
     let result = animated.interpolate(Time::from_secs(0.0));
@@ -26,7 +26,7 @@ fn single_keyframe_matrix_interpolation() -> Result<()> {
     // Test with a single matrix keyframe.
     let matrix_data = Data::Matrix3(vec![1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0].into());
 
-    let mut animated = AnimatedData::from((Time::from_secs(10.0), matrix_data.clone()));
+    let animated = AnimatedData::from((Time::from_secs(10.0), matrix_data.clone()));
 
     // Interpolating at any time should return the single keyframe value.
     let result = animated.interpolate(Time::from_secs(10.0));
