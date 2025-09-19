@@ -6,6 +6,7 @@ use crate::{
 use anyhow::Result;
 use core::num::NonZeroU16;
 use enum_dispatch::enum_dispatch;
+use smallvec::SmallVec;
 use std::hash::Hasher;
 
 /// Time-indexed data with interpolation support.
@@ -101,6 +102,48 @@ impl<T> AnimatedDataOps for TimeDataMap<T> {
 }
 
 impl_data_type_ops!(AnimatedData);
+
+impl AnimatedData {
+    /// Get all time samples from this animated data.
+    pub fn times(&self) -> SmallVec<[Time; 10]> {
+        match self {
+            AnimatedData::Boolean(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::Integer(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::Real(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::String(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::Color(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "vector2")]
+            AnimatedData::Vector2(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "vector3")]
+            AnimatedData::Vector3(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "matrix3")]
+            AnimatedData::Matrix3(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "normal3")]
+            AnimatedData::Normal3(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "point3")]
+            AnimatedData::Point3(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "matrix4")]
+            AnimatedData::Matrix4(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::BooleanVec(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::IntegerVec(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::RealVec(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::ColorVec(map) => map.iter().map(|(t, _)| *t).collect(),
+            AnimatedData::StringVec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "vector2", feature = "vec_variants"))]
+            AnimatedData::Vector2Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "vector3", feature = "vec_variants"))]
+            AnimatedData::Vector3Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
+            AnimatedData::Matrix3Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "normal3", feature = "vec_variants"))]
+            AnimatedData::Normal3Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "point3", feature = "vec_variants"))]
+            AnimatedData::Point3Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
+            AnimatedData::Matrix4Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+        }
+    }
+}
 
 impl From<(Time, Value)> for AnimatedData {
     fn from((time, value): (Time, Value)) -> Self {

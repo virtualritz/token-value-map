@@ -441,9 +441,76 @@ impl Value {
     pub fn times(&self) -> SmallVec<[Time; 10]> {
         match self {
             Value::Uniform(_) => SmallVec::<[Time; 10]>::new_const(),
-            Value::Animated(_samples) => {
-                // TODO: Implement proper time collection for AnimatedData
-                SmallVec::<[Time; 10]>::new_const()
+            Value::Animated(samples) => samples.times(),
+        }
+    }
+
+    /// Merge this value with another using a combiner function.
+    ///
+    /// For uniform values, applies the combiner once.
+    /// For animated values, samples both at the union of all keyframe times
+    /// and applies the combiner at each time.
+    ///
+    /// # Example
+    /// ```ignore
+    /// // Multiply two matrices
+    /// let result = matrix1.merge_with(&matrix2, |a, b| {
+    ///     match (a, b) {
+    ///         (Data::Matrix3(m1), Data::Matrix3(m2)) => {
+    ///             Data::Matrix3(Matrix3(m1.0 * m2.0))
+    ///         }
+    ///         _ => a, // fallback
+    ///     }
+    /// })?;
+    /// ```
+    pub fn merge_with<F>(&self, other: &Value, combiner: F) -> Result<Value>
+    where
+        F: Fn(&Data, &Data) -> Data,
+    {
+        match (self, other) {
+            // Both uniform: simple case
+            (Value::Uniform(a), Value::Uniform(b)) => {
+                Ok(Value::Uniform(combiner(a, b)))
+            }
+
+            // One or both animated: need to sample at union of times
+            _ => {
+                // Collect all unique times from both values
+                let mut all_times = std::collections::BTreeSet::new();
+
+                // Add times from self
+                for t in self.times() {
+                    all_times.insert(t);
+                }
+
+                // Add times from other
+                for t in other.times() {
+                    all_times.insert(t);
+                }
+
+                // If no times found (both were uniform with no times), sample at default
+                if all_times.is_empty() {
+                    let a = self.interpolate(Time::default());
+                    let b = other.interpolate(Time::default());
+                    return Ok(Value::Uniform(combiner(&a, &b)));
+                }
+
+                // Sample both values at all times and combine
+                let mut combined_samples = Vec::new();
+                for time in all_times {
+                    let a = self.interpolate(time);
+                    let b = other.interpolate(time);
+                    let combined = combiner(&a, &b);
+                    combined_samples.push((time, combined));
+                }
+
+                // If only one sample, return as uniform
+                if combined_samples.len() == 1 {
+                    Ok(Value::Uniform(combined_samples[0].1.clone()))
+                } else {
+                    // Create animated value from combined samples
+                    Value::animated(combined_samples)
+                }
             }
         }
     }
@@ -521,6 +588,108 @@ impl Value {
                 // For animated values, sample at standardized points.
                 animated.hash_with_shutter(state, shutter);
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[cfg(feature = "matrix3")]
+    use nalgebra;
+
+    #[cfg(feature = "matrix3")]
+    #[test]
+    fn test_matrix_merge_uniform() {
+        // Create two uniform matrices
+        let m1 = nalgebra::Matrix3::new(
+            2.0, 0.0, 0.0,
+            0.0, 2.0, 0.0,
+            0.0, 0.0, 1.0
+        ); // Scale by 2
+        let m2 = nalgebra::Matrix3::new(
+            1.0, 0.0, 10.0,
+            0.0, 1.0, 20.0,
+            0.0, 0.0, 1.0
+        ); // Translate by (10, 20)
+
+        let v1 = Value::uniform(m1);
+        let v2 = Value::uniform(m2);
+
+        // Merge them with multiplication
+        let result = v1.merge_with(&v2, |a, b| {
+            match (a, b) {
+                (Data::Matrix3(ma), Data::Matrix3(mb)) => {
+                    Data::Matrix3(ma.clone() * mb.clone())
+                }
+                _ => a.clone()
+            }
+        }).unwrap();
+
+        // Check result is uniform
+        if let Value::Uniform(Data::Matrix3(result_matrix)) = result {
+            let expected = m1 * m2;
+            assert_eq!(result_matrix.0, expected);
+        } else {
+            panic!("Expected uniform result");
+        }
+    }
+
+    #[cfg(feature = "matrix3")]
+    #[test]
+    fn test_matrix_merge_animated() {
+        use frame_tick::Tick;
+
+        // Create first animated matrix (rotation)
+        let m1_t0 = nalgebra::Matrix3::identity();
+        let m1_t10 = nalgebra::Matrix3::new(
+            0.0, -1.0, 0.0,
+            1.0, 0.0, 0.0,
+            0.0, 0.0, 1.0
+        ); // 90 degree rotation
+
+        let v1 = Value::animated([
+            (Tick::from_secs(0.0), m1_t0),
+            (Tick::from_secs(10.0), m1_t10),
+        ]).unwrap();
+
+        // Create second animated matrix (scale)
+        let m2_t5 = nalgebra::Matrix3::new(
+            2.0, 0.0, 0.0,
+            0.0, 2.0, 0.0,
+            0.0, 0.0, 1.0
+        );
+        let m2_t15 = nalgebra::Matrix3::new(
+            3.0, 0.0, 0.0,
+            0.0, 3.0, 0.0,
+            0.0, 0.0, 1.0
+        );
+
+        let v2 = Value::animated([
+            (Tick::from_secs(5.0), m2_t5),
+            (Tick::from_secs(15.0), m2_t15),
+        ]).unwrap();
+
+        // Merge them
+        let result = v1.merge_with(&v2, |a, b| {
+            match (a, b) {
+                (Data::Matrix3(ma), Data::Matrix3(mb)) => {
+                    Data::Matrix3(ma.clone() * mb.clone())
+                }
+                _ => a.clone()
+            }
+        }).unwrap();
+
+        // Check that result is animated with samples at t=0, 5, 10, 15
+        if let Value::Animated(animated) = result {
+            let times = animated.times();
+            assert_eq!(times.len(), 4);
+            assert!(times.contains(&Tick::from_secs(0.0)));
+            assert!(times.contains(&Tick::from_secs(5.0)));
+            assert!(times.contains(&Tick::from_secs(10.0)));
+            assert!(times.contains(&Tick::from_secs(15.0)));
+        } else {
+            panic!("Expected animated result");
         }
     }
 }
