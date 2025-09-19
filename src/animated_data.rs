@@ -6,6 +6,7 @@ use crate::{
 use anyhow::Result;
 use core::num::NonZeroU16;
 use enum_dispatch::enum_dispatch;
+use std::hash::Hasher;
 
 /// Time-indexed data with interpolation support.
 ///
@@ -884,3 +885,44 @@ impl_sample_for_animated_data!(
     Point3, Point3, "point3";
     Matrix4, Matrix4, "matrix4";
 );
+
+impl AnimatedData {
+    /// Hash the animated data with shutter context for better cache coherency.
+    ///
+    /// Samples the animation at standardized points within the shutter range
+    /// and hashes the interpolated values. If all samples are identical,
+    /// only one value is hashed for efficiency.
+    pub fn hash_with_shutter<H: Hasher>(&self, state: &mut H, shutter: &Shutter) {
+        use smallvec::SmallVec;
+
+        // Sample at 5 standardized points within the shutter.
+        const SAMPLE_POSITIONS: [f32; 5] = [0.0, 0.25, 0.5, 0.75, 1.0];
+
+        // Collect interpolated samples using SmallVec to avoid heap allocation.
+        let samples: SmallVec<[Data; 5]> = SAMPLE_POSITIONS
+            .iter()
+            .map(|&pos| {
+                let time = shutter.evaluate(pos);
+                self.interpolate(time)
+            })
+            .collect();
+
+        // Check if all samples are identical.
+        let all_same = samples.windows(2).all(|w| w[0] == w[1]);
+
+        // Hash the data type discriminant.
+        std::mem::discriminant(self).hash(state);
+
+        if all_same {
+            // If all samples are the same, just hash one.
+            1usize.hash(state); // Indicate single sample.
+            samples[0].hash(state);
+        } else {
+            // Hash all samples.
+            samples.len().hash(state); // Indicate multiple samples.
+            for sample in &samples {
+                sample.hash(state);
+            }
+        }
+    }
+}
