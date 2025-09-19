@@ -864,6 +864,43 @@ impl_nalgebra_arithmetic!(Vector3);
 #[cfg(feature = "matrix3")]
 impl_nalgebra_arithmetic!(Matrix3);
 
+// Matrix3 multiplication (matrix * matrix)
+#[cfg(feature = "matrix3")]
+impl Mul for Matrix3 {
+    type Output = Matrix3;
+
+    fn mul(self, other: Matrix3) -> Matrix3 {
+        Matrix3(self.0 * other.0)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<&Matrix3> for Matrix3 {
+    type Output = Matrix3;
+
+    fn mul(self, other: &Matrix3) -> Matrix3 {
+        Matrix3(self.0 * other.0)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<Matrix3> for &Matrix3 {
+    type Output = Matrix3;
+
+    fn mul(self, other: Matrix3) -> Matrix3 {
+        Matrix3(self.0 * other.0)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<&Matrix3> for &Matrix3 {
+    type Output = Matrix3;
+
+    fn mul(self, other: &Matrix3) -> Matrix3 {
+        Matrix3(self.0 * other.0)
+    }
+}
+
 // Vector types arithmetic operations
 impl Add for RealVec {
     type Output = RealVec;
