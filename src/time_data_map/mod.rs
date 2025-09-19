@@ -676,7 +676,7 @@ fn decompose_matrix(
     // Extract the linear part (upper-left 2x2 matrix).
     let linear_part = matrix.fixed_view::<2, 2>(0, 0).into_owned();
 
-    // Perform Singular Data Decomposition (SVD) to separate rotation and
+    // Perform Singular Value Decomposition (SVD) to separate rotation and
     // stretch.
     let svd = nalgebra::SVD::new(linear_part, true, true);
     let rotation = nalgebra::Rotation2::from_matrix(&svd.u.unwrap().into_owned());

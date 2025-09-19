@@ -1,5 +1,6 @@
 use crate::*;
 use core::num::NonZeroU16;
+use std::hash::{Hash, Hasher};
 
 /// Type alias for bracket sampling return type.
 type BracketSample = (Option<(Time, Data)>, Option<(Time, Data)>);
@@ -502,3 +503,24 @@ impl Sample<Integer> for Value {
 // Manual Eq implementation for Value
 // This is safe because we handle floating point comparison deterministically
 impl Eq for Value {}
+
+impl Value {
+    /// Hash the value with shutter context for animation-aware caching.
+    ///
+    /// For animated values, this samples at standardized points within the shutter
+    /// range and hashes the interpolated values rather than raw keyframes.
+    /// This provides better cache coherency for animations with different absolute
+    /// times but identical interpolated values.
+    pub fn hash_with_shutter<H: Hasher>(&self, state: &mut H, shutter: &Shutter) {
+        match self {
+            Value::Uniform(data) => {
+                // For uniform values, just use regular hashing.
+                data.hash(state);
+            }
+            Value::Animated(animated) => {
+                // For animated values, sample at standardized points.
+                animated.hash_with_shutter(state, shutter);
+            }
+        }
+    }
+}
