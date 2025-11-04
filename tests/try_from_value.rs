@@ -6,7 +6,7 @@ fn try_from_value_basic_types() -> Result<()> {
     // Test Boolean
     let value = Value::uniform(true);
     let boolean: Boolean = value.try_into()?;
-    assert_eq!(boolean.0, true);
+    assert!(boolean.0);
 
     // Test Integer
     let value = Value::uniform(42i64);
@@ -14,9 +14,9 @@ fn try_from_value_basic_types() -> Result<()> {
     assert_eq!(integer.0, 42);
 
     // Test Real
-    let value = Value::uniform(3.14f64);
+    let value = Value::uniform(3.5f64);
     let real: Real = value.try_into()?;
-    assert_eq!(real.0, 3.14);
+    assert_eq!(real.0, 3.5);
 
     // Test String
     let value = Value::uniform("hello");
@@ -112,7 +112,7 @@ fn try_from_value_ref_basic_types() -> Result<()> {
     // Test Boolean
     let value = Value::uniform(true);
     let boolean: Boolean = (&value).try_into()?;
-    assert_eq!(boolean.0, true);
+    assert!(boolean.0);
 
     // Test Integer
     let value = Value::uniform(42i64);
@@ -120,9 +120,9 @@ fn try_from_value_ref_basic_types() -> Result<()> {
     assert_eq!(integer.0, 42);
 
     // Test Real
-    let value = Value::uniform(3.14f64);
+    let value = Value::uniform(3.5f64);
     let real: Real = (&value).try_into()?;
-    assert_eq!(real.0, 3.14);
+    assert_eq!(real.0, 3.5);
 
     // Test String
     let value = Value::uniform("hello");

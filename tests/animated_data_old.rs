@@ -291,12 +291,12 @@ fn from_time_data_scalar_types() {
     );
 
     // Test Real
-    let real_animated = AnimatedData::from((Time::from_secs(3.0), Data::Real(Real(3.14))));
+    let real_animated = AnimatedData::from((Time::from_secs(3.0), Data::Real(Real(3.5))));
     assert_eq!(real_animated.data_type(), DataType::Real);
     assert_eq!(real_animated.len(), 1);
     assert_eq!(
         real_animated.sample_at(Time::from_secs(3.0)),
-        Some(Data::Real(Real(3.14)))
+        Some(Data::Real(Real(3.5)))
     );
 
     // Test String
