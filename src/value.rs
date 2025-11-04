@@ -469,9 +469,7 @@ impl Value {
     {
         match (self, other) {
             // Both uniform: simple case
-            (Value::Uniform(a), Value::Uniform(b)) => {
-                Ok(Value::Uniform(combiner(a, b)))
-            }
+            (Value::Uniform(a), Value::Uniform(b)) => Ok(Value::Uniform(combiner(a, b))),
 
             // One or both animated: need to sample at union of times
             _ => {
@@ -595,36 +593,24 @@ impl Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[cfg(feature = "matrix3")]
-    use nalgebra;
 
     #[cfg(feature = "matrix3")]
     #[test]
     fn test_matrix_merge_uniform() {
         // Create two uniform matrices
-        let m1 = nalgebra::Matrix3::new(
-            2.0, 0.0, 0.0,
-            0.0, 2.0, 0.0,
-            0.0, 0.0, 1.0
-        ); // Scale by 2
-        let m2 = nalgebra::Matrix3::new(
-            1.0, 0.0, 10.0,
-            0.0, 1.0, 20.0,
-            0.0, 0.0, 1.0
-        ); // Translate by (10, 20)
+        let m1 = nalgebra::Matrix3::new(2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0); // Scale by 2
+        let m2 = nalgebra::Matrix3::new(1.0, 0.0, 10.0, 0.0, 1.0, 20.0, 0.0, 0.0, 1.0); // Translate by (10, 20)
 
         let v1 = Value::uniform(m1);
         let v2 = Value::uniform(m2);
 
         // Merge them with multiplication
-        let result = v1.merge_with(&v2, |a, b| {
-            match (a, b) {
-                (Data::Matrix3(ma), Data::Matrix3(mb)) => {
-                    Data::Matrix3(ma.clone() * mb.clone())
-                }
-                _ => a.clone()
-            }
-        }).unwrap();
+        let result = v1
+            .merge_with(&v2, |a, b| match (a, b) {
+                (Data::Matrix3(ma), Data::Matrix3(mb)) => Data::Matrix3(ma.clone() * mb.clone()),
+                _ => a.clone(),
+            })
+            .unwrap();
 
         // Check result is uniform
         if let Value::Uniform(Data::Matrix3(result_matrix)) = result {
@@ -642,43 +628,31 @@ mod tests {
 
         // Create first animated matrix (rotation)
         let m1_t0 = nalgebra::Matrix3::identity();
-        let m1_t10 = nalgebra::Matrix3::new(
-            0.0, -1.0, 0.0,
-            1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0
-        ); // 90 degree rotation
+        let m1_t10 = nalgebra::Matrix3::new(0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); // 90 degree rotation
 
         let v1 = Value::animated([
             (Tick::from_secs(0.0), m1_t0),
             (Tick::from_secs(10.0), m1_t10),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         // Create second animated matrix (scale)
-        let m2_t5 = nalgebra::Matrix3::new(
-            2.0, 0.0, 0.0,
-            0.0, 2.0, 0.0,
-            0.0, 0.0, 1.0
-        );
-        let m2_t15 = nalgebra::Matrix3::new(
-            3.0, 0.0, 0.0,
-            0.0, 3.0, 0.0,
-            0.0, 0.0, 1.0
-        );
+        let m2_t5 = nalgebra::Matrix3::new(2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0);
+        let m2_t15 = nalgebra::Matrix3::new(3.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 1.0);
 
         let v2 = Value::animated([
             (Tick::from_secs(5.0), m2_t5),
             (Tick::from_secs(15.0), m2_t15),
-        ]).unwrap();
+        ])
+        .unwrap();
 
         // Merge them
-        let result = v1.merge_with(&v2, |a, b| {
-            match (a, b) {
-                (Data::Matrix3(ma), Data::Matrix3(mb)) => {
-                    Data::Matrix3(ma.clone() * mb.clone())
-                }
-                _ => a.clone()
-            }
-        }).unwrap();
+        let result = v1
+            .merge_with(&v2, |a, b| match (a, b) {
+                (Data::Matrix3(ma), Data::Matrix3(mb)) => Data::Matrix3(ma.clone() * mb.clone()),
+                _ => a.clone(),
+            })
+            .unwrap();
 
         // Check that result is animated with samples at t=0, 5, 10, 15
         if let Value::Animated(animated) = result {

@@ -12,18 +12,20 @@ pub use sample::*;
 
 /// A mapping from time to data values with interpolation support.
 ///
-/// [`TimeDataMap`] stores time-value pairs in a [`BTreeMap`] for
-/// efficient time-based queries and supports various interpolation methods.
+/// Stores time-value pairs in a [`BTreeMap`] for efficient time-based
+/// queries and supports various interpolation methods.
 ///
 /// When the `interpolation` feature is enabled, each value can have an
-/// associated interpolation specification for advanced animation curves.
+/// associated interpolation specification for animation curves.
+///
+/// Without `interpolation` feature: `BTreeMap<Time, T>`.
+///
+/// With `interpolation` feature an entry supports a [`Key`]s:
+/// `BTreeMap<Time, (T, Option<Key<T>>)>`.
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TimeDataMap<T> {
     /// The time-value pairs with optional interpolation keys.
-    ///
-    /// Without `interpolation` feature: BTreeMap<Time, T>
-    /// With `interpolation` feature: BTreeMap<Time, (T, Option<Key<T>>)>
     #[cfg(not(feature = "interpolation"))]
     pub values: BTreeMap<Time, T>,
     #[cfg(feature = "interpolation")]
@@ -381,7 +383,7 @@ impl<T> TimeDataMap<T> {
 
     /// Get surrounding samples for interpolation.
     ///
-    /// Returns up to N samples centered around the given time for
+    /// Returns up to `N` samples centered around the given time for
     /// use in interpolation algorithms.
     pub fn sample_surrounding<const N: usize>(&self, time: Time) -> SmallVec<[(Time, &T); N]> {
         // Get samples before the time.

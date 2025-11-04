@@ -4,7 +4,7 @@ use token_value_map::*;
 #[test]
 fn value_from_primitives() {
     let _: Data = 42i64.into();
-    let _: Data = 3.14f64.into();
+    let _: Data = 3.5f64.into();
     let _: Data = true.into();
     let _: Data = "hello".into();
     #[cfg(feature = "vector2")]
@@ -30,7 +30,7 @@ fn value_to_primitives() {
 #[test]
 fn data_type() {
     assert_eq!(Data::from(42i64).data_type(), DataType::Integer);
-    assert_eq!(Data::from(3.14).data_type(), DataType::Real);
+    assert_eq!(Data::from(3.5).data_type(), DataType::Real);
     assert_eq!(Data::from(true).data_type(), DataType::Boolean);
     assert_eq!(Data::from("hello").data_type(), DataType::String);
 }
