@@ -111,3 +111,19 @@ impl TokenValueMap {
 // Manual Eq implementation for TokenValueMap
 // This is safe because we handle floating point comparison deterministically
 impl Eq for TokenValueMap {}
+
+impl FromIterator<(Ustr, Value)> for TokenValueMap {
+    fn from_iter<T: IntoIterator<Item = (Ustr, Value)>>(iter: T) -> Self {
+        Self {
+            attributes: HashMap::from_iter(iter),
+        }
+    }
+}
+
+impl<const N: usize> From<[(Ustr, Value); N]> for TokenValueMap {
+    fn from(arr: [(Ustr, Value); N]) -> Self {
+        Self {
+            attributes: HashMap::from(arr),
+        }
+    }
+}
