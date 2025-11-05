@@ -340,13 +340,57 @@ fn calculate_speed_from_smooth(
 5. **No Circular Dependencies**: token-value-map doesn't know about Dopamine
 6. **Proven Algorithm**: Uses the same uniform-cubic-splines approach as Dopamine
 
+## Asymmetric Tangent Support
+
+The implementation **fully supports asymmetric tangents** through the `Key<T>` structure:
+
+```rust
+pub struct Key<T> {
+    pub interpolation_in: Interpolation<T>,   // Incoming tangent
+    pub interpolation_out: Interpolation<T>,  // Outgoing tangent
+}
+```
+
+This allows each keyframe to have different speeds for incoming and outgoing curves:
+
+```rust
+// Example: Fast outgoing, slow incoming
+map.insert_with_interpolation(
+    time,
+    value,
+    Key {
+        interpolation_out: Interpolation::Speed(fast_speed),
+        interpolation_in: Interpolation::Speed(slow_speed),
+    },
+);
+```
+
+### Bezier Interpolation with Asymmetric Tangents
+
+When both surrounding keyframes specify `Speed` interpolation, the system computes cubic Bezier control points:
+
+1. **Control Point 1**: `P1 = P0 + speed_out * handle_length`
+2. **Control Point 2**: `P2 = P3 - speed_in * handle_length`
+
+The `handle_length` is automatically clamped to prevent control point overlap on the time axis, which would create non-monotonic curves.
+
+### Interpolation Mode Priority
+
+When interpolating between two keyframes, the system follows this priority:
+
+1. **Hold**: If either side uses `Hold`, the previous value is held (step function)
+2. **Speed**: If both sides use `Speed`, bezier interpolation with asymmetric tangents
+3. **Linear**: If both sides use `Linear` (or no specs), automatic Hermite/quadratic/linear
+4. **Mixed**: Falls back to simple linear interpolation
+
 ## Implementation Status
 
 ### Phase 1: Core Implementation (token-value-map)
 - [x] Implement `Key<T>` and `Interpolation<T>` types
 - [x] Update `TimeDataMap` to use generic keys
-- [ ] Implement interpolation logic for Speed variant using uniform-cubic-splines
-- [ ] Add tests for all interpolation modes
+- [x] Implement interpolation logic for Speed variant with component-wise bezier
+- [x] Add tests for all interpolation modes
+- [x] Add tests for asymmetric tangent behavior
 
 ### Phase 2: Dopamine Integration
 - [ ] Implement `From<&Keyframe> for Key<Data>`
