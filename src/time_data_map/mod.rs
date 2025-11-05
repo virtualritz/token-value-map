@@ -239,14 +239,7 @@ where
         }
         #[cfg(feature = "interpolation")]
         {
-            // Extract just the values for interpolation.
-            // AIDEV-TODO: Use interpolation specs when available.
-            let values_only: BTreeMap<Time, T> = self
-                .values
-                .iter()
-                .map(|(k, (v, _))| (*k, v.clone()))
-                .collect();
-            interpolate(&values_only, time)
+            interpolate_with_specs(&self.values, time)
         }
     }
 }
@@ -466,6 +459,91 @@ pub(crate) fn interpolate_spherical_linear(
     let t: f32 = (f32::from(time) - t0) / (t1 - t0);
 
     r0.slerp(r1, t)
+}
+
+/// Interpolate with respect to interpolation specifications.
+///
+/// This function checks for custom interpolation specs and uses them if available,
+/// otherwise falls back to automatic interpolation.
+#[cfg(feature = "interpolation")]
+#[inline(always)]
+pub(crate) fn interpolate_with_specs<V>(
+    map: &BTreeMap<Time, (V, Option<crate::Key<V>>)>,
+    time: Time,
+) -> V
+where
+    V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
+{
+    if map.len() == 1 {
+        return map.values().next().unwrap().0.clone();
+    }
+
+    let first = map.iter().next().unwrap();
+    let last = map.iter().next_back().unwrap();
+
+    if time <= *first.0 {
+        return first.1.0.clone();
+    }
+
+    if time >= *last.0 {
+        return last.1.0.clone();
+    }
+
+    // Find surrounding keyframes.
+    let lower = map.range(..time).next_back().unwrap();
+    let upper = map.range(time..).next().unwrap();
+
+    // If we're exactly on a keyframe, return its value.
+    if lower.0 == upper.0 {
+        return lower.1.0.clone();
+    }
+
+    let (t1, (v1, spec1)) = lower;
+    let (t2, (v2, spec2)) = upper;
+
+    // Check if we have interpolation specs.
+    let interp_out = spec1.as_ref().map(|s| &s.interpolation_out);
+    let interp_in = spec2.as_ref().map(|s| &s.interpolation_in);
+
+    // AIDEV-NOTE: Determine interpolation mode based on specs.
+    // Hold takes precedence, then Speed (bezier), then Linear, then fallback to automatic.
+    match (interp_out, interp_in) {
+        // If either side is Hold, use step function (hold previous value).
+        (Some(crate::Interpolation::Hold), _) | (_, Some(crate::Interpolation::Hold)) => v1.clone(),
+
+        // If both sides specify Speed, use bezier interpolation with asymmetric tangents.
+        (Some(crate::Interpolation::Speed(speed1)), Some(crate::Interpolation::Speed(speed2))) => {
+            use crate::interpolation::bezier_helpers::*;
+
+            let (p1, p2) =
+                control_points_from_speed((*t1).into(), v1, speed1, (*t2).into(), v2, speed2);
+
+            evaluate_bezier_component_wise(
+                time.into(),
+                ((*t1).into(), v1),
+                (p1.0, &p1.1),
+                (p2.0, &p2.1),
+                ((*t2).into(), v2),
+            )
+        }
+
+        // If both sides specify Linear (or both have no specs), use automatic interpolation.
+        (Some(crate::Interpolation::Linear), Some(crate::Interpolation::Linear)) | (None, None) => {
+            // Fall back to automatic interpolation.
+            let values_only: BTreeMap<Time, V> =
+                map.iter().map(|(k, (v, _))| (*k, v.clone())).collect();
+            interpolate(&values_only, time)
+        }
+
+        // Mixed cases or only one side has spec: fall back to linear interpolation.
+        _ => {
+            let t1_f: f32 = (*t1).into();
+            let t2_f: f32 = (*t2).into();
+            let t_f: f32 = time.into();
+            let alpha = (t_f - t1_f) / (t2_f - t1_f);
+            v1.clone() + (v2.clone() - v1.clone()) * alpha
+        }
+    }
 }
 
 #[inline(always)]
