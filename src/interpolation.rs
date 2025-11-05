@@ -68,16 +68,49 @@ impl<T: Hash> Hash for Interpolation<T> {
 }
 
 // AIDEV-NOTE: Helper functions for bezier calculations.
-// These will be used when implementing bezier interpolation in TimeDataMap.
+// These are used when implementing bezier interpolation in TimeDataMap with Speed variants.
 
 #[cfg(feature = "interpolation")]
 pub(crate) mod bezier_helpers {
 
+    /// Clamp handle lengths to prevent overlap on time axis.
+    ///
+    /// When handles are too long, they can overlap on the time axis, making the knot
+    /// vector non-monotonic which breaks uniform-cubic-splines. Each handle can use
+    /// at most slightly under half the interval.
+    pub fn clamp_handle_lengths(
+        k1_time: f32,
+        k2_time: f32,
+        handle1_length: f32,
+        handle2_length: f32,
+    ) -> (f32, f32) {
+        let dt = k2_time - k1_time;
+
+        // Ensure handles don't overlap in time.
+        // Each handle can use at most 49.5% of the interval to prevent overlap.
+        let max_handle = dt * 0.495;
+
+        let clamped_h1 = handle1_length.min(max_handle);
+        let clamped_h2 = handle2_length.min(max_handle);
+
+        // Additional check: ensure p1.time < p2.time.
+        let p1_time = k1_time + clamped_h1;
+        let p2_time = k2_time - clamped_h2;
+
+        if p1_time >= p2_time {
+            // Scale both down proportionally.
+            let scale = (dt * 0.98) / (clamped_h1 + clamped_h2);
+            (clamped_h1 * scale, clamped_h2 * scale)
+        } else {
+            (clamped_h1, clamped_h2)
+        }
+    }
+
     /// Calculate bezier control points from speed values.
     ///
     /// Given two keyframes with speed values, calculates the control points
-    /// for a cubic bezier curve between them.
-    pub fn _control_points_from_speed<T>(
+    /// for a cubic bezier curve between them, ensuring handles don't overlap.
+    pub fn control_points_from_speed<T>(
         t1: f32,
         v1: &T,
         speed1: &T,
@@ -86,37 +119,57 @@ pub(crate) mod bezier_helpers {
         speed2: &T,
     ) -> ((f32, T), (f32, T))
     where
-        T: Clone + std::ops::Add<Output = T> + std::ops::Mul<f32, Output = T>,
+        T: Clone
+            + std::ops::Add<Output = T>
+            + std::ops::Sub<Output = T>
+            + std::ops::Mul<f32, Output = T>,
     {
-        // Control point 1: Move in direction of outgoing speed from keyframe 1.
-        let dt = (t2 - t1) / 3.0;
-        let p1 = (t1 + dt, v1.clone() + speed1.clone() * dt);
+        let dt = t2 - t1;
 
-        // Control point 2: Move in opposite direction of incoming speed to keyframe 2.
-        let p2 = (t2 - dt, v2.clone() + speed2.clone() * (-dt));
+        // Base handle length is 1/3 of the interval.
+        let base_handle = dt / 3.0;
+
+        // Clamp handles to prevent overlap.
+        let (h1, h2) = clamp_handle_lengths(t1, t2, base_handle, base_handle);
+
+        // Control point 1: Move in direction of outgoing speed from keyframe 1.
+        // P1 = P0 + speed1 * h1.
+        let p1 = (t1 + h1, v1.clone() + speed1.clone() * h1);
+
+        // Control point 2: Move backwards from keyframe 2 in direction of incoming speed.
+        // P2 = P3 - speed2 * h2.
+        let p2 = (t2 - h2, v2.clone() - speed2.clone() * h2);
 
         (p1, p2)
     }
 
-    /// Evaluate a cubic bezier at time t.
+    /// Evaluate a cubic bezier curve using component-wise interpolation.
     ///
-    /// Uses De Casteljau's algorithm for robust evaluation.
-    pub fn _evaluate_bezier<T>(t: f32, p0: (f32, T), p1: (f32, T), p2: (f32, T), p3: (f32, T)) -> T
+    /// Uses the standard cubic Bezier formula. This works for vector types
+    /// where the interpolation is applied component-wise.
+    pub fn evaluate_bezier_component_wise<T>(
+        t: f32,
+        p0: (f32, &T),
+        p1: (f32, &T),
+        p2: (f32, &T),
+        p3: (f32, &T),
+    ) -> T
     where
         T: Clone + std::ops::Add<Output = T> + std::ops::Mul<f32, Output = T>,
     {
-        // Normalize t to [0, 1] range.
-        let t = (t - p0.0) / (p3.0 - p0.0);
-        let t = t.clamp(0.0, 1.0);
+        // Normalize t to [0, 1] range based on time coordinates.
+        let t_norm = ((t - p0.0) / (p3.0 - p0.0)).clamp(0.0, 1.0);
 
-        // De Casteljau's algorithm.
-        let q0 = p0.1.clone() * (1.0 - t) + p1.1.clone() * t;
-        let q1 = p1.1.clone() * (1.0 - t) + p2.1.clone() * t;
-        let q2 = p2.1.clone() * (1.0 - t) + p3.1.clone() * t;
+        // Cubic Bezier formula: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3.
+        let one_minus_t = 1.0 - t_norm;
+        let one_minus_t2 = one_minus_t * one_minus_t;
+        let one_minus_t3 = one_minus_t2 * one_minus_t;
+        let t2 = t_norm * t_norm;
+        let t3 = t2 * t_norm;
 
-        let r0 = q0.clone() * (1.0 - t) + q1.clone() * t;
-        let r1 = q1 * (1.0 - t) + q2 * t;
-
-        r0 * (1.0 - t) + r1 * t
+        p0.1.clone() * one_minus_t3
+            + p1.1.clone() * (3.0 * one_minus_t2 * t_norm)
+            + p2.1.clone() * (3.0 * one_minus_t * t2)
+            + p3.1.clone() * t3
     }
 }

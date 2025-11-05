@@ -35,7 +35,7 @@ mlua = { version = "0.11", features = ["anyhow", "lua53"], optional = true }
 nalgebra = { version = "0.34", features = ["bytemuck", "serde-serialize"] }
 rayon = "1"
 serde = { version = "1", features = ["derive"], optional = true }
-smallvec = { version = "1", features = ["const_generics", "const_new", "specialization"] }
+smallvec = { version = "1", features = ["const_generics", "const_new"] }
 strum = { version = "0.27", features = ["derive"] }
 uniform-cubic-splines = { version = "0.5", optional = true }
 ustr = "1"
