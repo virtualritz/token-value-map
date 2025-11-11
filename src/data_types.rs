@@ -259,7 +259,7 @@ pub struct Vector3(pub nalgebra::Vector3<f32>);
 #[cfg(feature = "vector3")]
 impl Eq for Vector3 {}
 
-/// A 3x3 transformation matrix.
+/// A 3×3 transformation matrix.
 #[cfg(feature = "matrix3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -310,7 +310,7 @@ pub struct Point3(pub nalgebra::Point3<f32>);
 #[cfg(feature = "point3")]
 impl Eq for Point3 {}
 
-/// A 4x4 transformation matrix.
+/// A 4×4 transformation matrix.
 #[cfg(feature = "matrix4")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -512,7 +512,7 @@ impl Point3Vec {
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
 impl Eq for Point3Vec {}
 
-/// A vector of 4x4 transformation matrices.
+/// A vector of 4×4 transformation matrices.
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

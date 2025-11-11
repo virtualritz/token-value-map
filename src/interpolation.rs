@@ -8,6 +8,8 @@
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
 
+use crate::Time;
+
 /// A keyframe's interpolation specification.
 ///
 /// Describes how values should be interpolated when entering and leaving this keyframe.
@@ -32,6 +34,22 @@ where
     }
 }
 
+/// Bezier tangent handle specification.
+///
+/// Describes how to specify a tangent at a keyframe for Bezier interpolation.
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum BezierHandle<T> {
+    /// Tangent specified as an angle in radians.
+    Angle(f32),
+    /// Tangent specified as slope per second.
+    SlopePerSecond(T),
+    /// Tangent specified as slope per frame.
+    SlopePerFrame(T),
+    /// Tangent specified as delta time and delta value.
+    Delta { time: Time, value: T },
+}
+
 /// Interpolation mode between keyframes.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -42,9 +60,10 @@ pub enum Interpolation<T> {
     /// Linear interpolation between keyframes.
     #[default]
     Linear,
-    /// Bezier curve defined by speed (derivative) at keyframe.
-    /// The speed value has the same type as the animated value.
-    Speed(T),
+    /// Automatic smooth interpolation (Catmull-Rom style tangent).
+    Smooth,
+    /// Bezier curve with explicit tangent handle.
+    Bezier(BezierHandle<T>),
 }
 
 // Manual Hash implementation for Key<T>.
@@ -55,6 +74,22 @@ impl<T: Hash> Hash for Key<T> {
     }
 }
 
+// Manual Hash implementation for BezierHandle<T>.
+impl<T: Hash> Hash for BezierHandle<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            BezierHandle::Angle(angle) => angle.to_bits().hash(state),
+            BezierHandle::SlopePerSecond(slope) => slope.hash(state),
+            BezierHandle::SlopePerFrame(slope) => slope.hash(state),
+            BezierHandle::Delta { time, value } => {
+                time.hash(state);
+                value.hash(state);
+            }
+        }
+    }
+}
+
 // Manual Hash implementation for Interpolation<T>.
 impl<T: Hash> Hash for Interpolation<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -62,13 +97,14 @@ impl<T: Hash> Hash for Interpolation<T> {
         match self {
             Interpolation::Hold => {}
             Interpolation::Linear => {}
-            Interpolation::Speed(speed) => speed.hash(state),
+            Interpolation::Smooth => {}
+            Interpolation::Bezier(handle) => handle.hash(state),
         }
     }
 }
 
 // AIDEV-NOTE: Helper functions for bezier calculations.
-// These are used when implementing bezier interpolation in TimeDataMap with Speed variants.
+// These are used when implementing bezier interpolation in TimeDataMap with BezierHandle variants.
 
 #[cfg(feature = "interpolation")]
 pub(crate) mod bezier_helpers {
@@ -110,6 +146,7 @@ pub(crate) mod bezier_helpers {
     ///
     /// Given two keyframes with speed values, calculates the control points
     /// for a cubic bezier curve between them, ensuring handles don't overlap.
+    #[allow(dead_code)]
     pub fn control_points_from_speed<T>(
         t1: f32,
         v1: &T,
@@ -139,6 +176,35 @@ pub(crate) mod bezier_helpers {
         // Control point 2: Move backwards from keyframe 2 in direction of incoming speed.
         // P2 = P3 - speed2 * h2.
         let p2 = (t2 - h2, v2.clone() - speed2.clone() * h2);
+
+        (p1, p2)
+    }
+
+    /// Calculate bezier control points from slope values.
+    ///
+    /// Similar to [`control_points_from_speed`], but accepts arbitrary slopes
+    /// instead of specifically "speed" values. This is used when working with
+    /// [`BezierHandle`] variants that specify tangents in different ways.
+    pub fn control_points_from_slopes<T>(
+        t1: f32,
+        v1: &T,
+        slope1: &T,
+        t2: f32,
+        v2: &T,
+        slope2: &T,
+    ) -> ((f32, T), (f32, T))
+    where
+        T: Clone
+            + std::ops::Add<Output = T>
+            + std::ops::Sub<Output = T>
+            + std::ops::Mul<f32, Output = T>,
+    {
+        let dt = t2 - t1;
+        let base_handle = dt / 3.0;
+        let (h1, h2) = clamp_handle_lengths(t1, t2, base_handle, base_handle);
+
+        let p1 = (t1 + h1, v1.clone() + slope1.clone() * h1);
+        let p2 = (t2 - h2, v2.clone() - slope2.clone() * h2);
 
         (p1, p2)
     }

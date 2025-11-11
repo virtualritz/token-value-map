@@ -461,6 +461,109 @@ pub(crate) fn interpolate_spherical_linear(
     r0.slerp(r1, t)
 }
 
+// AIDEV-NOTE: Helper functions for converting BezierHandle variants to slopes and evaluating mixed interpolation modes.
+
+#[cfg(feature = "interpolation")]
+fn bezier_handle_to_slope<V>(
+    handle: &crate::BezierHandle<V>,
+    t1: f32,
+    t2: f32,
+    _v1: &V,
+    _v2: &V,
+) -> Option<V>
+where
+    V: Clone + Add<Output = V> + Sub<Output = V> + Mul<f32, Output = V>,
+{
+    match handle {
+        crate::BezierHandle::SlopePerSecond(s) => Some(s.clone()),
+        crate::BezierHandle::SlopePerFrame(s) => {
+            let frames = (t2 - t1).max(f32::EPSILON);
+            Some(s.clone() * (frames / (t2 - t1)))
+        }
+        crate::BezierHandle::Delta { time, value } => {
+            let time_f32: f32 = (*time).into();
+            if time_f32.abs() <= f32::EPSILON {
+                None
+            } else {
+                Some(value.clone() * (1.0 / time_f32))
+            }
+        }
+        crate::BezierHandle::Angle(_) => None, // angle needs higher-level context; fall back later
+    }
+}
+
+#[cfg(feature = "interpolation")]
+#[allow(clippy::too_many_arguments)]
+fn smooth_tangent<V>(
+    t1: f32,
+    v1: &V,
+    t2: f32,
+    v2: &V,
+    map: &BTreeMap<Time, (V, Option<crate::Key<V>>)>,
+    _time: Time,
+    anchor: Time,
+    incoming: bool,
+) -> V
+where
+    V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
+{
+    use smallvec::SmallVec;
+
+    // Minimal Catmull-style tangent: reuse nearby keys via existing helpers.
+    // We reuse interpolate() on a virtual window to let the hermite logic derive slopes.
+    let mut window = SmallVec::<[(Time, V); 2]>::new();
+
+    if incoming {
+        if let Some(prev) = map.range(..anchor).next_back() {
+            window.push((*prev.0, prev.1.0.clone()));
+        }
+        window.push((anchor, v1.clone()));
+    } else {
+        window.push((anchor, v1.clone()));
+        if let Some(next) = map.range(anchor..).nth(1) {
+            window.push((*next.0, next.1.0.clone()));
+        }
+    }
+
+    if window.len() == 2 {
+        let (t0, p0) = &window[0];
+        let (t1, p1) = &window[1];
+        let t0_f: f32 = (*t0).into();
+        let t1_f: f32 = (*t1).into();
+        let dt = (t1_f - t0_f).max(f32::EPSILON);
+        (p1.clone() - p0.clone()) * (1.0 / dt)
+    } else {
+        // Fall back to local linear slope.
+        (v2.clone() - v1.clone()) * (1.0 / (t2 - t1).max(f32::EPSILON))
+    }
+}
+
+#[cfg(feature = "interpolation")]
+fn evaluate_mixed_bezier<V>(
+    time: Time,
+    t1: Time,
+    v1: &V,
+    slope_out: &V,
+    t2: Time,
+    v2: &V,
+    slope_in: &V,
+) -> V
+where
+    V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
+{
+    use crate::interpolation::bezier_helpers::*;
+
+    let (p1, p2) = control_points_from_slopes(t1.into(), v1, slope_out, t2.into(), v2, slope_in);
+
+    evaluate_bezier_component_wise(
+        time.into(),
+        (t1.into(), v1),
+        (p1.0, &p1.1),
+        (p2.0, &p2.1),
+        (t2.into(), v2),
+    )
+}
+
 /// Interpolate with respect to interpolation specifications.
 ///
 /// This function checks for custom interpolation specs and uses them if available,
@@ -506,43 +609,80 @@ where
     let interp_in = spec2.as_ref().map(|s| &s.interpolation_in);
 
     // AIDEV-NOTE: Determine interpolation mode based on specs.
-    // Hold takes precedence, then Speed (bezier), then Linear, then fallback to automatic.
+    // Hold takes precedence over everything else, then explicit Bezier handles,
+    // then Smooth (Catmull-Rom style), then Linear, then fallback to automatic.
     match (interp_out, interp_in) {
-        // If either side is Hold, use step function (hold previous value).
+        // Step/hold beats everything else.
         (Some(crate::Interpolation::Hold), _) | (_, Some(crate::Interpolation::Hold)) => v1.clone(),
 
-        // If both sides specify Speed, use bezier interpolation with asymmetric tangents.
-        (Some(crate::Interpolation::Speed(speed1)), Some(crate::Interpolation::Speed(speed2))) => {
+        // Both sides supply explicit handles -- run a cubic Bezier with those tangents.
+        (
+            Some(crate::Interpolation::Bezier(out_handle)),
+            Some(crate::Interpolation::Bezier(in_handle)),
+        ) => {
             use crate::interpolation::bezier_helpers::*;
 
-            let (p1, p2) =
-                control_points_from_speed((*t1).into(), v1, speed1, (*t2).into(), v2, speed2);
+            if let (Some(slope_out), Some(slope_in)) = (
+                bezier_handle_to_slope(out_handle, (*t1).into(), (*t2).into(), v1, v2),
+                bezier_handle_to_slope(in_handle, (*t1).into(), (*t2).into(), v1, v2),
+            ) {
+                let (p1, p2) = control_points_from_slopes(
+                    (*t1).into(),
+                    v1,
+                    &slope_out,
+                    (*t2).into(),
+                    v2,
+                    &slope_in,
+                );
 
-            evaluate_bezier_component_wise(
-                time.into(),
-                ((*t1).into(), v1),
-                (p1.0, &p1.1),
-                (p2.0, &p2.1),
-                ((*t2).into(), v2),
-            )
+                evaluate_bezier_component_wise(
+                    time.into(),
+                    ((*t1).into(), v1),
+                    (p1.0, &p1.1),
+                    (p2.0, &p2.1),
+                    ((*t2).into(), v2),
+                )
+            } else {
+                // Fall back to linear if we can't convert handles to slopes.
+                linear_interp(*t1, *t2, v1, v2, time)
+            }
         }
 
-        // If both sides specify Linear (or both have no specs), use automatic interpolation.
-        (Some(crate::Interpolation::Linear), Some(crate::Interpolation::Linear)) | (None, None) => {
-            // Fall back to automatic interpolation.
+        // One side explicit, the other "smooth": derive a Catmull-style tangent for the smooth side.
+        (Some(crate::Interpolation::Bezier(out_handle)), Some(crate::Interpolation::Smooth)) => {
+            if let Some(slope_out) =
+                bezier_handle_to_slope(out_handle, (*t1).into(), (*t2).into(), v1, v2)
+            {
+                let slope_in =
+                    smooth_tangent((*t1).into(), v1, (*t2).into(), v2, map, time, *t1, false);
+
+                evaluate_mixed_bezier(time, *t1, v1, &slope_out, *t2, v2, &slope_in)
+            } else {
+                linear_interp(*t1, *t2, v1, v2, time)
+            }
+        }
+        (Some(crate::Interpolation::Smooth), Some(crate::Interpolation::Bezier(in_handle))) => {
+            if let Some(slope_in) =
+                bezier_handle_to_slope(in_handle, (*t1).into(), (*t2).into(), v1, v2)
+            {
+                let slope_out =
+                    smooth_tangent((*t1).into(), v1, (*t2).into(), v2, map, time, *t1, true);
+
+                evaluate_mixed_bezier(time, *t1, v1, &slope_out, *t2, v2, &slope_in)
+            } else {
+                linear_interp(*t1, *t2, v1, v2, time)
+            }
+        }
+
+        // Symmetric "smooth" -> fall back to the existing automatic interpolation.
+        (Some(crate::Interpolation::Smooth), Some(crate::Interpolation::Smooth)) | (None, None) => {
             let values_only: BTreeMap<Time, V> =
                 map.iter().map(|(k, (v, _))| (*k, v.clone())).collect();
             interpolate(&values_only, time)
         }
 
-        // Mixed cases or only one side has spec: fall back to linear interpolation.
-        _ => {
-            let t1_f: f32 = (*t1).into();
-            let t2_f: f32 = (*t2).into();
-            let t_f: f32 = time.into();
-            let alpha = (t_f - t1_f) / (t2_f - t1_f);
-            v1.clone() + (v2.clone() - v1.clone()) * alpha
-        }
+        // Linear/linear, linear vs smooth, or any unsupported combination -> straight line.
+        _ => linear_interp(*t1, *t2, v1, v2, time),
     }
 }
 

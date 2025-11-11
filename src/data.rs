@@ -39,7 +39,7 @@ pub enum Data {
     /// A 3D vector.
     #[cfg(feature = "vector3")]
     Vector3(Vector3),
-    /// A 3x3 transformation matrix.
+    /// A 3×3 transformation matrix.
     #[cfg(feature = "matrix3")]
     Matrix3(Matrix3),
     /// A 3D normal vector.
@@ -48,7 +48,7 @@ pub enum Data {
     /// A 3D point.
     #[cfg(feature = "point3")]
     Point3(Point3),
-    /// A 4x4 transformation matrix.
+    /// A 4×4 transformation matrix.
     #[cfg(feature = "matrix4")]
     Matrix4(Matrix4),
     /// A vector of boolean values.
@@ -76,7 +76,7 @@ pub enum Data {
     /// A vector of 3D points.
     #[cfg(all(feature = "point3", feature = "vec_variants"))]
     Point3Vec(Point3Vec),
-    /// A vector of 4x4 matrices.
+    /// A vector of 4×4 matrices.
     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
     Matrix4Vec(Matrix4Vec),
 }
