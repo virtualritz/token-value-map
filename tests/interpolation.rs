@@ -1,4 +1,7 @@
-//! Tests for interpolation with asymmetric tangents.
+//! Tests for interpolation with asymmetric tangents (legacy Speed syntax).
+//!
+//! AIDEV-NOTE: These tests were written for the old `Interpolation::Speed` variant.
+//! They have been updated to use `Interpolation::Bezier(BezierHandle::SlopePerSecond(...))`.
 
 use std::collections::BTreeMap;
 use token_value_map::*;
@@ -18,7 +21,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(1.0)),
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
             },
         );
 
@@ -27,7 +30,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(1.0)),
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -48,7 +51,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(2.0)),
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
             },
         );
 
@@ -57,7 +60,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(0.5)),
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.5))),
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -111,7 +114,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(1.0)),
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -172,7 +175,7 @@ mod asymmetric_tangents {
             v0,
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(speed_out),
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(speed_out)),
             },
         );
 
@@ -180,7 +183,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             v1,
             Key {
-                interpolation_in: Interpolation::Speed(speed_in),
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(speed_in)),
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -205,7 +208,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(2.0)),
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
             },
         );
 
@@ -233,7 +236,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(1.0)),
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
             },
         );
 
@@ -241,7 +244,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(1.0)),
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -265,7 +268,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(10.0)), // Very fast.
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(10.0))), // Very fast.
             },
         );
 
@@ -273,7 +276,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(0.1)), // Very slow.
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.1))), // Very slow.
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -308,7 +311,7 @@ mod asymmetric_tangents {
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(0.0)), // Flat outgoing.
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.0))), // Flat outgoing.
             },
         );
 
@@ -316,7 +319,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(10.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(0.0)), // Flat incoming.
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.0))), // Flat incoming.
                 interpolation_out: Interpolation::Linear,
             },
         );
@@ -350,7 +353,7 @@ mod asymmetric_tangents {
             Real(5.0),
             Key {
                 interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Speed(Real(-2.0)), // Going down.
+                interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(-2.0))), // Going down.
             },
         );
 
@@ -358,7 +361,7 @@ mod asymmetric_tangents {
             Time::from(10.0),
             Real(5.0),
             Key {
-                interpolation_in: Interpolation::Speed(Real(2.0)), // Coming up.
+                interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))), // Coming up.
                 interpolation_out: Interpolation::Linear,
             },
         );

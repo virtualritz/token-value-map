@@ -43,7 +43,7 @@ pub enum AnimatedData {
     /// Animated 3D points.
     #[cfg(feature = "point3")]
     Point3(TimeDataMap<Point3>),
-    /// Animated 4x4 transformation matrices.
+    /// Animated 4×4 transformation matrices.
     #[cfg(feature = "matrix4")]
     Matrix4(TimeDataMap<Matrix4>),
     /// Animated boolean vectors.
@@ -71,7 +71,7 @@ pub enum AnimatedData {
     /// Animated 3D point arrays.
     #[cfg(all(feature = "point3", feature = "vec_variants"))]
     Point3Vec(TimeDataMap<Point3Vec>),
-    /// Animated 4x4 matrix arrays.
+    /// Animated 4×4 matrix arrays.
     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
     Matrix4Vec(TimeDataMap<Matrix4Vec>),
 }
