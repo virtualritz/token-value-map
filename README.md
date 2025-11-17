@@ -43,3 +43,24 @@ if let Some(value) = params.get(&ustr("x_position")) {
     let interpolated = value.interpolate(Tick::new(15)); // Returns 50.0
 }
 ```
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0
+  ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
+- BSD-3-Clause license
+  ([LICENSE-BSD](LICENSE-BSD) or https://opensource.org/licenses/BSD-3-Clause)
+- MIT license
+  ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+- Zlib license
+  ([LICENSE-ZLIB](LICENSE-ZLIB) or http://opensource.org/licenses/Zlib)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+quad-licensed as above, without any additional terms or conditions.

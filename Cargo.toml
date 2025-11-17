@@ -1,7 +1,25 @@
 [package]
 name = "token-value-map"
 version = "0.1.2"
+authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
+keywords = [
+    "graphics",
+    "rendering",
+    "2d",
+    "3d",
+    "animation",
+    "property",
+    "attribute",
+    "dcc",
+]
+categories = ["graphics"]
+license = "Apache-2.0 OR BSD-3-Clause OR MIT OR Zlib"
+description = "A token-value map with interpolation of values: what you need for DCCs"
+exclude = [".github/**/*"]
+readme = "README.md"
+documentation = "https://docs.rs/token-value-map"
+repository = "https://github.com/virtualritz/token-value-map/"
 
 [features]
 default = ["2d", "vec_variants"]
