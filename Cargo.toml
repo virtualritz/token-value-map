@@ -5,12 +5,9 @@ authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
 keywords = [
     "graphics",
-    "rendering",
-    "2d",
-    "3d",
     "animation",
-    "property",
     "attribute",
+    "keyframe",
     "dcc",
 ]
 categories = ["graphics"]
