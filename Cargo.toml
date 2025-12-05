@@ -1,6 +1,6 @@
 [package]
 name = "token-value-map"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
 keywords = [
@@ -22,7 +22,7 @@ repository = "https://github.com/virtualritz/token-value-map/"
 default = ["2d", "vec_variants"]
 lua = ["dep:mlua"]
 serde = ["dep:serde", "ustr/serde"]
-facet = ["dep:facet"]
+facet = ["dep:facet", "frame-tick/facet"]
 interpolation = ["dep:uniform-cubic-splines"]
 dopamine-compat = ["interpolation"]
 
