@@ -17,6 +17,9 @@ use std::hash::Hasher;
 #[enum_dispatch(AnimatedDataOps)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", repr(u8))]
 pub enum AnimatedData {
     /// Animated boolean values.
     Boolean(TimeDataMap<Boolean>),

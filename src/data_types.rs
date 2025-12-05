@@ -98,6 +98,7 @@ macro_rules! impl_nalgebra_arithmetic {
 /// A boolean value wrapper.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct Boolean(pub bool);
 
 impl From<Data> for Boolean {
@@ -115,6 +116,7 @@ impl From<Data> for Boolean {
 /// A 64-bit signed integer wrapper.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct Integer(pub i64);
 
 impl From<Data> for Integer {
@@ -132,6 +134,7 @@ impl From<Data> for Integer {
 /// A 64-bit floating-point number wrapper.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct Real(pub f64);
 
 impl Eq for Real {}
@@ -163,6 +166,7 @@ impl From<f32> for Real {
 /// A UTF-8 string wrapper.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct String(pub std::string::String);
 
 impl From<Data> for String {
@@ -209,6 +213,7 @@ impl From<Data> for String {
 /// A 4-component RGBA color value.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct Color(pub [f32; 4]);
 
 impl Eq for Color {}
@@ -245,6 +250,8 @@ impl From<Data> for Color {
 #[cfg(feature = "vector2")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Vector2(pub nalgebra::Vector2<f32>);
 
 #[cfg(feature = "vector2")]
@@ -254,6 +261,8 @@ impl Eq for Vector2 {}
 #[cfg(feature = "vector3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Vector3(pub nalgebra::Vector3<f32>);
 
 #[cfg(feature = "vector3")]
@@ -263,6 +272,8 @@ impl Eq for Vector3 {}
 #[cfg(feature = "matrix3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Matrix3(pub nalgebra::Matrix3<f32>);
 
 #[cfg(feature = "matrix3")]
@@ -296,6 +307,8 @@ impl From<[f32; 9]> for Matrix3 {
 #[cfg(feature = "normal3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Normal3(pub nalgebra::Vector3<f32>);
 
 #[cfg(feature = "normal3")]
@@ -305,6 +318,8 @@ impl Eq for Normal3 {}
 #[cfg(feature = "point3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Point3(pub nalgebra::Point3<f32>);
 
 #[cfg(feature = "point3")]
@@ -314,6 +329,8 @@ impl Eq for Point3 {}
 #[cfg(feature = "matrix4")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Matrix4(pub nalgebra::Matrix4<f64>);
 
 #[cfg(feature = "matrix4")]
@@ -322,6 +339,7 @@ impl Eq for Matrix4 {}
 /// A vector of integer values.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct IntegerVec(pub Vec<i64>);
 
 impl IntegerVec {
@@ -348,6 +366,7 @@ impl From<Vec<i32>> for IntegerVec {
 /// A vector of real values.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct RealVec(pub Vec<f64>);
 
 impl RealVec {
@@ -376,6 +395,7 @@ impl Eq for RealVec {}
 /// A vector of boolean values.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct BooleanVec(pub Vec<bool>);
 
 impl BooleanVec {
@@ -390,6 +410,7 @@ impl BooleanVec {
 /// A vector of string values.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct StringVec(pub Vec<std::string::String>);
 
 impl StringVec {
@@ -404,6 +425,7 @@ impl StringVec {
 /// A vector of color values.
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
 pub struct ColorVec(pub Vec<[f32; 4]>);
 
 impl ColorVec {
@@ -421,6 +443,8 @@ impl Eq for ColorVec {}
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Vector2Vec(pub Vec<nalgebra::Vector2<f32>>);
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
@@ -440,6 +464,8 @@ impl Eq for Vector2Vec {}
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Vector3Vec(pub Vec<nalgebra::Vector3<f32>>);
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
@@ -459,6 +485,8 @@ impl Eq for Vector3Vec {}
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Matrix3Vec(pub Vec<nalgebra::Matrix3<f32>>);
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
@@ -478,6 +506,8 @@ impl Eq for Matrix3Vec {}
 #[cfg(all(feature = "normal3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Normal3Vec(pub Vec<nalgebra::Vector3<f32>>);
 
 #[cfg(all(feature = "normal3", feature = "vec_variants"))]
@@ -497,6 +527,8 @@ impl Eq for Normal3Vec {}
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Point3Vec(pub Vec<nalgebra::Point3<f32>>);
 
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
@@ -516,6 +548,8 @@ impl Eq for Point3Vec {}
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct Matrix4Vec(pub Vec<nalgebra::Matrix4<f64>>);
 
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]

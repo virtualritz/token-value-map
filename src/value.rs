@@ -11,6 +11,9 @@ type BracketSample = (Option<(Time, Data)>, Option<(Time, Data)>);
 /// (uniform) or [`AnimatedData`] that changes over time with interpolation.
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", repr(u8))]
 pub enum Value {
     /// A constant value that does not change over time.
     Uniform(Data),
