@@ -9,7 +9,9 @@
 //! - Bezier with Delta
 //! - Mixed combinations (Bezier/Smooth, etc.)
 
+#[cfg(feature = "interpolation")]
 use std::collections::BTreeMap;
+#[cfg(feature = "interpolation")]
 use token_value_map::*;
 
 #[cfg(feature = "interpolation")]

@@ -49,6 +49,8 @@
 //! ```
 
 use anyhow::{Result, anyhow};
+#[cfg(feature = "facet")]
+use facet::Facet;
 use function_name::named;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

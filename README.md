@@ -5,6 +5,7 @@ Time-based data mapping library for animation and interpolation.
 ## Overview
 
 This crate provides types for storing and manipulating data that changes over time, with automatic interpolation between keyframes. It supports uniform (constant) and animated (time-varying) values with multiple interpolation methods.
+Think your Maya/Blender/Houdini/whetever Attribute Editor.
 
 ## Features
 
@@ -16,6 +17,18 @@ This crate provides types for storing and manipulating data that changes over ti
 - Linear, quadratic, and hermite interpolation.
 - Motion blur sampling support.
 - Token-based value mapping with `ustr`.
+- Optional reflection support via `facet`.
+
+## Feature Flags
+
+- `default` -- Includes `2d` and `vec_variants`.
+- `2d` -- Enable 2D types (`Vector2`, `Matrix3`).
+- `3d` -- Enable 3D types (`Vector3`, `Matrix4`, `Normal3`, `Point3`).
+- `vec_variants` -- Enable vector collection types.
+- `interpolation` -- Enable keyframe interpolation with Bezier handles.
+- `serde` -- Enable serialization support.
+- `lua` -- Enable Lua bindings via `mlua`.
+- `facet` -- Enable reflection/introspection via `facet`.
 
 ## Example
 
@@ -48,14 +61,10 @@ if let Some(value) = params.get(&ustr("x_position")) {
 
 Licensed under either of
 
-- Apache License, Version 2.0
-  ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- BSD-3-Clause license
-  ([LICENSE-BSD](LICENSE-BSD) or https://opensource.org/licenses/BSD-3-Clause)
-- MIT license
-  ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-- Zlib license
-  ([LICENSE-ZLIB](LICENSE-ZLIB) or http://opensource.org/licenses/Zlib)
+- [Apache License](http://www.apache.org/licenses/LICENSE-2.0)
+- [BSD-3-Clause license](https://opensource.org/licenses/BSD-3-Clause)
+- [MIT license](http://opensource.org/licenses/MIT)
+- [Zlib license](http://opensource.org/licenses/Zlib)
 
 at your option.
 

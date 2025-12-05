@@ -24,6 +24,8 @@ pub use sample::*;
 /// `BTreeMap<Time, (T, Option<Key<T>>)>`.
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct TimeDataMap<T> {
     /// The time-value pairs with optional interpolation keys.
     #[cfg(not(feature = "interpolation"))]

@@ -12,6 +12,8 @@ use ustr::Ustr;
 /// token.
 #[derive(Clone, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
 pub struct TokenValueMap {
     attributes: HashMap<Ustr, Value>,
 }

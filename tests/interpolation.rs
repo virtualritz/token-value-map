@@ -3,12 +3,10 @@
 //! AIDEV-NOTE: These tests were written for the old `Interpolation::Speed` variant.
 //! They have been updated to use `Interpolation::Bezier(BezierHandle::SlopePerSecond(...))`.
 
-use std::collections::BTreeMap;
-use token_value_map::*;
-
 #[cfg(feature = "interpolation")]
 mod asymmetric_tangents {
-    use super::*;
+    use std::collections::BTreeMap;
+    use token_value_map::*;
 
     #[test]
     fn test_symmetric_speed_tangents() {
