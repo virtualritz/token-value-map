@@ -1,6 +1,6 @@
 [package]
 name = "token-value-map"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
 keywords = [

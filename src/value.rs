@@ -348,6 +348,18 @@ impl Value {
         }
     }
 
+    /// Remove a sample at a specific time.
+    ///
+    /// Returns the removed value if it existed. For uniform values, this is a
+    /// no-op and returns `None`. If the last sample is removed from an
+    /// animated value, the value remains animated but empty.
+    pub fn remove_sample(&mut self, time: &Time) -> Option<Data> {
+        match self {
+            Value::Uniform(_) => None,
+            Value::Animated(samples) => samples.remove_at(time),
+        }
+    }
+
     /// Sample value at exact time without interpolation.
     ///
     /// Returns the exact value if it exists at the given time, or `None` if

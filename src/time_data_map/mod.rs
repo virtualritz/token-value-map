@@ -73,6 +73,21 @@ impl<T> TimeDataMap<T> {
     pub fn len(&self) -> usize {
         self.values.len()
     }
+
+    /// Remove a sample at the given time.
+    ///
+    /// Returns the removed value if it existed.
+    #[inline]
+    pub fn remove(&mut self, time: &Time) -> Option<T> {
+        #[cfg(not(feature = "interpolation"))]
+        {
+            self.values.remove(time)
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            self.values.remove(time).map(|(v, _)| v)
+        }
+    }
 }
 
 // Constructor for backward compatibility.
