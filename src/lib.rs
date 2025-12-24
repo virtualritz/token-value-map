@@ -66,6 +66,8 @@ use macros::impl_sample_for_value;
 mod animated_data;
 mod data;
 mod data_types;
+#[cfg(feature = "egui-keyframe")]
+mod egui_keyframe_integration;
 #[cfg(feature = "interpolation")]
 mod interpolation;
 #[cfg(feature = "lua")]
