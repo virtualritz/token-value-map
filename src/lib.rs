@@ -48,7 +48,6 @@
 //! let interpolated = animated.interpolate(Tick::new(5));
 //! ```
 
-use anyhow::{Result, anyhow};
 #[cfg(feature = "facet")]
 use facet::Facet;
 use function_name::named;
@@ -68,6 +67,7 @@ mod data;
 mod data_types;
 #[cfg(feature = "egui-keyframe")]
 mod egui_keyframe_integration;
+mod error;
 #[cfg(feature = "interpolation")]
 mod interpolation;
 #[cfg(feature = "lua")]
@@ -80,6 +80,7 @@ mod value;
 pub use animated_data::*;
 pub use data::*;
 pub use data_types::*;
+pub use error::*;
 #[cfg(feature = "interpolation")]
 pub use interpolation::*;
 #[cfg(feature = "lua")]

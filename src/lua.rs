@@ -3,7 +3,7 @@ use log::error;
 use mlua::{Value as LuaData, prelude::*};
 use smallvec::SmallVec;
 
-pub fn from_lua(data: LuaData) -> Result<Data, LuaError> {
+pub fn from_lua(data: LuaData) -> std::result::Result<Data, LuaError> {
     match data {
         LuaData::Nil => Err(LuaError::FromLuaConversionError {
             from: "nil",
@@ -22,7 +22,7 @@ pub fn from_lua(data: LuaData) -> Result<Data, LuaError> {
                 // This will recursively call `from_lua()` on each
                 // value.
                 .sequence_values::<Data>()
-                .collect::<Result<SmallVec<[_; 10]>, LuaError>>();
+                .collect::<std::result::Result<SmallVec<[_; 10]>, LuaError>>();
 
             if let Ok(table) = table {
                 let data_type: DataType = table[0].data_type();
@@ -100,7 +100,7 @@ pub fn from_lua(data: LuaData) -> Result<Data, LuaError> {
     }
 }
 
-pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
+pub fn from_lua_err(data: LuaData) -> std::result::Result<Data, LuaError> {
     match data {
         LuaData::Nil => Err(LuaError::FromLuaConversionError {
             from: "nil",
@@ -119,13 +119,13 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                 // This will recursively call `from_lua_err()` on each
                 // value.
                 .sequence_values::<Data>()
-                .collect::<Result<SmallVec<[_; 10]>, LuaError>>();
+                .collect::<std::result::Result<SmallVec<[_; 10]>, LuaError>>();
 
             if let Ok(table) = table {
                 let data_type: DataType = table[0].data_type();
                 match data_type {
                     DataType::Boolean => {
-                        let result: Result<Vec<bool>, LuaError> = table
+                        let result: std::result::Result<Vec<bool>, LuaError> = table
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Boolean)
@@ -148,7 +148,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                         result.map(|vec| Data::BooleanVec(BooleanVec(vec)))
                     }
                     DataType::Integer => {
-                        let result: Result<Vec<i64>, LuaError> = table
+                        let result: std::result::Result<Vec<i64>, LuaError> = table
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Integer)
@@ -171,7 +171,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                         result.map(|vec| Data::IntegerVec(IntegerVec(vec)))
                     }
                     DataType::Real => {
-                        let result: Result<Vec<f64>, LuaError> = table
+                        let result: std::result::Result<Vec<f64>, LuaError> = table
                             .into_iter()
                             .map(|v| {
                                 v.try_convert(DataType::Real)
@@ -194,7 +194,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
                         result.map(|vec| Data::RealVec(RealVec(vec)))
                     }
                     DataType::String => {
-                        let result: Result<Vec<std::string::String>, LuaError> = table
+                        let result: std::result::Result<Vec<std::string::String>, LuaError> = table
                             .into_iter()
                             .map(|v| match v {
                                 Data::String(s) => Ok(s.0),
@@ -230,7 +230,7 @@ pub fn from_lua_err(data: LuaData) -> Result<Data, LuaError> {
 }
 
 impl FromLua for Data {
-    fn from_lua(value: LuaData, _lua: &Lua) -> Result<Self, LuaError> {
+    fn from_lua(value: LuaData, _lua: &Lua) -> std::result::Result<Self, LuaError> {
         from_lua(value)
     }
 }

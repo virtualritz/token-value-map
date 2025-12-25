@@ -275,8 +275,21 @@ impl<T> TimeDataMap<T> {
     /// Get interpolation spec at a given time.
     ///
     /// Returns `None` if no interpolation metadata exists or no spec at this time.
-    pub fn get_interpolation(&self, time: &Time) -> Option<&crate::Key<T>> {
+    pub fn interpolation(&self, time: &Time) -> Option<&crate::Key<T>> {
         self.values.get(time)?.1.as_ref()
+    }
+
+    /// Set or update the interpolation spec at a given time.
+    ///
+    /// Returns `Ok(())` if the time existed and was updated, or an error if no
+    /// sample exists at that time.
+    pub fn set_interpolation_at(&mut self, time: &Time, key: crate::Key<T>) -> crate::Result<()> {
+        if let Some(entry) = self.values.get_mut(time) {
+            entry.1 = Some(key);
+            Ok(())
+        } else {
+            Err(crate::Error::TimeNotFound { time: *time })
+        }
     }
 
     /// Clear all interpolation metadata.

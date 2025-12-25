@@ -103,6 +103,76 @@ impl<T: Hash> Hash for Interpolation<T> {
     }
 }
 
+/// Trait for types that can be used as bezier handle values.
+///
+/// This allows converting between the type's value and f64 for UI handle editing.
+/// Scalar types (Real, Integer) implement this; vector types do not.
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+pub trait HandleValue: Sized {
+    /// Convert to f64 for handle value.
+    fn to_handle_f64(&self) -> f64;
+    /// Create from f64 handle value.
+    fn from_handle_f64(v: f64) -> Self;
+}
+
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+impl HandleValue for crate::Real {
+    fn to_handle_f64(&self) -> f64 {
+        self.0
+    }
+    fn from_handle_f64(v: f64) -> Self {
+        crate::Real(v)
+    }
+}
+
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+impl HandleValue for crate::Integer {
+    fn to_handle_f64(&self) -> f64 {
+        self.0 as f64
+    }
+    fn from_handle_f64(v: f64) -> Self {
+        crate::Integer(v.round() as i64)
+    }
+}
+
+/// Convert a Key<T> to egui_keyframe BezierHandles.
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+pub fn key_to_bezier_handles<T: HandleValue>(key: &Key<T>) -> egui_keyframe::BezierHandles {
+    let (left_x, left_y) = match &key.interpolation_in {
+        Interpolation::Bezier(BezierHandle::Delta { time, value }) => {
+            (time.to_secs() as f32, value.to_handle_f64() as f32)
+        }
+        _ => (0.0, 0.0),
+    };
+    let (right_x, right_y) = match &key.interpolation_out {
+        Interpolation::Bezier(BezierHandle::Delta { time, value }) => {
+            (time.to_secs() as f32, value.to_handle_f64() as f32)
+        }
+        _ => (0.0, 0.0),
+    };
+    egui_keyframe::BezierHandles {
+        left_x,
+        left_y,
+        right_x,
+        right_y,
+    }
+}
+
+/// Convert egui_keyframe BezierHandles to a Key<T>.
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+pub fn bezier_handles_to_key<T: HandleValue>(handles: &egui_keyframe::BezierHandles) -> Key<T> {
+    Key {
+        interpolation_in: Interpolation::Bezier(BezierHandle::Delta {
+            time: Time::from_secs(handles.left_x as f64),
+            value: T::from_handle_f64(handles.left_y as f64),
+        }),
+        interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
+            time: Time::from_secs(handles.right_x as f64),
+            value: T::from_handle_f64(handles.right_y as f64),
+        }),
+    }
+}
+
 // AIDEV-NOTE: Helper functions for bezier calculations.
 // These are used when implementing bezier interpolation in TimeDataMap with BezierHandle variants.
 

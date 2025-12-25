@@ -40,7 +40,7 @@ impl Value {
             samples.into_iter().map(|(t, v)| (t, v.into())).collect();
 
         if samples_vec.is_empty() {
-            return Err(anyhow!("Cannot create animated value with no samples"));
+            return Err(Error::EmptySamples);
         }
 
         // Get the data type from the first sample
@@ -50,12 +50,11 @@ impl Value {
         let mut expected_len: Option<usize> = None;
         for (time, value) in &mut samples_vec {
             if value.data_type() != data_type {
-                return Err(anyhow!(
-                    "All animated samples must have the same type. Expected {:?}, found {:?} at time {}",
-                    data_type,
-                    value.data_type(),
-                    time
-                ));
+                return Err(Error::AnimatedTypeMismatch {
+                    expected: data_type,
+                    got: value.data_type(),
+                    time: *time,
+                });
             }
 
             // Check vector length consistency
@@ -64,12 +63,11 @@ impl Value {
                     None => expected_len = Some(vec_len),
                     Some(expected) => {
                         if vec_len > expected {
-                            return Err(anyhow!(
-                                "Vector length {} exceeds expected length {} at time {}",
-                                vec_len,
+                            return Err(Error::VectorLengthExceeded {
+                                actual: vec_len,
                                 expected,
-                                time
-                            ));
+                                time: *time,
+                            });
                         } else if vec_len < expected {
                             // Pad to expected length
                             value.pad_to_length(expected);
@@ -335,11 +333,10 @@ impl Value {
             Value::Animated(samples) => {
                 let data_type = samples.data_type();
                 if value.data_type() != data_type {
-                    return Err(anyhow!(
-                        "Type mismatch: cannot add {:?} to animated {:?}",
-                        value.data_type(),
-                        data_type
-                    ));
+                    return Err(Error::SampleTypeMismatch {
+                        expected: data_type,
+                        got: value.data_type(),
+                    });
                 }
 
                 // Insert the value using the generic insert method
@@ -457,6 +454,32 @@ impl Value {
         match self {
             Value::Uniform(_) => SmallVec::<[Time; 10]>::new_const(),
             Value::Animated(samples) => samples.times(),
+        }
+    }
+
+    /// Get bezier handles at a given time.
+    ///
+    /// Returns None for uniform values or non-scalar types.
+    #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+    pub fn bezier_handles(&self, time: &Time) -> Option<egui_keyframe::BezierHandles> {
+        match self {
+            Value::Uniform(_) => None,
+            Value::Animated(samples) => samples.bezier_handles(time),
+        }
+    }
+
+    /// Set bezier handles at a given time.
+    ///
+    /// Returns an error for uniform values or non-scalar types.
+    #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+    pub fn set_bezier_handles(
+        &mut self,
+        time: &Time,
+        handles: egui_keyframe::BezierHandles,
+    ) -> Result<()> {
+        match self {
+            Value::Uniform(_) => Err(Error::InterpolationOnUniform),
+            Value::Animated(samples) => samples.set_bezier_handles(time, handles),
         }
     }
 

@@ -1,5 +1,4 @@
-use anyhow::Result;
-use token_value_map::{AnimatedData, Data, Time, Value};
+use token_value_map::{AnimatedData, Data, Result, Time, Value};
 
 #[test]
 fn single_keyframe_interpolation() -> Result<()> {

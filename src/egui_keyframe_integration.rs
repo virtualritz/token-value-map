@@ -59,13 +59,36 @@ impl KeyframeSource for Value {
                     .filter_map(|time| {
                         let data = animated.sample_at(time)?;
                         let value = data_to_f32(&data)?;
+
+                        // Read handles from bezier_handles() when feature is enabled
+                        #[cfg(feature = "interpolation")]
+                        let (handles, keyframe_type) = {
+                            let handles = animated
+                                .bezier_handles(&time)
+                                .unwrap_or_else(BezierHandles::linear);
+                            let kf_type = if handles.left_x == 0.0
+                                && handles.left_y == 0.0
+                                && handles.right_x == 0.0
+                                && handles.right_y == 0.0
+                            {
+                                KeyframeType::Linear
+                            } else {
+                                KeyframeType::Bezier
+                            };
+                            (handles, kf_type)
+                        };
+
+                        #[cfg(not(feature = "interpolation"))]
+                        let (handles, keyframe_type) =
+                            (BezierHandles::linear(), KeyframeType::Linear);
+
                         Some(KeyframeView::new(
                             time_to_keyframe_id(time),
                             time_to_timetick(time),
                             value,
-                            BezierHandles::linear(), // TODO: extract from Key<T> if interpolation feature
+                            handles,
                             true,
-                            KeyframeType::Linear, // TODO: extract from Key<T>
+                            keyframe_type,
                         ))
                     })
                     .collect();
@@ -98,11 +121,11 @@ impl KeyframeSource for Value {
                 let mut max = f32::MIN;
 
                 for time in times {
-                    if let Some(data) = animated.sample_at(time) {
-                        if let Some(value) = data_to_f32(&data) {
-                            min = min.min(value);
-                            max = max.max(value);
-                        }
+                    if let Some(data) = animated.sample_at(time)
+                        && let Some(value) = data_to_f32(&data)
+                    {
+                        min = min.min(value);
+                        max = max.max(value);
                     }
                 }
 
