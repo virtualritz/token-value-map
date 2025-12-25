@@ -1,4 +1,3 @@
-use anyhow::Result;
 use token_value_map::*;
 
 #[test]
@@ -90,7 +89,7 @@ fn try_from_value_animated_fails() -> Result<()> {
             .as_ref()
             .unwrap_err()
             .to_string()
-            .contains("Cannot convert animated value")
+            .contains("from animated Value")
     );
 
     Ok(())
@@ -167,7 +166,7 @@ fn try_from_value_ref_animated_fails() -> Result<()> {
             .as_ref()
             .unwrap_err()
             .to_string()
-            .contains("Cannot convert animated value")
+            .contains("from animated Value")
     );
 
     Ok(())

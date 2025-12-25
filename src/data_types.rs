@@ -1,5 +1,4 @@
-use crate::{DataTypeOps, *};
-use anyhow::Result;
+use crate::{DataTypeOps, Error, Result, *};
 use std::{
     fmt::Debug,
     hash::{Hash, Hasher},
@@ -345,7 +344,9 @@ pub struct IntegerVec(pub Vec<i64>);
 impl IntegerVec {
     pub fn new(vec: Vec<i64>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("IntegerVec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "IntegerVec",
+            });
         }
         Ok(IntegerVec(vec))
     }
@@ -372,7 +373,9 @@ pub struct RealVec(pub Vec<f64>);
 impl RealVec {
     pub fn new(vec: Vec<f64>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("RealVec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "RealVec",
+            });
         }
         Ok(RealVec(vec))
     }
@@ -401,7 +404,9 @@ pub struct BooleanVec(pub Vec<bool>);
 impl BooleanVec {
     pub fn new(vec: Vec<bool>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("BooleanVec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "BooleanVec",
+            });
         }
         Ok(BooleanVec(vec))
     }
@@ -416,7 +421,9 @@ pub struct StringVec(pub Vec<std::string::String>);
 impl StringVec {
     pub fn new(vec: Vec<std::string::String>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("StringVec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "StringVec",
+            });
         }
         Ok(StringVec(vec))
     }
@@ -431,7 +438,9 @@ pub struct ColorVec(pub Vec<[f32; 4]>);
 impl ColorVec {
     pub fn new(vec: Vec<[f32; 4]>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("ColorVec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "ColorVec",
+            });
         }
         Ok(ColorVec(vec))
     }
@@ -451,7 +460,9 @@ pub struct Vector2Vec(pub Vec<nalgebra::Vector2<f32>>);
 impl Vector2Vec {
     pub fn new(vec: Vec<nalgebra::Vector2<f32>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Vector2Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Vector2Vec",
+            });
         }
         Ok(Vector2Vec(vec))
     }
@@ -472,7 +483,9 @@ pub struct Vector3Vec(pub Vec<nalgebra::Vector3<f32>>);
 impl Vector3Vec {
     pub fn new(vec: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Vector3Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Vector3Vec",
+            });
         }
         Ok(Vector3Vec(vec))
     }
@@ -493,7 +506,9 @@ pub struct Matrix3Vec(pub Vec<nalgebra::Matrix3<f32>>);
 impl Matrix3Vec {
     pub fn new(vec: Vec<nalgebra::Matrix3<f32>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Matrix3Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Matrix3Vec",
+            });
         }
         Ok(Matrix3Vec(vec))
     }
@@ -514,7 +529,9 @@ pub struct Normal3Vec(pub Vec<nalgebra::Vector3<f32>>);
 impl Normal3Vec {
     pub fn new(vec: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Normal3Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Normal3Vec",
+            });
         }
         Ok(Normal3Vec(vec))
     }
@@ -535,7 +552,9 @@ pub struct Point3Vec(pub Vec<nalgebra::Point3<f32>>);
 impl Point3Vec {
     pub fn new(vec: Vec<nalgebra::Point3<f32>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Point3Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Point3Vec",
+            });
         }
         Ok(Point3Vec(vec))
     }
@@ -556,7 +575,9 @@ pub struct Matrix4Vec(pub Vec<nalgebra::Matrix4<f64>>);
 impl Matrix4Vec {
     pub fn new(vec: Vec<nalgebra::Matrix4<f64>>) -> Result<Self> {
         if vec.is_empty() {
-            return Err(anyhow!("Matrix4Vec cannot be empty"));
+            return Err(Error::EmptyVec {
+                type_name: "Matrix4Vec",
+            });
         }
         Ok(Matrix4Vec(vec))
     }
@@ -2133,9 +2154,9 @@ impl_data_ops!(Matrix4Vec, "matrix4_vec", DataType::Matrix4Vec);
 macro_rules! impl_try_from_value {
     ($type:ty, $data_type:expr, $variant:ident) => {
         impl TryFrom<Value> for $type {
-            type Error = anyhow::Error;
+            type Error = Error;
 
-            fn try_from(value: Value) -> Result<Self, Self::Error> {
+            fn try_from(value: Value) -> std::result::Result<Self, Self::Error> {
                 match value {
                     Value::Uniform(data) => {
                         let converted = data.try_convert($data_type)?;
@@ -2147,18 +2168,17 @@ macro_rules! impl_try_from_value {
                             ),
                         }
                     }
-                    Value::Animated(_) => Err(anyhow!(
-                        "Cannot convert animated value to {}",
-                        stringify!($type)
-                    )),
+                    Value::Animated(_) => Err(Error::AnimatedExtraction {
+                        type_name: stringify!($type),
+                    }),
                 }
             }
         }
 
         impl TryFrom<&Value> for $type {
-            type Error = anyhow::Error;
+            type Error = Error;
 
-            fn try_from(value: &Value) -> Result<Self, Self::Error> {
+            fn try_from(value: &Value) -> std::result::Result<Self, Self::Error> {
                 match value {
                     Value::Uniform(data) => {
                         let converted = data.try_convert($data_type)?;
@@ -2170,10 +2190,9 @@ macro_rules! impl_try_from_value {
                             ),
                         }
                     }
-                    Value::Animated(_) => Err(anyhow!(
-                        "Cannot convert animated value to {}",
-                        stringify!($type)
-                    )),
+                    Value::Animated(_) => Err(Error::AnimatedExtraction {
+                        type_name: stringify!($type),
+                    }),
                 }
             }
         }

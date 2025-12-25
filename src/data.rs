@@ -11,7 +11,6 @@ use std::{
     ops::{Add, Div, Mul, Sub},
     str::FromStr,
 };
-use strum::IntoDiscriminant;
 
 /// A variant `enum` containing all supported data types.
 ///
@@ -129,11 +128,10 @@ impl Data {
             Data::Real(value) => Ok(value.0 != 0.0),
             Data::Integer(value) => Ok(value.0 != 0),
             Data::String(value) => Ok(value.0.parse::<bool>().unwrap_or(false)),
-            _ => Err(anyhow!(
-                "{}: called on '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -148,10 +146,10 @@ impl Data {
             }
             Data::Real(value) => Ok(value.0 as _),
             Data::Integer(value) => Ok(value.0 as _),
-            _ => Err(anyhow!(
-                "to_f32() called on incompatible data type: {:?}",
-                self.data_type()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: "to_f32",
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -166,10 +164,10 @@ impl Data {
             }
             Data::Real(value) => Ok(value.0),
             Data::Integer(value) => Ok(value.0 as _),
-            _ => Err(anyhow!(
-                "to_f64() called on incompatible data type: {:?}",
-                self.data_type()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: "to_f64",
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -178,16 +176,11 @@ impl Data {
         match self {
             Data::Boolean(value) => Ok(if value.0 { 1 } else { 0 }),
             Data::Real(value) => Ok((value.0 + 0.5) as i32),
-            // FIXME: this may wrap around.
-            Data::Integer(value) => value
-                .0
-                .try_into()
-                .map_err(|e: std::num::TryFromIntError| anyhow!("Integer conversion error: {}", e)),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            Data::Integer(value) => value.0.try_into().map_err(Error::IntegerOverflow),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -203,11 +196,10 @@ impl Data {
             }
             Data::Real(value) => Ok((value.0 + 0.5) as _),
             Data::Integer(value) => Ok(value.0),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -222,11 +214,10 @@ impl Data {
                 // Convert Vec<nalgebra::Matrix4<f64>> to &[f64]
                 Ok(bytemuck::cast_slice(&value.0))
             }
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -270,11 +261,10 @@ impl Data {
                 // Convert Vec<nalgebra::Point3<f32>> to &[f32]
                 Ok(bytemuck::cast_slice(&value.0))
             }
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -282,11 +272,10 @@ impl Data {
     pub fn as_slice_i64(&self) -> Result<&[i64]> {
         match self {
             Data::IntegerVec(value) => Ok(value.0.as_slice()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -295,11 +284,10 @@ impl Data {
         match self {
             #[cfg(feature = "vector2")]
             Data::Vector2(value) => Ok(value.0.as_ref()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -308,11 +296,10 @@ impl Data {
         match self {
             #[cfg(feature = "vector3")]
             Data::Vector3(value) => Ok(value.0.as_ref()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -325,11 +312,10 @@ impl Data {
                 // directly from Matrix3
                 Ok(bytemuck::cast_ref(&value.0))
             }
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -337,11 +323,10 @@ impl Data {
     pub fn as_color_ref(&self) -> Result<&[f32; 4]> {
         match self {
             Data::Color(value) => Ok(&value.0),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -350,11 +335,10 @@ impl Data {
     pub fn as_normal3_ref(&self) -> Result<&[f32; 3]> {
         match self {
             Data::Normal3(value) => Ok(value.0.as_ref()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -363,11 +347,10 @@ impl Data {
     pub fn as_point3_ref(&self) -> Result<&[f32; 3]> {
         match self {
             Data::Point3(value) => Ok(value.0.coords.as_ref()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -380,11 +363,10 @@ impl Data {
                 // directly from Matrix4
                 Ok(bytemuck::cast_ref(&value.0))
             }
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -392,11 +374,10 @@ impl Data {
     pub fn as_str(&self) -> Result<&str> {
         match self {
             Data::String(value) => Ok(value.0.as_str()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 
@@ -404,11 +385,10 @@ impl Data {
     pub fn as_slice_string(&self) -> Result<&[std::string::String]> {
         match self {
             Data::StringVec(value) => Ok(value.0.as_slice()),
-            _ => Err(anyhow!(
-                "{}: called on incompatible data type '{:?}'",
-                function_name!(),
-                self.discriminant()
-            )),
+            _ => Err(Error::IncompatibleType {
+                method: function_name!(),
+                got: self.data_type(),
+            }),
         }
     }
 }
@@ -510,7 +490,7 @@ impl From<nalgebra::Matrix3<f32>> for Data {
 
 // From implementations for Vec types
 impl TryFrom<Vec<i64>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<i64>) -> Result<Self> {
         Ok(Data::IntegerVec(IntegerVec::new(v)?))
@@ -518,7 +498,7 @@ impl TryFrom<Vec<i64>> for Data {
 }
 
 impl TryFrom<Vec<f64>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<f64>) -> Result<Self> {
         Ok(Data::RealVec(RealVec::new(v)?))
@@ -526,7 +506,7 @@ impl TryFrom<Vec<f64>> for Data {
 }
 
 impl TryFrom<Vec<bool>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<bool>) -> Result<Self> {
         Ok(Data::BooleanVec(BooleanVec::new(v)?))
@@ -534,7 +514,7 @@ impl TryFrom<Vec<bool>> for Data {
 }
 
 impl TryFrom<Vec<&str>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<&str>) -> Result<Self> {
         let string_vec: Vec<std::string::String> = v.into_iter().map(|s| s.to_string()).collect();
@@ -543,7 +523,7 @@ impl TryFrom<Vec<&str>> for Data {
 }
 
 impl TryFrom<Vec<[f32; 4]>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<[f32; 4]>) -> Result<Self> {
         Ok(Data::ColorVec(ColorVec::new(v)?))
@@ -552,7 +532,7 @@ impl TryFrom<Vec<[f32; 4]>> for Data {
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 impl TryFrom<Vec<nalgebra::Vector2<f32>>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<nalgebra::Vector2<f32>>) -> Result<Self> {
         Ok(Data::Vector2Vec(Vector2Vec::new(v)?))
@@ -561,7 +541,7 @@ impl TryFrom<Vec<nalgebra::Vector2<f32>>> for Data {
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
 impl TryFrom<Vec<nalgebra::Vector3<f32>>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
         Ok(Data::Vector3Vec(Vector3Vec::new(v)?))
@@ -570,7 +550,7 @@ impl TryFrom<Vec<nalgebra::Vector3<f32>>> for Data {
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
 impl TryFrom<Vec<nalgebra::Matrix3<f32>>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<nalgebra::Matrix3<f32>>) -> Result<Self> {
         Ok(Data::Matrix3Vec(Matrix3Vec::new(v)?))
@@ -592,7 +572,7 @@ impl From<Vec<f32>> for Data {
 }
 
 impl TryFrom<Vec<std::string::String>> for Data {
-    type Error = anyhow::Error;
+    type Error = Error;
 
     fn try_from(v: Vec<std::string::String>) -> Result<Self> {
         Ok(Data::StringVec(StringVec::new(v)?))
@@ -602,31 +582,29 @@ impl TryFrom<Vec<std::string::String>> for Data {
 macro_rules! impl_try_from_value {
     ($target:ty, $variant:ident) => {
         impl TryFrom<Data> for $target {
-            type Error = anyhow::Error;
+            type Error = Error;
 
-            fn try_from(value: Data) -> Result<Self, Self::Error> {
+            fn try_from(value: Data) -> std::result::Result<Self, Self::Error> {
                 match value {
                     Data::$variant(v) => Ok(v.0),
-                    _ => Err(anyhow!(
-                        "Could not convert {} to {}",
-                        stringify!($variant),
-                        stringify!($target)
-                    )),
+                    _ => Err(Error::IncompatibleType {
+                        method: concat!("TryFrom<Data> for ", stringify!($target)),
+                        got: value.data_type(),
+                    }),
                 }
             }
         }
 
         impl TryFrom<&Data> for $target {
-            type Error = anyhow::Error;
+            type Error = Error;
 
-            fn try_from(value: &Data) -> Result<Self, Self::Error> {
+            fn try_from(value: &Data) -> std::result::Result<Self, Self::Error> {
                 match value {
                     Data::$variant(v) => Ok(v.0.clone()),
-                    _ => Err(anyhow!(
-                        "Could not convert &{} to {}",
-                        stringify!($variant),
-                        stringify!($target)
-                    )),
+                    _ => Err(Error::IncompatibleType {
+                        method: concat!("TryFrom<&Data> for ", stringify!($target)),
+                        got: value.data_type(),
+                    }),
                 }
             }
         }
@@ -798,7 +776,10 @@ impl Data {
             (Data::String(String(s)), DataType::Integer) => s
                 .parse::<i64>()
                 .map(|i| Data::Integer(Integer(i)))
-                .map_err(|_| anyhow!("Cannot parse '{}' as Integer", s)),
+                .map_err(|_| Error::ParseFailed {
+                    input: s.clone(),
+                    target_type: "Integer",
+                }),
 
             // To Real conversions
             (Data::Integer(Integer(i)), DataType::Real) => Ok(Data::Real(Real(*i as f64))),
@@ -808,7 +789,10 @@ impl Data {
             (Data::String(String(s)), DataType::Real) => s
                 .parse::<f64>()
                 .map(|f| Data::Real(Real(f)))
-                .map_err(|_| anyhow!("Cannot parse '{}' as Real", s)),
+                .map_err(|_| Error::ParseFailed {
+                    input: s.clone(),
+                    target_type: "Real",
+                }),
 
             // To Boolean conversions
             (Data::Integer(Integer(i)), DataType::Boolean) => Ok(Data::Boolean(Boolean(*i != 0))),
@@ -816,7 +800,10 @@ impl Data {
             (Data::String(String(s)), DataType::Boolean) => match s.to_lowercase().as_str() {
                 "true" | "yes" | "1" | "on" => Ok(Data::Boolean(Boolean(true))),
                 "false" | "no" | "0" | "off" | "" => Ok(Data::Boolean(Boolean(false))),
-                _ => Err(anyhow!("Cannot parse '{}' as Boolean", s)),
+                _ => Err(Error::ParseFailed {
+                    input: s.clone(),
+                    target_type: "Boolean",
+                }),
             },
 
             // To String conversions
@@ -970,7 +957,10 @@ impl Data {
             }
             (Data::String(String(s)), DataType::Color) => parse_color_from_string(s)
                 .map(|c| Data::Color(Color(c)))
-                .ok_or_else(|| anyhow!("Cannot parse '{}' as Color", s)),
+                .ok_or_else(|| Error::ParseFailed {
+                    input: s.clone(),
+                    target_type: "Color",
+                }),
 
             // To Mat3 conversions
             #[cfg(feature = "matrix3")]
@@ -1097,20 +1087,10 @@ impl Data {
             #[cfg(feature = "matrix4")]
             (Data::RealVec(RealVec(vec)), DataType::Matrix4) if vec.len() >= 16 => {
                 // AIDEV-NOTE: Direct copy when types match, using bytemuck for exact size.
-                if vec.len() == 16 {
-                    let arr: &[f64; 16] = vec
-                        .as_slice()
-                        .try_into()
-                        .map_err(|_| anyhow!("Failed to convert slice to array"))?;
-                    Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
-                        arr,
-                    ))))
-                } else {
-                    let m: Vec<f64> = vec.iter().take(16).copied().collect();
-                    Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
-                        &m,
-                    ))))
-                }
+                let m: Vec<f64> = vec.iter().take(16).copied().collect();
+                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
+                    &m,
+                ))))
             }
             #[cfg(feature = "matrix4")]
             (Data::IntegerVec(IntegerVec(vec)), DataType::Matrix4) if vec.len() >= 16 => {
@@ -1409,7 +1389,10 @@ impl Data {
             }
 
             // Unsupported conversions
-            _ => Err(anyhow!("Cannot convert {:?} to {:?}", self.data_type(), to)),
+            _ => Err(Error::ConversionUnsupported {
+                from: self.data_type(),
+                to,
+            }),
         }
     }
 }
@@ -1500,14 +1483,12 @@ where
         .filter(|&s| !s.is_empty())
         .take(N)
         .map(|s| {
-            s.parse::<T>().map_err(|e| {
-                anyhow!(
-                    "Can't parse string `{s}` in `{input}` to `{}`: {e}",
-                    std::any::type_name::<T>()
-                )
+            s.parse::<T>().map_err(|_| Error::ParseFailed {
+                input: input.to_string(),
+                target_type: std::any::type_name::<T>(),
             })
         })
-        .collect::<Result<SmallVec<[T; N]>, _>>()?;
+        .collect::<std::result::Result<SmallVec<[T; N]>, _>>()?;
 
     if result.len() < N {
         result.extend((0..N - result.len()).map(|_| T::default()));

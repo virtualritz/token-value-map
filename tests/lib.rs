@@ -126,7 +126,7 @@ fn string_parsing() {
 }
 
 #[test]
-fn attribute_value() -> anyhow::Result<()> {
+fn attribute_value() -> token_value_map::Result<()> {
     let av = Value::animated(vec![
         (Time::from_secs(0.0), 0.0),
         (Time::from_secs(1.0), 1.0),
@@ -143,7 +143,7 @@ fn attribute_value() -> anyhow::Result<()> {
 }
 
 #[test]
-fn token_value_map() -> anyhow::Result<()> {
+fn token_value_map() -> token_value_map::Result<()> {
     let mut map = TokenValueMap::new();
 
     #[cfg(feature = "vector3")]
@@ -167,7 +167,7 @@ fn token_value_map() -> anyhow::Result<()> {
 }
 
 #[test]
-fn value_with_animated_data() -> anyhow::Result<()> {
+fn value_with_animated_data() -> token_value_map::Result<()> {
     // Test creating animated real values
     let animated_real = Value::animated(vec![
         (Time::from_secs(0.0), 1.0),
@@ -191,7 +191,7 @@ fn value_with_animated_data() -> anyhow::Result<()> {
 
 #[test]
 #[cfg(feature = "vector3")]
-fn value_with_animated_vectors() -> anyhow::Result<()> {
+fn value_with_animated_vectors() -> token_value_map::Result<()> {
     // Test animated Vector3
     let animated_vec3 = Value::animated(vec![
         (Time::from_secs(0.0), [0.0f32, 0.0, 0.0]),
@@ -203,20 +203,18 @@ fn value_with_animated_vectors() -> anyhow::Result<()> {
 
     // Test interpolation
     let interpolated = animated_vec3.interpolate(Time::from_secs(0.5));
-    if let Data::Vector3(Vector3(v)) = interpolated {
-        assert_eq!(v, nalgebra::Vector3::new(0.5, 1.0, 1.5));
-    } else {
-        return Err(anyhow::anyhow!(
-            "Expected Vector3 data, got: {:?}",
-            interpolated
-        ));
+    match interpolated {
+        Data::Vector3(Vector3(v)) => {
+            assert_eq!(v, nalgebra::Vector3::new(0.5, 1.0, 1.5));
+        }
+        _ => panic!("Expected Vector3 data, got: {:?}", interpolated),
     }
 
     Ok(())
 }
 
 #[test]
-fn value_add_sample_conversion() -> anyhow::Result<()> {
+fn value_add_sample_conversion() -> token_value_map::Result<()> {
     // Start with uniform value and add sample to make it animated
     let mut value = Value::uniform(1.0);
     assert!(!value.is_animated());
@@ -241,7 +239,7 @@ fn value_add_sample_conversion() -> anyhow::Result<()> {
 }
 
 #[test]
-fn value_type_safety() -> anyhow::Result<()> {
+fn value_type_safety() -> token_value_map::Result<()> {
     // Test that adding different types fails
     let mut real_value = Value::animated(vec![(Time::from_secs(0.0), 1.0)])?;
 
@@ -259,7 +257,7 @@ fn value_type_safety() -> anyhow::Result<()> {
 }
 
 #[test]
-fn value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
+fn value_animated_boolean_no_interpolation() -> token_value_map::Result<()> {
     // Boolean values should not interpolate, just use closest sample
     let animated_bool = Value::animated(vec![
         (Time::from_secs(0.0), false),
@@ -279,12 +277,12 @@ fn value_animated_boolean_no_interpolation() -> anyhow::Result<()> {
 #[test]
 fn value_empty_animated_creation() {
     // Creating animated value with no samples should fail
-    let empty_result: anyhow::Result<Value> = Value::animated(Vec::<(Time, f64)>::new());
+    let empty_result: token_value_map::Result<Value> = Value::animated(Vec::<(Time, f64)>::new());
     assert!(empty_result.is_err());
 }
 
 #[test]
-fn value_uses_generic_insert() -> anyhow::Result<()> {
+fn value_uses_generic_insert() -> token_value_map::Result<()> {
     // This test verifies that the simplified implementation using generic
     // insert works
     let animated_mixed = Value::animated(vec![
@@ -347,7 +345,7 @@ fn data_type_dispatch() {
 }
 
 #[test]
-fn sample_trait_implementations() -> anyhow::Result<()> {
+fn sample_trait_implementations() -> token_value_map::Result<()> {
     // Test uniform Value sampling - should always return 1 sample with the
     // uniform value
     let uniform_real = Value::uniform(42.0);

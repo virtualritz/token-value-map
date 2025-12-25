@@ -287,16 +287,10 @@ macro_rules! impl_sample_for_value {
                 match self {
                     Value::Uniform(data) => match data {
                         Data::$data_variant(value) => Ok(vec![(value.clone(), 1.0)]),
-                        _ => Err(anyhow!(
-                            concat!(
-                                "Sample<",
-                                stringify!($type),
-                                "> called on non-",
-                                stringify!($data_variant),
-                                " uniform Value: {:?}"
-                            ),
-                            data.data_type()
-                        )),
+                        _ => Err(Error::SampleVariantMismatch {
+                            sample_type: stringify!($type),
+                            got: data.data_type(),
+                        }),
                     },
                     Value::Animated(animated_data) => animated_data.sample(shutter, samples),
                 }
@@ -320,7 +314,10 @@ macro_rules! impl_animated_data_insert {
                             map.insert(time, value);
                             Ok(())
                         }
-                        _ => Err(anyhow!(concat!("Type mismatch: expected ", stringify!($type)))),
+                        _ => Err(Error::SampleTypeMismatch {
+                            expected: DataType::$variant,
+                            got: self.data_type(),
+                        }),
                     }
                 }
             )+
@@ -333,29 +330,29 @@ macro_rules! impl_try_from_vec {
     ($($target_type:ty, $variant:ident, $type_name:literal);+ $(;)?) => {
         $(
             impl TryFrom<Data> for Vec<$target_type> {
-                type Error = anyhow::Error;
+                type Error = Error;
 
-                fn try_from(value: Data) -> Result<Self, Self::Error> {
+                fn try_from(value: Data) -> std::result::Result<Self, Self::Error> {
                     match value {
                         Data::$variant(v) => Ok(v.0),
-                        _ => Err(anyhow!(
-                            concat!("Could not convert {} to Vec<", $type_name, ">"),
-                            value.type_name()
-                        )),
+                        _ => Err(Error::IncompatibleType {
+                            method: concat!("TryFrom<Data> for Vec<", $type_name, ">"),
+                            got: value.data_type(),
+                        }),
                     }
                 }
             }
 
             impl TryFrom<&Data> for Vec<$target_type> {
-                type Error = anyhow::Error;
+                type Error = Error;
 
-                fn try_from(value: &Data) -> Result<Self, Self::Error> {
+                fn try_from(value: &Data) -> std::result::Result<Self, Self::Error> {
                     match value {
                         Data::$variant(v) => Ok(v.0.clone()),
-                        _ => Err(anyhow!(
-                            concat!("Could not convert &{} to Vec<", $type_name, ">"),
-                            value.type_name()
-                        )),
+                        _ => Err(Error::IncompatibleType {
+                            method: concat!("TryFrom<&Data> for Vec<", $type_name, ">"),
+                            got: value.data_type(),
+                        }),
                     }
                 }
             }
@@ -376,16 +373,10 @@ macro_rules! impl_sample_for_animated_data {
                 ) -> Result<Vec<($type, SampleWeight)>> {
                     match self {
                         AnimatedData::$data_variant(map) => map.sample(shutter, samples),
-                        _ => Err(anyhow!(
-                            concat!(
-                                "Sample<",
-                                stringify!($type),
-                                "> called on non-",
-                                stringify!($data_variant),
-                                " AnimatedData variant: {:?}"
-                            ),
-                            self.data_type()
-                        )),
+                        _ => Err(Error::SampleVariantMismatch {
+                            sample_type: stringify!($type),
+                            got: self.data_type(),
+                        }),
                     }
                 }
             }
@@ -401,16 +392,10 @@ macro_rules! impl_sample_for_animated_data {
                 ) -> Result<Vec<($type, SampleWeight)>> {
                     match self {
                         AnimatedData::$data_variant(map) => map.sample(shutter, samples),
-                        _ => Err(anyhow!(
-                            concat!(
-                                "Sample<",
-                                stringify!($type),
-                                "> called on non-",
-                                stringify!($data_variant),
-                                " AnimatedData variant: {:?}"
-                            ),
-                            self.data_type()
-                        )),
+                        _ => Err(Error::SampleVariantMismatch {
+                            sample_type: stringify!($type),
+                            got: self.data_type(),
+                        }),
                     }
                 }
             }

@@ -3,7 +3,8 @@ use crate::{
     time_data_map::TimeDataMapControl,
     *,
 };
-use anyhow::Result;
+
+use crate::Result;
 use core::num::NonZeroU16;
 use enum_dispatch::enum_dispatch;
 use smallvec::SmallVec;
@@ -105,6 +106,77 @@ impl<T> AnimatedDataOps for TimeDataMap<T> {
 }
 
 impl_data_type_ops!(AnimatedData);
+
+// Interpolation-specific methods (when feature enabled)
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+impl AnimatedData {
+    /// Get bezier handles at a given time.
+    ///
+    /// Returns handles for scalar types (Real, Integer). Other types return None.
+    pub fn bezier_handles(&self, time: &Time) -> Option<egui_keyframe::BezierHandles> {
+        match self {
+            AnimatedData::Real(map) => map.interpolation(time).map(crate::key_to_bezier_handles),
+            AnimatedData::Integer(map) => map.interpolation(time).map(crate::key_to_bezier_handles),
+            // Vector/matrix types don't support scalar bezier handles
+            _ => None,
+        }
+    }
+
+    /// Set bezier handles at a given time.
+    ///
+    /// Works for scalar types (Real, Integer). Other types return an error.
+    pub fn set_bezier_handles(
+        &mut self,
+        time: &Time,
+        handles: egui_keyframe::BezierHandles,
+    ) -> Result<()> {
+        match self {
+            AnimatedData::Real(map) => {
+                map.set_interpolation_at(time, crate::bezier_handles_to_key(&handles))
+            }
+            AnimatedData::Integer(map) => {
+                map.set_interpolation_at(time, crate::bezier_handles_to_key(&handles))
+            }
+            _ => Err(Error::BezierNotSupported {
+                got: self.data_type(),
+            }),
+        }
+    }
+
+    /// Set the interpolation type at a given time.
+    ///
+    /// Works for scalar types (Real, Integer). Other types return an error.
+    pub fn set_keyframe_type(
+        &mut self,
+        time: &Time,
+        keyframe_type: egui_keyframe::KeyframeType,
+    ) -> Result<()> {
+        use crate::interpolation::{BezierHandle, Interpolation, Key};
+
+        let key = match keyframe_type {
+            egui_keyframe::KeyframeType::Hold => Key {
+                interpolation_in: Interpolation::Hold,
+                interpolation_out: Interpolation::Hold,
+            },
+            egui_keyframe::KeyframeType::Linear => Key {
+                interpolation_in: Interpolation::Linear,
+                interpolation_out: Interpolation::Linear,
+            },
+            egui_keyframe::KeyframeType::Bezier => {
+                // Default bezier handles (smooth curve)
+                return self.set_bezier_handles(time, egui_keyframe::BezierHandles::default());
+            }
+        };
+
+        match self {
+            AnimatedData::Real(map) => map.set_interpolation_at(time, key),
+            AnimatedData::Integer(map) => map.set_interpolation_at(time, key),
+            _ => Err(Error::BezierNotSupported {
+                got: self.data_type(),
+            }),
+        }
+    }
+}
 
 impl AnimatedData {
     /// Get all time samples from this animated data.
@@ -245,7 +317,6 @@ impl_animated_data_insert!(
 impl AnimatedData {
     /// Generic insert method that takes `Data` and matches the type to the
     /// `AnimatedData` variant.
-    #[named]
     pub fn try_insert(&mut self, time: Time, value: Data) -> Result<()> {
         match (self, value) {
             (AnimatedData::Boolean(map), Data::Boolean(v)) => {
@@ -348,12 +419,10 @@ impl AnimatedData {
                 map.insert(time, v);
                 Ok(())
             }
-            (s, v) => Err(anyhow!(
-                "{}: type mismatch: {:?} variant does not match {:?} type",
-                function_name!(),
-                s.data_type(),
-                v.data_type()
-            )),
+            (s, v) => Err(Error::SampleTypeMismatch {
+                expected: s.data_type(),
+                got: v.data_type(),
+            }),
         }
     }
 
