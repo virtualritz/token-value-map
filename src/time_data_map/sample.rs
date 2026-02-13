@@ -1,5 +1,6 @@
 use super::*;
 use core::num::NonZeroU16;
+#[cfg(feature = "builtin-types")]
 use rayon::prelude::*;
 
 /// Weight value for motion blur sampling.
@@ -18,6 +19,7 @@ pub trait Sample<T> {
     fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<(T, SampleWeight)>>;
 }
 
+#[cfg(feature = "builtin-types")]
 macro_rules! impl_sample {
     ($data_type:ty) => {
         impl Sample<$data_type> for TimeDataMap<$data_type> {
@@ -38,30 +40,35 @@ macro_rules! impl_sample {
     };
 }
 
+#[cfg(feature = "builtin-types")]
 impl_sample!(Real);
+#[cfg(feature = "builtin-types")]
 impl_sample!(Integer);
+#[cfg(feature = "builtin-types")]
 impl_sample!(Color);
 
-#[cfg(feature = "vector2")]
+#[cfg(all(feature = "builtin-types", feature = "vector2"))]
 impl_sample!(Vector2);
-#[cfg(feature = "vector3")]
+#[cfg(all(feature = "builtin-types", feature = "vector3"))]
 impl_sample!(Vector3);
-#[cfg(feature = "normal3")]
+#[cfg(all(feature = "builtin-types", feature = "normal3"))]
 impl_sample!(Normal3);
-#[cfg(feature = "point3")]
+#[cfg(all(feature = "builtin-types", feature = "point3"))]
 impl_sample!(Point3);
-#[cfg(feature = "matrix4")]
+#[cfg(all(feature = "builtin-types", feature = "matrix4"))]
 impl_sample!(Matrix4);
 
-#[cfg(feature = "matrix3")]
+// AIDEV-NOTE: Matrix3 sampling uses analytical 2×2 SVD decomposition for proper
+// rotation/stretch interpolation on all backends. Rotation is interpolated via
+// shortest-path angle slerp; translation and stretch are interpolated linearly.
+#[cfg(all(feature = "builtin-types", feature = "matrix3"))]
 impl Sample<Matrix3> for TimeDataMap<Matrix3> {
     fn sample(
         &self,
         shutter: &Shutter,
         samples: NonZeroU16,
     ) -> Result<Vec<(Matrix3, SampleWeight)>> {
-        // Split all matrices into their component parts via singular value
-        // decomposition.
+        // Split all matrices into their component parts via analytical 2×2 SVD.
         let mut translations = BTreeMap::new();
         let mut rotations = BTreeMap::new();
         let mut stretches = BTreeMap::new();
@@ -91,7 +98,7 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
                 (
                     crate::Matrix3(recompose_matrix(
                         interpolate(&translations, time),
-                        interpolate_spherical_linear(&rotations, time),
+                        interpolate_rotation(&rotations, time),
                         interpolate(&stretches, time),
                     )),
                     shutter.opening(time),

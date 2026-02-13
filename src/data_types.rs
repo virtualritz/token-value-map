@@ -1,3 +1,4 @@
+use crate::math::*;
 use crate::{DataTypeOps, Error, Result, *};
 use std::{
     fmt::Debug,
@@ -98,6 +99,7 @@ macro_rules! impl_nalgebra_arithmetic {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Boolean(pub bool);
 
 impl From<Data> for Boolean {
@@ -116,6 +118,7 @@ impl From<Data> for Boolean {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Integer(pub i64);
 
 impl From<Data> for Integer {
@@ -134,6 +137,7 @@ impl From<Data> for Integer {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Real(pub f64);
 
 impl Eq for Real {}
@@ -166,6 +170,7 @@ impl From<f32> for Real {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct String(pub std::string::String);
 
 impl From<Data> for String {
@@ -210,36 +215,63 @@ impl From<Data> for String {
 }
 
 /// A 4-component RGBA color value.
-#[derive(Clone, Debug, PartialEq)]
+///
+/// AIDEV-NOTE: Color uses `[f32; 4]` directly -- it's a domain concept (RGBA),
+/// not a math-library type. Both glam and nalgebra lack a canonical "Color".
+#[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[repr(transparent)]
 pub struct Color(pub [f32; 4]);
 
 impl Eq for Color {}
 
 impl From<[f32; 4]> for Color {
+    #[inline(always)]
     fn from(array: [f32; 4]) -> Self {
         Color(array)
+    }
+}
+
+impl From<Color> for [f32; 4] {
+    #[inline(always)]
+    fn from(color: Color) -> Self {
+        color.0
+    }
+}
+
+impl Color {
+    /// Create a new color from RGBA components.
+    #[inline(always)]
+    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Color([r, g, b, a])
+    }
+
+    /// Get RGBA components as array.
+    #[inline(always)]
+    pub fn to_array(&self) -> [f32; 4] {
+        self.0
     }
 }
 
 impl From<Data> for Color {
     fn from(data: Data) -> Self {
         match data {
-            Data::Boolean(b) => Color([b.0.into(), b.0.into(), b.0.into(), 1.0]),
-            Data::Real(r) => Color([r.0 as _, r.0 as _, r.0 as _, 1.0]),
-            Data::Integer(i) => Color([i.0 as _, i.0 as _, i.0 as _, 1.0]),
-            Data::String(s) => Color([s.0.parse::<f32>().unwrap_or(0.0); 4]),
+            Data::Boolean(b) => Color::from([b.0.into(), b.0.into(), b.0.into(), 1.0]),
+            Data::Real(r) => Color::from([r.0 as _, r.0 as _, r.0 as _, 1.0]),
+            Data::Integer(i) => Color::from([i.0 as _, i.0 as _, i.0 as _, 1.0]),
+            Data::String(s) => Color::from([s.0.parse::<f32>().unwrap_or(0.0); 4]),
             Data::Color(c) => c,
             #[cfg(feature = "vector2")]
-            Data::Vector2(v) => Color([v.0.x, v.0.y, 0.0, 1.0]),
+            Data::Vector2(v) => Color::from([v.0.x, v.0.y, 0.0, 1.0]),
             #[cfg(feature = "vector3")]
-            Data::Vector3(v) => Color([v.0.x, v.0.y, v.0.z, 1.0]),
-            Data::BooleanVec(v) => Color([v.0[0].into(), v.0[1].into(), v.0[2].into(), 1.0]),
-            Data::RealVec(v) => Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
-            Data::IntegerVec(v) => Color([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
-            Data::StringVec(v) => Color([v.0[0].parse::<f32>().unwrap_or(0.0); 4]),
-            Data::ColorVec(v) => Color([v.0[0][0], v.0[0][1], v.0[0][2], v.0[0][3]]),
+            Data::Vector3(v) => Color::from([v.0.x, v.0.y, v.0.z, 1.0]),
+            Data::BooleanVec(v) => Color::from([v.0[0].into(), v.0[1].into(), v.0[2].into(), 1.0]),
+            Data::RealVec(v) => Color::from([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
+            Data::IntegerVec(v) => Color::from([v.0[0] as _, v.0[1] as _, v.0[2] as _, 1.0]),
+            Data::StringVec(v) => Color::from([v.0[0].parse::<f32>().unwrap_or(0.0); 4]),
+            Data::ColorVec(v) => Color::from([v.0[0][0], v.0[0][1], v.0[0][2], v.0[0][3]]),
             _ => panic!("Cannot convert {data:?} to Color"),
         }
     }
@@ -249,9 +281,8 @@ impl From<Data> for Color {
 #[cfg(feature = "vector2")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Vector2(pub nalgebra::Vector2<f32>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Vector2(pub Vec2Impl);
 
 #[cfg(feature = "vector2")]
 impl Eq for Vector2 {}
@@ -260,9 +291,8 @@ impl Eq for Vector2 {}
 #[cfg(feature = "vector3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Vector3(pub nalgebra::Vector3<f32>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Vector3(pub Vec3Impl);
 
 #[cfg(feature = "vector3")]
 impl Eq for Vector3 {}
@@ -271,9 +301,8 @@ impl Eq for Vector3 {}
 #[cfg(feature = "matrix3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Matrix3(pub nalgebra::Matrix3<f32>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Matrix3(pub Mat3Impl);
 
 #[cfg(feature = "matrix3")]
 impl Eq for Matrix3 {}
@@ -282,7 +311,7 @@ impl Eq for Matrix3 {}
 impl From<Vec<f32>> for Matrix3 {
     fn from(vec: Vec<f32>) -> Self {
         assert_eq!(vec.len(), 9, "Matrix3 requires exactly 9 elements");
-        Matrix3(nalgebra::Matrix3::from_row_slice(&vec))
+        Matrix3(mat3_from_row_slice(&vec))
     }
 }
 
@@ -291,24 +320,27 @@ impl From<Vec<f64>> for Matrix3 {
     fn from(vec: Vec<f64>) -> Self {
         assert_eq!(vec.len(), 9, "Matrix3 requires exactly 9 elements");
         let vec_f32: Vec<f32> = vec.into_iter().map(|v| v as f32).collect();
-        Matrix3(nalgebra::Matrix3::from_row_slice(&vec_f32))
+        Matrix3(mat3_from_row_slice(&vec_f32))
     }
 }
 
 #[cfg(feature = "matrix3")]
 impl From<[f32; 9]> for Matrix3 {
     fn from(arr: [f32; 9]) -> Self {
-        Matrix3(nalgebra::Matrix3::from_row_slice(&arr))
+        Matrix3(mat3_from_row_slice(&arr))
     }
 }
 
 /// A 3D normal vector.
+///
+/// AIDEV-NOTE: Inner type is `Vec3Impl` for both backends. Normalization
+/// is the caller's responsibility -- typically done at construction time.
 #[cfg(feature = "normal3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Normal3(pub nalgebra::Vector3<f32>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[repr(transparent)]
+pub struct Normal3(pub Vec3Impl);
 
 #[cfg(feature = "normal3")]
 impl Eq for Normal3 {}
@@ -317,9 +349,8 @@ impl Eq for Normal3 {}
 #[cfg(feature = "point3")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Point3(pub nalgebra::Point3<f32>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Point3(pub Point3Impl);
 
 #[cfg(feature = "point3")]
 impl Eq for Point3 {}
@@ -328,9 +359,8 @@ impl Eq for Point3 {}
 #[cfg(feature = "matrix4")]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Matrix4(pub nalgebra::Matrix4<f64>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Matrix4(pub Mat4Impl);
 
 #[cfg(feature = "matrix4")]
 impl Eq for Matrix4 {}
@@ -339,6 +369,7 @@ impl Eq for Matrix4 {}
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct IntegerVec(pub Vec<i64>);
 
 impl IntegerVec {
@@ -368,6 +399,7 @@ impl From<Vec<i32>> for IntegerVec {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct RealVec(pub Vec<f64>);
 
 impl RealVec {
@@ -399,6 +431,7 @@ impl Eq for RealVec {}
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct BooleanVec(pub Vec<bool>);
 
 impl BooleanVec {
@@ -416,6 +449,7 @@ impl BooleanVec {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct StringVec(pub Vec<std::string::String>);
 
 impl StringVec {
@@ -433,6 +467,7 @@ impl StringVec {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct ColorVec(pub Vec<[f32; 4]>);
 
 impl ColorVec {
@@ -452,13 +487,12 @@ impl Eq for ColorVec {}
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Vector2Vec(pub Vec<nalgebra::Vector2<f32>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Vector2Vec(pub Vec<Vec2Impl>);
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 impl Vector2Vec {
-    pub fn new(vec: Vec<nalgebra::Vector2<f32>>) -> Result<Self> {
+    pub fn new(vec: Vec<Vec2Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Vector2Vec",
@@ -475,13 +509,12 @@ impl Eq for Vector2Vec {}
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Vector3Vec(pub Vec<nalgebra::Vector3<f32>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Vector3Vec(pub Vec<Vec3Impl>);
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
 impl Vector3Vec {
-    pub fn new(vec: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
+    pub fn new(vec: Vec<Vec3Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Vector3Vec",
@@ -498,13 +531,12 @@ impl Eq for Vector3Vec {}
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Matrix3Vec(pub Vec<nalgebra::Matrix3<f32>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Matrix3Vec(pub Vec<Mat3Impl>);
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
 impl Matrix3Vec {
-    pub fn new(vec: Vec<nalgebra::Matrix3<f32>>) -> Result<Self> {
+    pub fn new(vec: Vec<Mat3Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Matrix3Vec",
@@ -521,13 +553,12 @@ impl Eq for Matrix3Vec {}
 #[cfg(all(feature = "normal3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Normal3Vec(pub Vec<nalgebra::Vector3<f32>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Normal3Vec(pub Vec<Vec3Impl>);
 
 #[cfg(all(feature = "normal3", feature = "vec_variants"))]
 impl Normal3Vec {
-    pub fn new(vec: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
+    pub fn new(vec: Vec<Vec3Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Normal3Vec",
@@ -544,13 +575,12 @@ impl Eq for Normal3Vec {}
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Point3Vec(pub Vec<nalgebra::Point3<f32>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Point3Vec(pub Vec<Point3Impl>);
 
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
 impl Point3Vec {
-    pub fn new(vec: Vec<nalgebra::Point3<f32>>) -> Result<Self> {
+    pub fn new(vec: Vec<Point3Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Point3Vec",
@@ -567,13 +597,12 @@ impl Eq for Point3Vec {}
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
-pub struct Matrix4Vec(pub Vec<nalgebra::Matrix4<f64>>);
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct Matrix4Vec(pub Vec<Mat4Impl>);
 
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
 impl Matrix4Vec {
-    pub fn new(vec: Vec<nalgebra::Matrix4<f64>>) -> Result<Self> {
+    pub fn new(vec: Vec<Mat4Impl>) -> Result<Self> {
         if vec.is_empty() {
             return Err(Error::EmptyVec {
                 type_name: "Matrix4Vec",
@@ -595,7 +624,11 @@ impl Add for Point3 {
     type Output = Point3;
 
     fn add(self, other: Point3) -> Point3 {
-        Point3(self.0 + other.0.coords)
+        Point3(Point3Impl::new(
+            self.0.x + other.0.x,
+            self.0.y + other.0.y,
+            self.0.z + other.0.z,
+        ))
     }
 }
 
@@ -604,7 +637,11 @@ impl Sub for Point3 {
     type Output = Point3;
 
     fn sub(self, other: Point3) -> Point3 {
-        Point3(nalgebra::Point3::from(self.0.coords - other.0.coords))
+        Point3(Point3Impl::new(
+            self.0.x - other.0.x,
+            self.0.y - other.0.y,
+            self.0.z - other.0.z,
+        ))
     }
 }
 
@@ -613,7 +650,11 @@ impl Mul<f32> for Point3 {
     type Output = Point3;
 
     fn mul(self, scalar: f32) -> Point3 {
-        Point3(self.0 * scalar)
+        Point3(Point3Impl::new(
+            self.0.x * scalar,
+            self.0.y * scalar,
+            self.0.z * scalar,
+        ))
     }
 }
 
@@ -622,12 +663,45 @@ impl Mul<f64> for Point3 {
     type Output = Point3;
 
     fn mul(self, scalar: f64) -> Point3 {
-        Point3(self.0 * scalar as f32)
+        let s = scalar as f32;
+        Point3(Point3Impl::new(self.0.x * s, self.0.y * s, self.0.z * s))
+    }
+}
+
+// Matrix4 arithmetic operations.
+// AIDEV-NOTE: Manual impls using math utility functions because ultraviolet's
+// DMat4 lacks Sub.
+#[cfg(feature = "matrix4")]
+impl Add for Matrix4 {
+    type Output = Matrix4;
+    fn add(self, other: Matrix4) -> Matrix4 {
+        Matrix4(self.0 + other.0)
     }
 }
 
 #[cfg(feature = "matrix4")]
-impl_nalgebra_arithmetic!(Matrix4, f64);
+impl Sub for Matrix4 {
+    type Output = Matrix4;
+    fn sub(self, other: Matrix4) -> Matrix4 {
+        Matrix4(mat4_sub(self.0, other.0))
+    }
+}
+
+#[cfg(feature = "matrix4")]
+impl Mul<f32> for Matrix4 {
+    type Output = Matrix4;
+    fn mul(self, scalar: f32) -> Matrix4 {
+        Matrix4(self.0 * scalar as f64)
+    }
+}
+
+#[cfg(feature = "matrix4")]
+impl Mul<f64> for Matrix4 {
+    type Output = Matrix4;
+    fn mul(self, scalar: f64) -> Matrix4 {
+        Matrix4(self.0 * scalar)
+    }
+}
 
 // Arithmetic trait implementations for interpolation
 impl Add for Real {
@@ -853,10 +927,11 @@ impl Mul<f64> for StringVec {
     }
 }
 
-// Color arithmetic operations
+// Color arithmetic operations on [f32; 4].
 impl Add for Color {
     type Output = Color;
 
+    #[inline(always)]
     fn add(self, other: Color) -> Color {
         Color([
             self.0[0] + other.0[0],
@@ -870,6 +945,7 @@ impl Add for Color {
 impl Sub for Color {
     type Output = Color;
 
+    #[inline(always)]
     fn sub(self, other: Color) -> Color {
         Color([
             self.0[0] - other.0[0],
@@ -883,27 +959,36 @@ impl Sub for Color {
 impl Mul<f32> for Color {
     type Output = Color;
 
-    fn mul(self, scalar: f32) -> Color {
-        Color([
-            self.0[0] * scalar,
-            self.0[1] * scalar,
-            self.0[2] * scalar,
-            self.0[3] * scalar,
-        ])
+    #[inline(always)]
+    fn mul(self, s: f32) -> Color {
+        Color([self.0[0] * s, self.0[1] * s, self.0[2] * s, self.0[3] * s])
+    }
+}
+
+impl Div<f32> for Color {
+    type Output = Color;
+
+    #[inline(always)]
+    fn div(self, s: f32) -> Color {
+        Color([self.0[0] / s, self.0[1] / s, self.0[2] / s, self.0[3] / s])
     }
 }
 
 impl Mul<f64> for Color {
     type Output = Color;
 
+    #[inline(always)]
     fn mul(self, scalar: f64) -> Color {
-        let scalar = scalar as f32;
-        Color([
-            self.0[0] * scalar,
-            self.0[1] * scalar,
-            self.0[2] * scalar,
-            self.0[3] * scalar,
-        ])
+        self * (scalar as f32)
+    }
+}
+
+impl Div<f64> for Color {
+    type Output = Color;
+
+    #[inline(always)]
+    fn div(self, scalar: f64) -> Color {
+        self / (scalar as f32)
     }
 }
 
@@ -915,9 +1000,40 @@ impl_nalgebra_arithmetic!(Vector2);
 #[cfg(feature = "vector3")]
 impl_nalgebra_arithmetic!(Vector3);
 
-// Matrix3 arithmetic operations
+// Matrix3 arithmetic operations.
+// AIDEV-NOTE: Manual impls using math utility functions because ultraviolet's
+// Mat3 lacks Sub and Div<f32>.
 #[cfg(feature = "matrix3")]
-impl_nalgebra_arithmetic!(Matrix3);
+impl Add for Matrix3 {
+    type Output = Matrix3;
+    fn add(self, other: Matrix3) -> Matrix3 {
+        Matrix3(self.0 + other.0)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Sub for Matrix3 {
+    type Output = Matrix3;
+    fn sub(self, other: Matrix3) -> Matrix3 {
+        Matrix3(mat3_sub(self.0, other.0))
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<f32> for Matrix3 {
+    type Output = Matrix3;
+    fn mul(self, scalar: f32) -> Matrix3 {
+        Matrix3(self.0 * scalar)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<f64> for Matrix3 {
+    type Output = Matrix3;
+    fn mul(self, scalar: f64) -> Matrix3 {
+        Matrix3(self.0 * scalar as f32)
+    }
+}
 
 // Matrix3 multiplication (matrix * matrix)
 #[cfg(feature = "matrix3")]
@@ -1256,17 +1372,12 @@ impl Mul<f64> for Vector3Vec {
 impl Add for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn add(self, other: Matrix3Vec) -> Matrix3Vec {
+    fn add(mut self, other: Matrix3Vec) -> Matrix3Vec {
         if self.0.len() != other.0.len() {
             panic!("Vector lengths must match for addition");
         }
-        Matrix3Vec(
-            self.0
-                .into_iter()
-                .zip(other.0)
-                .map(|(a, b)| a + b)
-                .collect(),
-        )
+        self.0.iter_mut().zip(other.0).for_each(|(a, b)| *a += b);
+        self
     }
 }
 
@@ -1274,17 +1385,15 @@ impl Add for Matrix3Vec {
 impl Sub for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn sub(self, other: Matrix3Vec) -> Matrix3Vec {
+    fn sub(mut self, other: Matrix3Vec) -> Matrix3Vec {
         if self.0.len() != other.0.len() {
             panic!("Vector lengths must match for subtraction");
         }
-        Matrix3Vec(
-            self.0
-                .into_iter()
-                .zip(other.0)
-                .map(|(a, b)| a - b)
-                .collect(),
-        )
+        self.0
+            .iter_mut()
+            .zip(other.0)
+            .for_each(|(a, b)| *a = mat3_sub(*a, b));
+        self
     }
 }
 
@@ -1292,8 +1401,11 @@ impl Sub for Matrix3Vec {
 impl Mul<f32> for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn mul(self, scalar: f32) -> Matrix3Vec {
-        Matrix3Vec(self.0.into_iter().map(|mat| mat * scalar).collect())
+    #[allow(clippy::assign_op_pattern)]
+    fn mul(mut self, scalar: f32) -> Matrix3Vec {
+        // AIDEV-NOTE: no MulAssign on ultraviolet Mat3.
+        self.0.iter_mut().for_each(|mat| *mat = *mat * scalar);
+        self
     }
 }
 
@@ -1301,9 +1413,11 @@ impl Mul<f32> for Matrix3Vec {
 impl Mul<f64> for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn mul(self, scalar: f64) -> Matrix3Vec {
+    #[allow(clippy::assign_op_pattern)]
+    fn mul(mut self, scalar: f64) -> Matrix3Vec {
         let scalar = scalar as f32;
-        Matrix3Vec(self.0.into_iter().map(|mat| mat * scalar).collect())
+        self.0.iter_mut().for_each(|mat| *mat = *mat * scalar);
+        self
     }
 }
 
@@ -1356,7 +1470,7 @@ impl Mul<f64> for Normal3Vec {
     }
 }
 
-// Point3Vec arithmetic operations
+// Point3Vec arithmetic operations.
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
 impl Add for Point3Vec {
     type Output = Point3Vec;
@@ -1366,7 +1480,7 @@ impl Add for Point3Vec {
             self.0
                 .into_iter()
                 .zip(other.0)
-                .map(|(a, b)| a + b.coords)
+                .map(|(a, b)| Point3Impl::new(a.x + b.x, a.y + b.y, a.z + b.z))
                 .collect(),
         )
     }
@@ -1381,7 +1495,7 @@ impl Sub for Point3Vec {
             self.0
                 .into_iter()
                 .zip(other.0)
-                .map(|(a, b)| nalgebra::Point3::from(a.coords - b.coords))
+                .map(|(a, b)| Point3Impl::new(a.x - b.x, a.y - b.y, a.z - b.z))
                 .collect(),
         )
     }
@@ -1391,11 +1505,11 @@ impl Sub for Point3Vec {
 impl Mul<f32> for Point3Vec {
     type Output = Point3Vec;
 
-    fn mul(self, scalar: f32) -> Self::Output {
+    fn mul(self, s: f32) -> Self::Output {
         Point3Vec(
             self.0
                 .into_iter()
-                .map(|p| nalgebra::Point3::from(p.coords * scalar))
+                .map(|p| Point3Impl::new(p.x * s, p.y * s, p.z * s))
                 .collect(),
         )
     }
@@ -1406,10 +1520,11 @@ impl Mul<f64> for Point3Vec {
     type Output = Point3Vec;
 
     fn mul(self, scalar: f64) -> Self::Output {
+        let s = scalar as f32;
         Point3Vec(
             self.0
                 .into_iter()
-                .map(|p| nalgebra::Point3::from(p.coords * scalar as f32))
+                .map(|p| Point3Impl::new(p.x * s, p.y * s, p.z * s))
                 .collect(),
         )
     }
@@ -1420,14 +1535,9 @@ impl Mul<f64> for Point3Vec {
 impl Add for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn add(self, other: Matrix4Vec) -> Self::Output {
-        Matrix4Vec(
-            self.0
-                .into_iter()
-                .zip(other.0)
-                .map(|(a, b)| a + b)
-                .collect(),
-        )
+    fn add(mut self, other: Matrix4Vec) -> Self::Output {
+        self.0.iter_mut().zip(other.0).for_each(|(a, b)| *a += b);
+        self
     }
 }
 
@@ -1435,14 +1545,12 @@ impl Add for Matrix4Vec {
 impl Sub for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn sub(self, other: Matrix4Vec) -> Self::Output {
-        Matrix4Vec(
-            self.0
-                .into_iter()
-                .zip(other.0)
-                .map(|(a, b)| a - b)
-                .collect(),
-        )
+    fn sub(mut self, other: Matrix4Vec) -> Self::Output {
+        self.0
+            .iter_mut()
+            .zip(other.0)
+            .for_each(|(a, b)| *a = mat4_sub(*a, b));
+        self
     }
 }
 
@@ -1450,8 +1558,12 @@ impl Sub for Matrix4Vec {
 impl Mul<f32> for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn mul(self, scalar: f32) -> Self::Output {
-        Matrix4Vec(self.0.into_iter().map(|v| v * scalar as f64).collect())
+    #[allow(clippy::assign_op_pattern)]
+    fn mul(mut self, scalar: f32) -> Self::Output {
+        // AIDEV-NOTE: no MulAssign on ultraviolet DMat4.
+        let scalar = scalar as f64;
+        self.0.iter_mut().for_each(|v| *v = *v * scalar);
+        self
     }
 }
 
@@ -1459,8 +1571,10 @@ impl Mul<f32> for Matrix4Vec {
 impl Mul<f64> for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn mul(self, scalar: f64) -> Self::Output {
-        Matrix4Vec(self.0.into_iter().map(|v| v * scalar).collect())
+    #[allow(clippy::assign_op_pattern)]
+    fn mul(mut self, scalar: f64) -> Self::Output {
+        self.0.iter_mut().for_each(|v| *v = *v * scalar);
+        self
     }
 }
 
@@ -1478,17 +1592,26 @@ impl Div<f32> for Normal3 {
 impl Div<f32> for Point3 {
     type Output = Point3;
 
-    fn div(self, scalar: f32) -> Point3 {
-        Point3(self.0 / scalar)
+    fn div(self, s: f32) -> Point3 {
+        Point3(Point3Impl::new(self.0.x / s, self.0.y / s, self.0.z / s))
     }
 }
 
 #[cfg(feature = "matrix4")]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f32> for Matrix4 {
     type Output = Matrix4;
 
     fn div(self, scalar: f32) -> Matrix4 {
-        Matrix4(self.0 / scalar as f64)
+        // AIDEV-NOTE: ultraviolet DMat4 lacks Div<f64>.
+        #[cfg(not(feature = "ultraviolet"))]
+        {
+            Matrix4(self.0 / scalar as f64)
+        }
+        #[cfg(feature = "ultraviolet")]
+        {
+            self * (1.0 / scalar as f64)
+        }
     }
 }
 
@@ -1540,19 +1663,6 @@ impl Div<f32> for StringVec {
     }
 }
 
-impl Div<f32> for Color {
-    type Output = Color;
-
-    fn div(self, scalar: f32) -> Color {
-        Color([
-            self.0[0] / scalar,
-            self.0[1] / scalar,
-            self.0[2] / scalar,
-            self.0[3] / scalar,
-        ])
-    }
-}
-
 #[cfg(feature = "vector2")]
 impl Div<f32> for Vector2 {
     type Output = Vector2;
@@ -1572,15 +1682,23 @@ impl Div<f32> for Vector3 {
 }
 
 #[cfg(feature = "matrix3")]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f32> for Matrix3 {
     type Output = Matrix3;
 
     fn div(self, scalar: f32) -> Matrix3 {
-        Matrix3(self.0 / scalar)
+        // AIDEV-NOTE: ultraviolet Mat3 lacks Div<f32>.
+        #[cfg(not(feature = "ultraviolet"))]
+        {
+            Matrix3(self.0 / scalar)
+        }
+        #[cfg(feature = "ultraviolet")]
+        {
+            self * (1.0 / scalar)
+        }
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f32> for RealVec {
     type Output = RealVec;
 
@@ -1589,7 +1707,6 @@ impl Div<f32> for RealVec {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f32> for IntegerVec {
     type Output = IntegerVec;
 
@@ -1603,7 +1720,6 @@ impl Div<f32> for IntegerVec {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f32> for ColorVec {
     type Output = ColorVec;
 
@@ -1643,11 +1759,19 @@ impl Div<f32> for Vector3Vec {
 }
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f32> for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn div(self, scalar: f32) -> Matrix3Vec {
-        Matrix3Vec(self.0.into_iter().map(|mat| mat / scalar).collect())
+    fn div(mut self, scalar: f32) -> Matrix3Vec {
+        #[cfg(not(feature = "ultraviolet"))]
+        self.0.iter_mut().for_each(|mat| *mat /= scalar);
+        #[cfg(feature = "ultraviolet")]
+        {
+            let recip = 1.0 / scalar;
+            self.0.iter_mut().for_each(|mat| *mat = *mat * recip);
+        }
+        self
     }
 }
 
@@ -1664,17 +1788,31 @@ impl Div<f32> for Normal3Vec {
 impl Div<f32> for Point3Vec {
     type Output = Point3Vec;
 
-    fn div(self, scalar: f32) -> Self::Output {
-        Point3Vec(self.0.into_iter().map(|v| v / scalar).collect())
+    fn div(self, s: f32) -> Self::Output {
+        Point3Vec(
+            self.0
+                .into_iter()
+                .map(|p| Point3Impl::new(p.x / s, p.y / s, p.z / s))
+                .collect(),
+        )
     }
 }
 
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f32> for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn div(self, scalar: f32) -> Self::Output {
-        Matrix4Vec(self.0.into_iter().map(|v| v / scalar as f64).collect())
+    fn div(mut self, scalar: f32) -> Self::Output {
+        let scalar = scalar as f64;
+        #[cfg(not(feature = "ultraviolet"))]
+        self.0.iter_mut().for_each(|v| *v /= scalar);
+        #[cfg(feature = "ultraviolet")]
+        {
+            let recip = 1.0 / scalar;
+            self.0.iter_mut().for_each(|v| *v = *v * recip);
+        }
+        self
     }
 }
 
@@ -1693,16 +1831,25 @@ impl Div<f64> for Point3 {
     type Output = Point3;
 
     fn div(self, scalar: f64) -> Point3 {
-        Point3(self.0 / scalar as f32)
+        let s = scalar as f32;
+        Point3(Point3Impl::new(self.0.x / s, self.0.y / s, self.0.z / s))
     }
 }
 
 #[cfg(feature = "matrix4")]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f64> for Matrix4 {
     type Output = Matrix4;
 
     fn div(self, scalar: f64) -> Matrix4 {
-        Matrix4(self.0 / scalar)
+        #[cfg(not(feature = "ultraviolet"))]
+        {
+            Matrix4(self.0 / scalar)
+        }
+        #[cfg(feature = "ultraviolet")]
+        {
+            self * (1.0 / scalar)
+        }
     }
 }
 
@@ -1738,7 +1885,6 @@ impl Div<f64> for String {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f64> for BooleanVec {
     type Output = BooleanVec;
 
@@ -1747,26 +1893,11 @@ impl Div<f64> for BooleanVec {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f64> for StringVec {
     type Output = StringVec;
 
     fn div(self, _scalar: f64) -> StringVec {
         self
-    }
-}
-
-impl Div<f64> for Color {
-    type Output = Color;
-
-    fn div(self, scalar: f64) -> Color {
-        let scalar = scalar as f32;
-        Color([
-            self.0[0] / scalar,
-            self.0[1] / scalar,
-            self.0[2] / scalar,
-            self.0[3] / scalar,
-        ])
     }
 }
 
@@ -1789,15 +1920,22 @@ impl Div<f64> for Vector3 {
 }
 
 #[cfg(feature = "matrix3")]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f64> for Matrix3 {
     type Output = Matrix3;
 
     fn div(self, scalar: f64) -> Matrix3 {
-        Matrix3(self.0 / scalar as f32)
+        #[cfg(not(feature = "ultraviolet"))]
+        {
+            Matrix3(self.0 / scalar as f32)
+        }
+        #[cfg(feature = "ultraviolet")]
+        {
+            self * (1.0 / scalar as f32)
+        }
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f64> for RealVec {
     type Output = RealVec;
 
@@ -1806,7 +1944,6 @@ impl Div<f64> for RealVec {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f64> for IntegerVec {
     type Output = IntegerVec;
 
@@ -1820,7 +1957,6 @@ impl Div<f64> for IntegerVec {
     }
 }
 
-#[cfg(feature = "vec_variants")]
 impl Div<f64> for ColorVec {
     type Output = ColorVec;
 
@@ -1863,12 +1999,20 @@ impl Div<f64> for Vector3Vec {
 }
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f64> for Matrix3Vec {
     type Output = Matrix3Vec;
 
-    fn div(self, scalar: f64) -> Matrix3Vec {
+    fn div(mut self, scalar: f64) -> Matrix3Vec {
         let scalar = scalar as f32;
-        Matrix3Vec(self.0.into_iter().map(|mat| mat / scalar).collect())
+        #[cfg(not(feature = "ultraviolet"))]
+        self.0.iter_mut().for_each(|mat| *mat /= scalar);
+        #[cfg(feature = "ultraviolet")]
+        {
+            let recip = 1.0 / scalar;
+            self.0.iter_mut().for_each(|mat| *mat = *mat * recip);
+        }
+        self
     }
 }
 
@@ -1886,16 +2030,30 @@ impl Div<f64> for Point3Vec {
     type Output = Point3Vec;
 
     fn div(self, scalar: f64) -> Self::Output {
-        Point3Vec(self.0.into_iter().map(|v| v / scalar as f32).collect())
+        let s = scalar as f32;
+        Point3Vec(
+            self.0
+                .into_iter()
+                .map(|p| Point3Impl::new(p.x / s, p.y / s, p.z / s))
+                .collect(),
+        )
     }
 }
 
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
+#[allow(clippy::suspicious_arithmetic_impl)]
 impl Div<f64> for Matrix4Vec {
     type Output = Matrix4Vec;
 
-    fn div(self, scalar: f64) -> Self::Output {
-        Matrix4Vec(self.0.into_iter().map(|v| v / scalar).collect())
+    fn div(mut self, scalar: f64) -> Self::Output {
+        #[cfg(not(feature = "ultraviolet"))]
+        self.0.iter_mut().for_each(|v| *v /= scalar);
+        #[cfg(feature = "ultraviolet")]
+        {
+            let recip = 1.0 / scalar;
+            self.0.iter_mut().for_each(|v| *v = *v * recip);
+        }
+        self
     }
 }
 
@@ -1914,7 +2072,7 @@ impl Hash for Real {
 impl Hash for Color {
     fn hash<H: Hasher>(&self, state: &mut H) {
         for &component in &self.0 {
-            // Normalize -0.0 to 0.0 for consistent hashing
+            // Normalize -0.0 to 0.0 for consistent hashing.
             let normalized = if component == 0.0 { 0.0_f32 } else { component };
             normalized.to_bits().hash(state);
         }
@@ -1948,8 +2106,8 @@ impl Hash for Vector3 {
 #[cfg(feature = "matrix3")]
 impl Hash for Matrix3 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for &element in self.0.iter() {
-            // Normalize -0.0 to 0.0 for consistent hashing
+        for &element in mat3_iter(&self.0) {
+            // Normalize -0.0 to 0.0 for consistent hashing.
             let normalized = if element == 0.0 { 0.0_f32 } else { element };
             normalized.to_bits().hash(state);
         }
@@ -2015,8 +2173,8 @@ impl Hash for Matrix3Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for matrix in &self.0 {
-            for &element in matrix.iter() {
-                // Normalize -0.0 to 0.0 for consistent hashing
+            for &element in mat3_iter(matrix) {
+                // Normalize -0.0 to 0.0 for consistent hashing.
                 let normalized = if element == 0.0 { 0.0_f32 } else { element };
                 normalized.to_bits().hash(state);
             }
@@ -2054,8 +2212,8 @@ impl Hash for Point3 {
 #[cfg(feature = "matrix4")]
 impl Hash for Matrix4 {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        for &element in self.0.iter() {
-            // Normalize -0.0 to 0.0 for consistent hashing
+        for &element in mat4_iter(&self.0) {
+            // Normalize -0.0 to 0.0 for consistent hashing.
             let normalized = if element == 0.0 { 0.0_f64 } else { element };
             normalized.to_bits().hash(state);
         }
@@ -2099,8 +2257,8 @@ impl Hash for Matrix4Vec {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.0.len().hash(state);
         for matrix in &self.0 {
-            for &element in matrix.iter() {
-                // Normalize -0.0 to 0.0 for consistent hashing
+            for &element in mat4_iter(matrix) {
+                // Normalize -0.0 to 0.0 for consistent hashing.
                 let normalized = if element == 0.0 { 0.0_f64 } else { element };
                 normalized.to_bits().hash(state);
             }

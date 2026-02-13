@@ -68,8 +68,8 @@ fn try_convert() {
         let v = Data::from(5.0);
         let vec2 = v.try_convert(DataType::Vector2).unwrap();
         assert_eq!(
-            nalgebra::Vector2::<f32>::try_from(vec2).unwrap(),
-            nalgebra::Vector2::new(5.0, 5.0)
+            token_value_map::math::Vec2Impl::try_from(vec2).unwrap(),
+            token_value_map::math::Vec2Impl::new(5.0, 5.0)
         );
     }
 
@@ -78,8 +78,8 @@ fn try_convert() {
         let v = Data::from(5.0);
         let vec3 = v.try_convert(DataType::Vector3).unwrap();
         assert_eq!(
-            nalgebra::Vector3::<f32>::try_from(vec3).unwrap(),
-            nalgebra::Vector3::new(5.0, 5.0, 5.0)
+            token_value_map::math::Vec3Impl::try_from(vec3).unwrap(),
+            token_value_map::math::Vec3Impl::new(5.0, 5.0, 5.0)
         );
     }
 
@@ -105,8 +105,8 @@ fn string_parsing() {
         let v = Data::from("[1.0, 2.0]");
         let vec2 = v.try_convert(DataType::Vector2).unwrap();
         assert_eq!(
-            nalgebra::Vector2::<f32>::try_from(vec2).unwrap(),
-            nalgebra::Vector2::new(1.0, 2.0)
+            token_value_map::math::Vec2Impl::try_from(vec2).unwrap(),
+            token_value_map::math::Vec2Impl::new(1.0, 2.0)
         );
     }
 
@@ -120,8 +120,11 @@ fn string_parsing() {
     {
         let v = Data::from("5.0");
         let mat = v.try_convert(DataType::Matrix3).unwrap();
-        let expected = nalgebra::Matrix3::from_diagonal_element(5.0);
-        assert_eq!(nalgebra::Matrix3::<f32>::try_from(mat).unwrap(), expected);
+        let expected = token_value_map::math::mat3_from_diagonal_element(5.0);
+        assert_eq!(
+            token_value_map::math::Mat3Impl::try_from(mat).unwrap(),
+            expected
+        );
     }
 }
 
@@ -205,7 +208,7 @@ fn value_with_animated_vectors() -> token_value_map::Result<()> {
     let interpolated = animated_vec3.interpolate(Time::from_secs(0.5));
     match interpolated {
         Data::Vector3(Vector3(v)) => {
-            assert_eq!(v, nalgebra::Vector3::new(0.5, 1.0, 1.5));
+            assert_eq!(v, token_value_map::math::Vec3Impl::new(0.5, 1.0, 1.5));
         }
         _ => panic!("Expected Vector3 data, got: {:?}", interpolated),
     }
@@ -217,12 +220,12 @@ fn value_with_animated_vectors() -> token_value_map::Result<()> {
 fn value_add_sample_conversion() -> token_value_map::Result<()> {
     // Start with uniform value and add sample to make it animated
     let mut value = Value::uniform(1.0);
-    assert!(!value.is_animated());
+    assert!(!value.is_animated()); // Uniform = not animated
     assert_eq!(value.sample_count(), 1);
 
     // Add a sample - should convert to animated and drop uniform content
     value.add_sample(Time::from_secs(1.0), 2.0)?;
-    // With only one sample, it's not considered "animated" yet
+    // With only one sample, it's not considered "animated" yet.
     assert!(!value.is_animated());
     assert_eq!(value.sample_count(), 1); // Only the new sample should remain
 
@@ -230,7 +233,7 @@ fn value_add_sample_conversion() -> token_value_map::Result<()> {
     let sample = value.sample_at(Time::from_secs(1.0));
     assert_eq!(sample, Some(Data::Real(Real(2.0))));
 
-    // Add another sample to make it truly animated
+    // Add another sample - now animated.
     value.add_sample(Time::from_secs(2.0), 3.0)?;
     assert!(value.is_animated());
     assert_eq!(value.sample_count(), 2);
@@ -338,7 +341,7 @@ fn data_type_dispatch() {
 
     #[cfg(feature = "vector3")]
     {
-        let vec3_data = Data::Vector3(Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)));
+        let vec3_data = Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)));
         assert_eq!(vec3_data.data_type(), DataType::Vector3);
         assert_eq!(vec3_data.type_name(), "vec3");
     }
@@ -366,7 +369,10 @@ fn sample_trait_implementations() -> token_value_map::Result<()> {
         let samples: Vec<(Vector3, SampleWeight)> =
             uniform_vector.sample(&shutter, NonZeroU16::new(3).unwrap())?;
         assert_eq!(samples.len(), 1);
-        assert_eq!(samples[0].0, Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)));
+        assert_eq!(
+            samples[0].0,
+            Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0))
+        );
         assert_eq!(samples[0].1, 1.0);
     }
 
@@ -385,4 +391,71 @@ fn sample_trait_implementations() -> token_value_map::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(all(test, feature = "rkyv"))]
+mod rkyv_tests {
+    use super::*;
+    use rkyv::{Deserialize, archived_root, to_bytes};
+
+    #[test]
+    fn test_data_rkyv_roundtrip() {
+        let original = Data::Integer(Integer(42));
+        let bytes = to_bytes::<_, 256>(&original).unwrap();
+        let archived = unsafe { archived_root::<Data>(&bytes) };
+        let deserialized: Data = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        assert_eq!(original, deserialized);
+    }
+
+    #[test]
+    fn test_value_rkyv_roundtrip() {
+        let original = Value::uniform(42.0);
+        let bytes = to_bytes::<_, 256>(&original).unwrap();
+        let archived = unsafe { archived_root::<Value>(&bytes) };
+        let deserialized: Value = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        assert_eq!(original, deserialized);
+    }
+
+    #[test]
+    fn test_animated_value_rkyv_roundtrip() -> token_value_map::Result<()> {
+        let original = Value::animated(vec![
+            (Time::from_secs(0.0), 0.0),
+            (Time::from_secs(1.0), 1.0),
+            (Time::from_secs(2.0), 2.0),
+        ])?;
+        let bytes = to_bytes::<_, 1024>(&original).unwrap();
+        let archived = unsafe { archived_root::<Value>(&bytes) };
+        let deserialized: Value = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        assert_eq!(original, deserialized);
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(feature = "vector3")]
+    fn test_vector3_rkyv_roundtrip() {
+        let original = Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)));
+        let bytes = to_bytes::<_, 256>(&original).unwrap();
+        let archived = unsafe { archived_root::<Data>(&bytes) };
+        let deserialized: Data = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        assert_eq!(original, deserialized);
+    }
+
+    #[test]
+    fn test_token_value_map_rkyv_roundtrip() -> token_value_map::Result<()> {
+        let mut original = TokenValueMap::new();
+        original.insert("position", 42.0);
+        original.insert(
+            "color",
+            Value::animated(vec![
+                (Time::from_secs(0.0), [1.0, 0.0, 0.0, 1.0]),
+                (Time::from_secs(1.0), [0.0, 1.0, 0.0, 1.0]),
+            ])?,
+        );
+
+        let bytes = to_bytes::<_, 2048>(&original).unwrap();
+        let archived = unsafe { archived_root::<TokenValueMap>(&bytes) };
+        let deserialized: TokenValueMap = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        assert_eq!(original, deserialized);
+        Ok(())
+    }
 }

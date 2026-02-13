@@ -1,6 +1,6 @@
 [package]
 name = "token-value-map"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
 keywords = [
@@ -19,15 +19,31 @@ documentation = "https://docs.rs/token-value-map"
 repository = "https://github.com/virtualritz/token-value-map/"
 
 [features]
-default = ["2d", "vec_variants"]
+default = ["builtin-types", "2d", "vec_variants", "glam"]
+builtin-types = []
 lua = ["dep:mlua"]
 serde = ["dep:serde", "ustr/serde"]
-facet = ["dep:facet", "frame-tick/facet"]
+
+# Math backend features (mutually exclusive).
+glam = ["dep:glam"]
+nalgebra = ["dep:nalgebra"]
+ultraviolet = ["dep:ultraviolet"]
+
+# mint interop -- enables From/Into<mint::*> on wrapper types.
+# Weak deps auto-forward mint to whichever backend is active.
+mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
+
+# rkyv only works with glam backend.
+rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "ustr/rkyv", "glam/rkyv"]
+
+# Facet support -- works with any backend.
+facet = ["dep:facet", "frame-tick/facet", "ustr/facet"]
+
+egui-keyframe = ["dep:egui-keyframe"]
 interpolation = ["dep:uniform-cubic-splines"]
 dopamine-compat = ["interpolation"]
-egui-keyframe = ["dep:egui-keyframe"]
 
-# Individual type features
+# Individual type features.
 vector2 = []
 vector3 = []
 matrix3 = []
@@ -36,7 +52,7 @@ point3 = []
 matrix4 = []
 vec_variants = []
 
-# Global feature flags
+# Global feature flags.
 2d = ["vector2", "matrix3"]
 3d = ["vector3", "matrix4", "normal3", "point3"]
 
@@ -45,19 +61,26 @@ thiserror = "2"
 bytemuck = "1"
 derive_more = { version = "2", features = ["as_ref"] }
 enum_dispatch = "0.3"
-facet = { version = ">=0.34", optional = true }
-frame-tick = { version = "0.1", features = ["float_frame_rate", "serde", "std"] }
+facet = { version = ">=0.41", optional = true }
+frame-tick = { path = "../frame-tick", features = ["float_frame_rate", "serde", "std"] }
 function_name = "0.3"
 log = "0.4"
 mlua = { version = "0.11", features = ["anyhow", "lua53"], optional = true }
-nalgebra = { version = "0.34", features = ["bytemuck", "serde-serialize"] }
+
+# Math libraries (optional, feature-gated).
+glam = { version = "0.32", optional = true, features = ["serde", "bytemuck"] }
+nalgebra = { version = "0.34", optional = true, features = ["bytemuck", "serde-serialize"] }
+ultraviolet = { version = "0.10", optional = true, features = ["bytemuck", "serde", "f64"] }
+mint = { version = "0.5", optional = true }
+
 rayon = "1"
+rkyv = { version = "0.8", features = ["bytecheck"], optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
 smallvec = { version = "1", features = ["const_generics", "const_new"] }
 strum = { version = "0.27", features = ["derive"] }
 uniform-cubic-splines = { version = "0.5", optional = true }
-ustr = "1"
-egui-keyframe = { path = "../egui-keyframe", optional = true }
+ustr = { path = "../ustr" }
+egui-keyframe = { version = "0.1", optional = true }
 
 [dev-dependencies]
 anyhow = "1"

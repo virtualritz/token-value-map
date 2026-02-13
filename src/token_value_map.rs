@@ -14,6 +14,7 @@ use ustr::Ustr;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct TokenValueMap {
     attributes: HashMap<Ustr, Value>,
 }

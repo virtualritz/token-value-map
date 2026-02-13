@@ -1,11 +1,15 @@
 //! Error types for token-value-map operations.
 
-use crate::{DataType, Time};
+use crate::Time;
+
+#[cfg(feature = "builtin-types")]
+use crate::DataType;
 
 /// Error type for token-value-map operations.
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum Error {
     /// Type conversion method called on incompatible type.
+    #[cfg(feature = "builtin-types")]
     #[error("{method}: called on incompatible type `{got:?}`")]
     IncompatibleType {
         /// The method that was called.
@@ -15,6 +19,7 @@ pub enum Error {
     },
 
     /// Conversion between data types is not supported.
+    #[cfg(feature = "builtin-types")]
     #[error("cannot convert `{from:?}` to `{to:?}`")]
     ConversionUnsupported {
         /// The source data type.
@@ -41,6 +46,7 @@ pub enum Error {
     EmptySamples,
 
     /// Type mismatch in animated samples.
+    #[cfg(feature = "builtin-types")]
     #[error("animated sample type mismatch: expected `{expected:?}`, got `{got:?}` at time {time}")]
     AnimatedTypeMismatch {
         /// The expected data type.
@@ -63,6 +69,7 @@ pub enum Error {
     },
 
     /// Type mismatch when adding sample to animated value.
+    #[cfg(feature = "builtin-types")]
     #[error("cannot add `{got:?}` to animated `{expected:?}`")]
     SampleTypeMismatch {
         /// The expected data type.
@@ -76,6 +83,7 @@ pub enum Error {
     InterpolationOnUniform,
 
     /// Bezier handles only supported for Real type.
+    #[cfg(feature = "builtin-types")]
     #[error("bezier handles only supported for Real type, got `{got:?}`")]
     BezierNotSupported {
         /// The actual data type encountered.
@@ -83,6 +91,7 @@ pub enum Error {
     },
 
     /// Sample trait called on wrong variant.
+    #[cfg(feature = "builtin-types")]
     #[error("Sample<{sample_type}> called on `{got:?}` variant")]
     SampleVariantMismatch {
         /// The expected sample type.
@@ -110,6 +119,15 @@ pub enum Error {
     AnimatedExtraction {
         /// The type name.
         type_name: &'static str,
+    },
+
+    /// Type mismatch (generic version for custom data systems).
+    #[error("type mismatch: expected {expected}, got {got}")]
+    GenericTypeMismatch {
+        /// The expected type name.
+        expected: &'static str,
+        /// The actual type name.
+        got: &'static str,
     },
 }
 

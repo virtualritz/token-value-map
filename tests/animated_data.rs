@@ -27,7 +27,7 @@ fn animated_data_creation() -> Result<()> {
     {
         let vector3_data = AnimatedData::Vector3(TimeDataMap::from_iter(vec![(
             Time::from_secs(0.0),
-            Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)),
+            Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)),
         )]));
         assert_eq!(vector3_data.data_type(), DataType::Vector3);
         assert!(!vector3_data.is_empty());
@@ -109,18 +109,18 @@ fn animated_data_boolean_no_interpolation() -> Result<()> {
 fn animated_data_vector_interpolation() -> Result<()> {
     let mut vec3_data = AnimatedData::Vector3(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
-        Vector3(nalgebra::Vector3::new(0.0, 0.0, 0.0)),
+        Vector3(token_value_map::math::Vec3Impl::new(0.0, 0.0, 0.0)),
     )]));
 
     vec3_data.insert_vector3(
         Time::from_secs(1.0),
-        Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)),
+        Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)),
     )?;
 
     let interpolated = vec3_data.interpolate(Time::from_secs(0.5));
     assert_eq!(
         interpolated,
-        Data::Vector3(Vector3(nalgebra::Vector3::new(0.5, 1.0, 1.5)))
+        Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(0.5, 1.0, 1.5)))
     );
 
     Ok(())
@@ -134,7 +134,7 @@ fn animated_data_single_sample() -> Result<()> {
     )]));
 
     assert_eq!(real_data.len(), 1);
-    assert!(!real_data.is_animated()); // Single sample is not animated
+    assert!(!real_data.is_animated()); // Single sample is not animated.
 
     // Any time should return the single value
     let sample = real_data.interpolate(Time::from_secs(100.0));
@@ -249,13 +249,13 @@ fn animated_data_generic_insert_all_types() -> Result<()> {
     {
         let mut vector3_data = AnimatedData::Vector3(TimeDataMap::from_iter(vec![(
             Time::from_secs(0.0),
-            Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0)),
+            Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)),
         )]));
         assert!(
             vector3_data
                 .try_insert(
                     Time::from_secs(1.0),
-                    Data::Vector3(Vector3(nalgebra::Vector3::new(4.0, 5.0, 6.0)))
+                    Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(4.0, 5.0, 6.0)))
                 )
                 .is_ok()
         );
@@ -340,13 +340,15 @@ fn from_time_data_vector_types() -> Result<()> {
     {
         let vector2_animated = AnimatedData::from((
             Time::from_secs(2.0),
-            Data::Vector2(Vector2(nalgebra::Vector2::new(1.0, 2.0))),
+            Data::Vector2(Vector2(token_value_map::math::Vec2Impl::new(1.0, 2.0))),
         ));
         assert_eq!(vector2_animated.data_type(), DataType::Vector2);
         assert_eq!(vector2_animated.len(), 1);
         assert_eq!(
             vector2_animated.sample_at(Time::from_secs(2.0)),
-            Some(Data::Vector2(Vector2(nalgebra::Vector2::new(1.0, 2.0))))
+            Some(Data::Vector2(Vector2(
+                token_value_map::math::Vec2Impl::new(1.0, 2.0)
+            )))
         );
     }
 
@@ -355,22 +357,24 @@ fn from_time_data_vector_types() -> Result<()> {
     {
         let vector3_animated = AnimatedData::from((
             Time::from_secs(3.0),
-            Data::Vector3(Vector3(nalgebra::Vector3::new(1.0, 2.0, 3.0))),
+            Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0))),
         ));
         assert_eq!(vector3_animated.data_type(), DataType::Vector3);
         assert_eq!(vector3_animated.len(), 1);
         assert_eq!(
             vector3_animated.sample_at(Time::from_secs(3.0)),
-            Some(Data::Vector3(Vector3(nalgebra::Vector3::new(
-                1.0, 2.0, 3.0
-            ))))
+            Some(Data::Vector3(Vector3(
+                token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)
+            )))
         );
     }
 
     // Test Matrix3
     #[cfg(feature = "matrix3")]
     {
-        let matrix = nalgebra::Matrix3::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let matrix = token_value_map::math::mat3_from_row_slice(&[
+            1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+        ]);
         let matrix3_animated =
             AnimatedData::from((Time::from_secs(4.0), Data::Matrix3(Matrix3(matrix))));
         assert_eq!(matrix3_animated.data_type(), DataType::Matrix3);
@@ -434,7 +438,9 @@ fn from_time_data_vec_types() -> Result<()> {
     {
         let vector2_vec_animated = AnimatedData::from((
             Time::from_secs(6.0),
-            Data::Vector2Vec(Vector2Vec::new(vec![nalgebra::Vector2::new(1.0, 2.0)])?),
+            Data::Vector2Vec(Vector2Vec::new(vec![
+                token_value_map::math::Vec2Impl::new(1.0, 2.0),
+            ])?),
         ));
         assert_eq!(vector2_vec_animated.data_type(), DataType::Vector2Vec);
         assert_eq!(vector2_vec_animated.len(), 1);
@@ -445,9 +451,9 @@ fn from_time_data_vec_types() -> Result<()> {
     {
         let vector3_vec_animated = AnimatedData::from((
             Time::from_secs(7.0),
-            Data::Vector3Vec(Vector3Vec::new(vec![nalgebra::Vector3::new(
-                1.0, 2.0, 3.0,
-            )])?),
+            Data::Vector3Vec(Vector3Vec::new(vec![
+                token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0),
+            ])?),
         ));
         assert_eq!(vector3_vec_animated.data_type(), DataType::Vector3Vec);
         assert_eq!(vector3_vec_animated.len(), 1);
@@ -456,7 +462,9 @@ fn from_time_data_vec_types() -> Result<()> {
     // Test Matrix3Vec
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
     {
-        let matrix = nalgebra::Matrix3::new(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0);
+        let matrix = token_value_map::math::mat3_from_row_slice(&[
+            1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+        ]);
         let matrix3_vec_animated = AnimatedData::from((
             Time::from_secs(8.0),
             Data::Matrix3Vec(Matrix3Vec::new(vec![matrix])?),
@@ -499,18 +507,20 @@ fn from_time_data_interpolation_works() -> Result<()> {
 #[test]
 #[cfg(feature = "matrix3")]
 fn matrix3_interpolation_over_time() -> Result<()> {
+    use token_value_map::math::{mat3, mat3_from_row_slice, mat3_identity};
+
     // Test Matrix3 interpolation with identity and rotation matrices.
     let mut matrix3_data = AnimatedData::Matrix3(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
-        Matrix3(nalgebra::Matrix3::identity()),
+        Matrix3(mat3_identity()),
     )]));
 
     // Add a 90-degree rotation matrix around Z axis at t=1.0.
-    let rotation_90 = nalgebra::Matrix3::new(0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    let rotation_90 = mat3_from_row_slice(&[0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]);
     matrix3_data.insert_matrix3(Time::from_secs(1.0), Matrix3(rotation_90))?;
 
     // Add a 180-degree rotation matrix at t=2.0.
-    let rotation_180 = nalgebra::Matrix3::new(-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0);
+    let rotation_180 = mat3_from_row_slice(&[-1.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 1.0]);
     matrix3_data.insert_matrix3(Time::from_secs(2.0), Matrix3(rotation_180))?;
 
     assert_eq!(matrix3_data.len(), 3);
@@ -519,7 +529,7 @@ fn matrix3_interpolation_over_time() -> Result<()> {
     // Test exact samples.
     assert_eq!(
         matrix3_data.sample_at(Time::from_secs(0.0)),
-        Some(Data::Matrix3(Matrix3(nalgebra::Matrix3::identity())))
+        Some(Data::Matrix3(Matrix3(mat3_identity())))
     );
     assert_eq!(
         matrix3_data.sample_at(Time::from_secs(1.0)),
@@ -535,11 +545,11 @@ fn matrix3_interpolation_over_time() -> Result<()> {
     if let Data::Matrix3(Matrix3(mat)) = interpolated {
         // With 3 samples, quadratic interpolation is used.
         // The interpolated values are different from simple linear interpolation.
-        assert!((mat[(0, 0)] - 0.5).abs() < 0.01);
-        assert!((mat[(1, 0)] - 0.75).abs() < 0.01); // Quadratic gives 0.75 not 0.5.
-        assert!((mat[(0, 1)] - (-0.75)).abs() < 0.01); // Quadratic gives -0.75 not -0.5.
-        assert!((mat[(1, 1)] - 0.5).abs() < 0.01);
-        assert!((mat[(2, 2)] - 1.0).abs() < 0.01);
+        assert!((mat3(&mat, 0, 0) - 0.5).abs() < 0.01);
+        assert!((mat3(&mat, 1, 0) - 0.75).abs() < 0.01); // Quadratic gives 0.75 not 0.5.
+        assert!((mat3(&mat, 0, 1) - (-0.75)).abs() < 0.01); // Quadratic gives -0.75 not -0.5.
+        assert!((mat3(&mat, 1, 1) - 0.5).abs() < 0.01);
+        assert!((mat3(&mat, 2, 2) - 1.0).abs() < 0.01);
     } else {
         panic!("Expected Matrix3 data");
     }
@@ -549,11 +559,11 @@ fn matrix3_interpolation_over_time() -> Result<()> {
     if let Data::Matrix3(Matrix3(mat)) = interpolated {
         // With 3 samples, quadratic interpolation is used.
         // Based on quadratic interpolation between rotation matrices.
-        assert!((mat[(0, 0)] - (-0.5)).abs() < 0.01);
-        assert!((mat[(1, 0)] - 0.75).abs() < 0.01); // Quadratic result.
-        assert!((mat[(0, 1)] - (-0.75)).abs() < 0.01); // Quadratic result.
-        assert!((mat[(1, 1)] - (-0.5)).abs() < 0.01);
-        assert!((mat[(2, 2)] - 1.0).abs() < 0.01);
+        assert!((mat3(&mat, 0, 0) - (-0.5)).abs() < 0.01);
+        assert!((mat3(&mat, 1, 0) - 0.75).abs() < 0.01); // Quadratic result.
+        assert!((mat3(&mat, 0, 1) - (-0.75)).abs() < 0.01); // Quadratic result.
+        assert!((mat3(&mat, 1, 1) - (-0.5)).abs() < 0.01);
+        assert!((mat3(&mat, 2, 2) - 1.0).abs() < 0.01);
     } else {
         panic!("Expected Matrix3 data");
     }
@@ -564,22 +574,24 @@ fn matrix3_interpolation_over_time() -> Result<()> {
 #[test]
 #[cfg(feature = "matrix4")]
 fn matrix4_interpolation_over_time() -> Result<()> {
+    use token_value_map::math::{mat4, mat4_from_row_slice, mat4_identity};
+
     // Test Matrix4 interpolation with transformation matrices.
     let mut matrix4_data = AnimatedData::Matrix4(TimeDataMap::from_iter(vec![(
         Time::from_secs(0.0),
-        Matrix4(nalgebra::Matrix4::identity()),
+        Matrix4(mat4_identity()),
     )]));
 
     // Add a translation matrix at t=1.0.
-    let translation = nalgebra::Matrix4::new(
+    let translation = mat4_from_row_slice(&[
         1.0, 0.0, 0.0, 10.0, 0.0, 1.0, 0.0, 20.0, 0.0, 0.0, 1.0, 30.0, 0.0, 0.0, 0.0, 1.0,
-    );
+    ]);
     matrix4_data.insert_matrix4(Time::from_secs(1.0), Matrix4(translation))?;
 
     // Add a scaled translation matrix at t=2.0.
-    let scaled_translation = nalgebra::Matrix4::new(
+    let scaled_translation = mat4_from_row_slice(&[
         2.0, 0.0, 0.0, 20.0, 0.0, 2.0, 0.0, 40.0, 0.0, 0.0, 2.0, 60.0, 0.0, 0.0, 0.0, 1.0,
-    );
+    ]);
     matrix4_data.insert_matrix4(Time::from_secs(2.0), Matrix4(scaled_translation))?;
 
     assert_eq!(matrix4_data.len(), 3);
@@ -588,7 +600,7 @@ fn matrix4_interpolation_over_time() -> Result<()> {
     // Test exact samples.
     assert_eq!(
         matrix4_data.sample_at(Time::from_secs(0.0)),
-        Some(Data::Matrix4(Matrix4(nalgebra::Matrix4::identity())))
+        Some(Data::Matrix4(Matrix4(mat4_identity())))
     );
     assert_eq!(
         matrix4_data.sample_at(Time::from_secs(1.0)),
@@ -604,13 +616,13 @@ fn matrix4_interpolation_over_time() -> Result<()> {
     if let Data::Matrix4(Matrix4(mat)) = interpolated {
         // With 3 samples, quadratic interpolation is used.
         // The scale values are also affected by quadratic interpolation.
-        assert!((mat[(0, 0)] - 0.875).abs() < 0.01); // Quadratic gives 0.875.
-        assert!((mat[(1, 1)] - 0.875).abs() < 0.01);
-        assert!((mat[(2, 2)] - 0.875).abs() < 0.01);
-        assert!((mat[(0, 3)] - 5.0).abs() < 0.01); // Translation X.
-        assert!((mat[(1, 3)] - 10.0).abs() < 0.01); // Translation Y.
-        assert!((mat[(2, 3)] - 15.0).abs() < 0.01); // Translation Z.
-        assert!((mat[(3, 3)] - 1.0).abs() < 0.01);
+        assert!((mat4(&mat, 0, 0) - 0.875).abs() < 0.01); // Quadratic gives 0.875.
+        assert!((mat4(&mat, 1, 1) - 0.875).abs() < 0.01);
+        assert!((mat4(&mat, 2, 2) - 0.875).abs() < 0.01);
+        assert!((mat4(&mat, 0, 3) - 5.0).abs() < 0.01); // Translation X.
+        assert!((mat4(&mat, 1, 3) - 10.0).abs() < 0.01); // Translation Y.
+        assert!((mat4(&mat, 2, 3) - 15.0).abs() < 0.01); // Translation Z.
+        assert!((mat4(&mat, 3, 3) - 1.0).abs() < 0.01);
     } else {
         panic!("Expected Matrix4 data");
     }
@@ -620,13 +632,13 @@ fn matrix4_interpolation_over_time() -> Result<()> {
     if let Data::Matrix4(Matrix4(mat)) = interpolated {
         // With 3 samples, quadratic interpolation is used.
         // The scale values are affected by quadratic interpolation.
-        assert!((mat[(0, 0)] - 1.375).abs() < 0.01); // Quadratic gives 1.375.
-        assert!((mat[(1, 1)] - 1.375).abs() < 0.01);
-        assert!((mat[(2, 2)] - 1.375).abs() < 0.01);
-        assert!((mat[(0, 3)] - 15.0).abs() < 0.01); // Translation X.
-        assert!((mat[(1, 3)] - 30.0).abs() < 0.01); // Translation Y.
-        assert!((mat[(2, 3)] - 45.0).abs() < 0.01); // Translation Z.
-        assert!((mat[(3, 3)] - 1.0).abs() < 0.01);
+        assert!((mat4(&mat, 0, 0) - 1.375).abs() < 0.01); // Quadratic gives 1.375.
+        assert!((mat4(&mat, 1, 1) - 1.375).abs() < 0.01);
+        assert!((mat4(&mat, 2, 2) - 1.375).abs() < 0.01);
+        assert!((mat4(&mat, 0, 3) - 15.0).abs() < 0.01); // Translation X.
+        assert!((mat4(&mat, 1, 3) - 30.0).abs() < 0.01); // Translation Y.
+        assert!((mat4(&mat, 2, 3) - 45.0).abs() < 0.01); // Translation Z.
+        assert!((mat4(&mat, 3, 3) - 1.0).abs() < 0.01);
     } else {
         panic!("Expected Matrix4 data");
     }

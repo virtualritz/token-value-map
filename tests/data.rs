@@ -10,11 +10,11 @@ fn empty_vec_try_from_rejected() {
     assert!(Data::try_from(Vec::<&str>::new()).is_err());
     assert!(Data::try_from(Vec::<[f32; 4]>::new()).is_err());
     #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-    assert!(Data::try_from(Vec::<nalgebra::Vector2<f32>>::new()).is_err());
+    assert!(Data::try_from(Vec::<token_value_map::math::Vec2Impl>::new()).is_err());
     #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-    assert!(Data::try_from(Vec::<nalgebra::Vector3<f32>>::new()).is_err());
+    assert!(Data::try_from(Vec::<token_value_map::math::Vec3Impl>::new()).is_err());
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-    assert!(Data::try_from(Vec::<nalgebra::Matrix3<f32>>::new()).is_err());
+    assert!(Data::try_from(Vec::<token_value_map::math::Mat3Impl>::new()).is_err());
 }
 
 #[test]
@@ -27,11 +27,11 @@ fn non_empty_vec_try_from_accepted() {
     assert!(Data::try_from(vec!["test"]).is_ok());
     assert!(Data::try_from(vec![[1.0f32, 0.0, 0.0, 1.0]]).is_ok());
     #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-    assert!(Data::try_from(vec![nalgebra::Vector2::new(1.0f32, 2.0)]).is_ok());
+    assert!(Data::try_from(vec![token_value_map::math::Vec2Impl::new(1.0f32, 2.0)]).is_ok());
     #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-    assert!(Data::try_from(vec![nalgebra::Vector3::new(1.0f32, 2.0, 3.0)]).is_ok());
+    assert!(Data::try_from(vec![token_value_map::math::Vec3Impl::new(1.0f32, 2.0, 3.0)]).is_ok());
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-    assert!(Data::try_from(vec![nalgebra::Matrix3::identity()]).is_ok());
+    assert!(Data::try_from(vec![token_value_map::math::mat3_identity()]).is_ok());
 }
 
 #[test]

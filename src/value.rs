@@ -14,6 +14,7 @@ type BracketSample = (Option<(Time, Data)>, Option<(Time, Data)>);
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "facet", repr(u8))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum Value {
     /// A constant value that does not change over time.
     Uniform(Data),
@@ -483,6 +484,21 @@ impl Value {
         }
     }
 
+    /// Set the interpolation type at a given time.
+    ///
+    /// Returns an error for uniform values or non-scalar types.
+    #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+    pub fn set_keyframe_type(
+        &mut self,
+        time: &Time,
+        keyframe_type: egui_keyframe::KeyframeType,
+    ) -> Result<()> {
+        match self {
+            Value::Uniform(_) => Err(Error::InterpolationOnUniform),
+            Value::Animated(samples) => samples.set_keyframe_type(time, keyframe_type),
+        }
+    }
+
     /// Merge this value with another using a combiner function.
     ///
     /// For uniform values, applies the combiner once.
@@ -636,8 +652,8 @@ mod tests {
     #[test]
     fn test_matrix_merge_uniform() {
         // Create two uniform matrices
-        let m1 = nalgebra::Matrix3::new(2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0); // Scale by 2
-        let m2 = nalgebra::Matrix3::new(1.0, 0.0, 10.0, 0.0, 1.0, 20.0, 0.0, 0.0, 1.0); // Translate by (10, 20)
+        let m1 = crate::math::mat3_from_row_slice(&[2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0]); // Scale by 2
+        let m2 = crate::math::mat3_from_row_slice(&[1.0, 0.0, 10.0, 0.0, 1.0, 20.0, 0.0, 0.0, 1.0]); // Translate by (10, 20)
 
         let v1 = Value::uniform(m1);
         let v2 = Value::uniform(m2);
@@ -665,8 +681,10 @@ mod tests {
         use frame_tick::Tick;
 
         // Create first animated matrix (rotation)
-        let m1_t0 = nalgebra::Matrix3::identity();
-        let m1_t10 = nalgebra::Matrix3::new(0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0); // 90 degree rotation
+        let m1_t0 =
+            crate::math::mat3_from_row_slice(&[1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]); // Identity
+        let m1_t10 =
+            crate::math::mat3_from_row_slice(&[0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]); // 90 degree rotation
 
         let v1 = Value::animated([
             (Tick::from_secs(0.0), m1_t0),
@@ -675,8 +693,10 @@ mod tests {
         .unwrap();
 
         // Create second animated matrix (scale)
-        let m2_t5 = nalgebra::Matrix3::new(2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0);
-        let m2_t15 = nalgebra::Matrix3::new(3.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 1.0);
+        let m2_t5 =
+            crate::math::mat3_from_row_slice(&[2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.0]);
+        let m2_t15 =
+            crate::math::mat3_from_row_slice(&[3.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 1.0]);
 
         let v2 = Value::animated([
             (Tick::from_secs(5.0), m2_t5),
