@@ -21,6 +21,7 @@ use std::hash::Hasher;
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "facet", repr(u8))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum AnimatedData {
     /// Animated boolean values.
     Boolean(TimeDataMap<Boolean>),
@@ -151,29 +152,51 @@ impl AnimatedData {
         time: &Time,
         keyframe_type: egui_keyframe::KeyframeType,
     ) -> Result<()> {
-        use crate::interpolation::{BezierHandle, Interpolation, Key};
+        use crate::interpolation::{Interpolation, Key};
 
-        let key = match keyframe_type {
-            egui_keyframe::KeyframeType::Hold => Key {
-                interpolation_in: Interpolation::Hold,
-                interpolation_out: Interpolation::Hold,
+        match keyframe_type {
+            egui_keyframe::KeyframeType::Hold => match self {
+                AnimatedData::Real(map) => map.set_interpolation_at(
+                    time,
+                    Key {
+                        interpolation_in: Interpolation::Hold,
+                        interpolation_out: Interpolation::Hold,
+                    },
+                ),
+                AnimatedData::Integer(map) => map.set_interpolation_at(
+                    time,
+                    Key {
+                        interpolation_in: Interpolation::Hold,
+                        interpolation_out: Interpolation::Hold,
+                    },
+                ),
+                _ => Err(Error::BezierNotSupported {
+                    got: self.data_type(),
+                }),
             },
-            egui_keyframe::KeyframeType::Linear => Key {
-                interpolation_in: Interpolation::Linear,
-                interpolation_out: Interpolation::Linear,
+            egui_keyframe::KeyframeType::Linear => match self {
+                AnimatedData::Real(map) => map.set_interpolation_at(
+                    time,
+                    Key {
+                        interpolation_in: Interpolation::Linear,
+                        interpolation_out: Interpolation::Linear,
+                    },
+                ),
+                AnimatedData::Integer(map) => map.set_interpolation_at(
+                    time,
+                    Key {
+                        interpolation_in: Interpolation::Linear,
+                        interpolation_out: Interpolation::Linear,
+                    },
+                ),
+                _ => Err(Error::BezierNotSupported {
+                    got: self.data_type(),
+                }),
             },
             egui_keyframe::KeyframeType::Bezier => {
                 // Default bezier handles (smooth curve)
-                return self.set_bezier_handles(time, egui_keyframe::BezierHandles::default());
+                self.set_bezier_handles(time, egui_keyframe::BezierHandles::default())
             }
-        };
-
-        match self {
-            AnimatedData::Real(map) => map.set_interpolation_at(time, key),
-            AnimatedData::Integer(map) => map.set_interpolation_at(time, key),
-            _ => Err(Error::BezierNotSupported {
-                got: self.data_type(),
-            }),
         }
     }
 }
@@ -474,7 +497,7 @@ impl AnimatedData {
             AnimatedData::Integer(map) => map.get(&time).map(|v| Data::Integer(v.clone())),
             AnimatedData::Real(map) => map.get(&time).map(|v| Data::Real(v.clone())),
             AnimatedData::String(map) => map.get(&time).map(|v| Data::String(v.clone())),
-            AnimatedData::Color(map) => map.get(&time).map(|v| Data::Color(v.clone())),
+            AnimatedData::Color(map) => map.get(&time).map(|v| Data::Color(*v)),
             #[cfg(feature = "vector2")]
             AnimatedData::Vector2(map) => map.get(&time).map(|v| Data::Vector2(v.clone())),
             #[cfg(feature = "vector3")]
@@ -529,7 +552,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Color(map.interpolate(time))
                 } else {
-                    Data::Color(map.iter().next().unwrap().1.clone())
+                    Data::Color(*map.iter().next().unwrap().1)
                 }
             }
             #[cfg(feature = "vector2")]
@@ -735,12 +758,16 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec2_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec2_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -750,12 +777,16 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -765,12 +796,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -780,12 +811,16 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::vec3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -795,12 +830,16 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.coords.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::point3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.coords.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::point3_as_slice(&value.0)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -810,12 +849,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in &map.values {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
                 }
             }
@@ -905,7 +944,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec2_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -913,7 +954,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec2_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -926,7 +969,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec3_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -934,7 +979,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec3_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -947,7 +994,7 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
-                        m.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::mat3_iter(m).for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -955,7 +1002,7 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
-                        m.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::mat3_iter(m).for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -968,7 +1015,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec3_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -976,7 +1025,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
-                        v.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::vec3_as_slice(v)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -989,7 +1040,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|p| {
-                        p.coords.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::point3_as_slice(p)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -997,7 +1050,9 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|p| {
-                        p.coords.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::point3_as_slice(p)
+                            .iter()
+                            .for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -1010,7 +1065,7 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
-                        m.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::mat4_iter(m).for_each(|f| f.to_bits().hash(state));
                     });
                 }
                 #[cfg(feature = "interpolation")]
@@ -1018,7 +1073,7 @@ impl Hash for AnimatedData {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
-                        m.iter().for_each(|f| f.to_bits().hash(state));
+                        crate::math::mat4_iter(m).for_each(|f| f.to_bits().hash(state));
                     });
                     spec.hash(state);
                 }
@@ -1081,5 +1136,54 @@ impl AnimatedData {
                 sample.hash(state);
             }
         }
+    }
+}
+
+// Implement AnimatedDataSystem trait for the built-in AnimatedData type.
+impl crate::traits::AnimatedDataSystem for AnimatedData {
+    type Data = Data;
+
+    fn keyframe_count(&self) -> usize {
+        AnimatedDataOps::len(self)
+    }
+
+    fn is_keyframes_empty(&self) -> bool {
+        AnimatedDataOps::is_empty(self)
+    }
+
+    fn has_animation(&self) -> bool {
+        AnimatedDataOps::is_animated(self)
+    }
+
+    fn times(&self) -> SmallVec<[Time; 10]> {
+        AnimatedData::times(self)
+    }
+
+    fn interpolate(&self, time: Time) -> Data {
+        AnimatedData::interpolate(self, time)
+    }
+
+    fn sample_at(&self, time: Time) -> Option<Data> {
+        AnimatedData::sample_at(self, time)
+    }
+
+    fn try_insert(&mut self, time: Time, value: Data) -> Result<()> {
+        AnimatedData::try_insert(self, time, value)
+    }
+
+    fn remove_at(&mut self, time: &Time) -> Option<Data> {
+        AnimatedData::remove_at(self, time)
+    }
+
+    fn discriminant(&self) -> DataType {
+        DataTypeOps::data_type(self)
+    }
+
+    fn from_single(time: Time, value: Data) -> Self {
+        AnimatedData::from((time, value))
+    }
+
+    fn variant_name(&self) -> &'static str {
+        DataTypeOps::type_name(self)
     }
 }

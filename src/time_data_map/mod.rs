@@ -26,6 +26,7 @@ pub use sample::*;
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct TimeDataMap<T> {
     /// The time-value pairs with optional interpolation keys.
     #[cfg(not(feature = "interpolation"))]
@@ -127,15 +128,16 @@ impl<T> TimeDataMapControl<T> for TimeDataMap<T> {
     }
 
     fn is_animated(&self) -> bool {
-        1 < self.values.len()
+        self.values.len() > 1
     }
 }
 
+#[cfg(feature = "builtin-types")]
 impl<T> crate::DataTypeOps for TimeDataMap<T>
 where
     T: crate::DataTypeOps,
 {
-    fn data_type(&self) -> DataType {
+    fn data_type(&self) -> crate::DataType {
         // Use the first element to determine the type, or return a default if empty.
         #[cfg(not(feature = "interpolation"))]
         {
@@ -176,6 +178,8 @@ where
     }
 }
 
+// AIDEV-NOTE: These From impls are only available with builtin-types feature.
+#[cfg(feature = "builtin-types")]
 macro_rules! impl_from_at_time {
     ($($t:ty),+) => {
         $(
@@ -188,35 +192,60 @@ macro_rules! impl_from_at_time {
     };
 }
 
+#[cfg(feature = "builtin-types")]
 impl_from_at_time!(
     Boolean, Real, Integer, String, Color, BooleanVec, RealVec, IntegerVec, StringVec, ColorVec,
     Data
 );
 
-#[cfg(feature = "vector2")]
+#[cfg(all(feature = "builtin-types", feature = "vector2"))]
 impl_from_at_time!(Vector2);
-#[cfg(feature = "vector3")]
+#[cfg(all(feature = "builtin-types", feature = "vector3"))]
 impl_from_at_time!(Vector3);
-#[cfg(feature = "matrix3")]
+#[cfg(all(feature = "builtin-types", feature = "matrix3"))]
 impl_from_at_time!(Matrix3);
-#[cfg(feature = "normal3")]
+#[cfg(all(feature = "builtin-types", feature = "normal3"))]
 impl_from_at_time!(Normal3);
-#[cfg(feature = "point3")]
+#[cfg(all(feature = "builtin-types", feature = "point3"))]
 impl_from_at_time!(Point3);
-#[cfg(feature = "matrix4")]
+#[cfg(all(feature = "builtin-types", feature = "matrix4"))]
 impl_from_at_time!(Matrix4);
 
-#[cfg(all(feature = "vector2", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "vector2",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Vector2Vec);
-#[cfg(all(feature = "vector3", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "vector3",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Vector3Vec);
-#[cfg(all(feature = "matrix3", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "matrix3",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Matrix3Vec);
-#[cfg(all(feature = "normal3", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "normal3",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Normal3Vec);
-#[cfg(all(feature = "point3", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "point3",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Point3Vec);
-#[cfg(all(feature = "matrix4", feature = "vec_variants"))]
+#[cfg(all(
+    feature = "builtin-types",
+    feature = "matrix4",
+    feature = "vec_variants"
+))]
 impl_from_at_time!(Matrix4Vec);
 
 impl<T> TimeDataMap<T> {
@@ -458,12 +487,73 @@ impl<T> TimeDataMap<T> {
     }
 }
 
+// AIDEV-NOTE: Internal types for backend-agnostic Matrix3 SVD decomposition.
+// These implement the arithmetic traits needed by the generic `interpolate()`
+// function, avoiding any dependency on a specific math backend for SVD compute.
+// The analytical 2×2 SVD replaces the previous nalgebra-dependent implementation.
+
+/// Internal 2D translation extracted from a 3×3 homogeneous matrix.
+#[cfg(feature = "matrix3")]
+#[derive(Clone)]
+struct Trans2(f32, f32);
+
+#[cfg(feature = "matrix3")]
+impl Add for Trans2 {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Trans2(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Sub for Trans2 {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Trans2(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<f32> for Trans2 {
+    type Output = Self;
+    fn mul(self, s: f32) -> Self {
+        Trans2(self.0 * s, self.1 * s)
+    }
+}
+
+/// Internal diagonal stretch (singular values) for decomposed 3×3 matrices.
+#[cfg(feature = "matrix3")]
+#[derive(Clone)]
+struct DiagStretch(f32, f32);
+
+#[cfg(feature = "matrix3")]
+impl Add for DiagStretch {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        DiagStretch(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Sub for DiagStretch {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        DiagStretch(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+#[cfg(feature = "matrix3")]
+impl Mul<f32> for DiagStretch {
+    type Output = Self;
+    fn mul(self, s: f32) -> Self {
+        DiagStretch(self.0 * s, self.1 * s)
+    }
+}
+
+/// Interpolate 2D rotation angles via shortest-path slerp across a [`BTreeMap`].
 #[cfg(feature = "matrix3")]
 #[inline(always)]
-pub(crate) fn interpolate_spherical_linear(
-    map: &BTreeMap<Time, nalgebra::Rotation2<f32>>,
-    time: Time,
-) -> nalgebra::Rotation2<f32> {
+fn interpolate_rotation(map: &BTreeMap<Time, f32>, time: Time) -> f32 {
     if map.len() == 1 {
         return *map.values().next().unwrap();
     }
@@ -482,13 +572,23 @@ pub(crate) fn interpolate_spherical_linear(
     let lower = map.range(..=time).next_back().unwrap();
     let upper = map.range(time..).next().unwrap();
 
-    let (t0, r0): (f32, _) = (lower.0.into(), lower.1);
-    let (t1, r1): (f32, _) = (upper.0.into(), upper.1);
+    let t0 = f32::from(*lower.0);
+    let t1 = f32::from(*upper.0);
+    let a0 = *lower.1;
+    let a1 = *upper.1;
 
-    // Normalize `t`.
+    // Normalize `t` to [0, 1].
     let t: f32 = (f32::from(time) - t0) / (t1 - t0);
 
-    r0.slerp(r1, t)
+    // Shortest-path angle interpolation.
+    use std::f32::consts::{PI, TAU};
+    let mut diff = a1 - a0;
+    if diff > PI {
+        diff -= TAU;
+    } else if diff < -PI {
+        diff += TAU;
+    }
+    a0 + diff * t
 }
 
 // AIDEV-NOTE: Helper functions for converting BezierHandle variants to slopes and evaluating mixed interpolation modes.
@@ -911,55 +1011,69 @@ where
     params.p1.clone() * h00 + m1 * h10 + params.p2.clone() * h01 + m2 * h11
 }
 
+/// Analytical 2×2 SVD decomposition of a 3×3 homogeneous matrix.
+///
+/// Extracts translation, rotation angle (radians), and diagonal stretch
+/// (singular values) without depending on any specific math backend.
 #[cfg(feature = "matrix3")]
 #[inline(always)]
-fn decompose_matrix(
-    matrix: &nalgebra::Matrix3<f32>,
-) -> (
-    nalgebra::Vector2<f32>,
-    nalgebra::Rotation2<f32>,
-    nalgebra::Matrix3<f32>,
-) {
-    // Extract translation (assuming the matrix is in homogeneous coordinates).
-    let translation = nalgebra::Vector2::new(matrix[(0, 2)], matrix[(1, 2)]);
+fn decompose_matrix(matrix: &crate::math::Mat3Impl) -> (Trans2, f32, DiagStretch) {
+    use crate::math::mat3;
 
-    // Extract the linear part (upper-left 2x2 matrix).
-    let linear_part = matrix.fixed_view::<2, 2>(0, 0).into_owned();
+    // Extract translation from the last column.
+    let tx = mat3(matrix, 0, 2);
+    let ty = mat3(matrix, 1, 2);
 
-    // Perform Singular Value Decomposition (SVD) to separate rotation and
-    // stretch.
-    let svd = nalgebra::SVD::new(linear_part, true, true);
-    let rotation = nalgebra::Rotation2::from_matrix(&svd.u.unwrap().into_owned());
+    // Upper-left 2×2 linear block.
+    let a = mat3(matrix, 0, 0);
+    let b = mat3(matrix, 0, 1);
+    let c = mat3(matrix, 1, 0);
+    let d = mat3(matrix, 1, 1);
 
-    // Construct the stretch matrix from singular values.
-    let singular_values = svd.singular_values;
-    let stretch = nalgebra::Matrix3::new(
-        singular_values[0],
-        0.0,
-        0.0,
-        0.0,
-        singular_values[1],
-        0.0,
-        0.0,
-        0.0,
-        1.0, // Homogeneous coordinate
-    );
+    // Analytical 2×2 SVD: M = Rot(θ) × diag(σ₁, σ₂) × Rot(-φ).
+    let e = (a + d) * 0.5;
+    let f = (a - d) * 0.5;
+    let g = (c + b) * 0.5;
+    let h = (c - b) * 0.5;
 
-    (translation, rotation, stretch)
+    let q = (e * e + h * h).sqrt();
+    let r = (f * f + g * g).sqrt();
+
+    let s1 = q + r;
+    let s2 = q - r;
+
+    let theta1 = g.atan2(f);
+    let theta2 = h.atan2(e);
+
+    // U rotation angle.
+    let rotation_angle = (theta2 + theta1) * 0.5;
+
+    (Trans2(tx, ty), rotation_angle, DiagStretch(s1, s2))
 }
 
+/// Recompose a 3×3 homogeneous matrix from its decomposed parts.
+///
+/// Constructs `Rot(angle) × diag(sx, sy, 1)` with translation in the last column.
 #[cfg(feature = "matrix3")]
 #[inline(always)]
 fn recompose_matrix(
-    translation: nalgebra::Vector2<f32>,
-    rotation: nalgebra::Rotation2<f32>,
-    stretch: nalgebra::Matrix3<f32>,
-) -> nalgebra::Matrix3<f32> {
-    let rotation = rotation.to_homogeneous();
-    let mut combined_linear = rotation * stretch;
+    translation: Trans2,
+    rotation_angle: f32,
+    stretch: DiagStretch,
+) -> crate::math::Mat3Impl {
+    let cos = rotation_angle.cos();
+    let sin = rotation_angle.sin();
 
-    combined_linear[(0, 2)] = translation.x;
-    combined_linear[(1, 2)] = translation.y;
-
-    combined_linear
+    // Rot(θ) × diag(sx, sy, 1) in column-major layout.
+    crate::math::mat3_from_column_slice(&[
+        stretch.0 * cos,
+        stretch.0 * sin,
+        0.0,
+        -stretch.1 * sin,
+        stretch.1 * cos,
+        0.0,
+        translation.0,
+        translation.1,
+        1.0,
+    ])
 }

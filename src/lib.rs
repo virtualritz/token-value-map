@@ -50,50 +50,88 @@
 
 #[cfg(feature = "facet")]
 use facet::Facet;
+#[cfg(feature = "builtin-types")]
 use function_name::named;
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use smallvec::SmallVec;
-use std::{
-    fmt::Debug,
-    hash::{Hash, Hasher},
-};
+use std::fmt::Debug;
+use std::hash::Hash;
+#[cfg(feature = "builtin-types")]
+use std::hash::Hasher;
 
+// Internal macro module.
+#[cfg(feature = "builtin-types")]
 mod macros;
+#[cfg(feature = "builtin-types")]
 use macros::impl_sample_for_value;
 
+// Math backend abstraction.
+#[cfg(feature = "builtin-types")]
+pub mod math;
+
+// Built-in types (feature-gated).
+#[cfg(feature = "builtin-types")]
 mod animated_data;
+#[cfg(feature = "builtin-types")]
 mod data;
+#[cfg(feature = "builtin-types")]
 mod data_types;
+#[cfg(feature = "builtin-types")]
+mod token_value_map;
+#[cfg(feature = "builtin-types")]
+mod value;
+
+// Generic types (always available).
+mod define_data_macro;
+mod generic_token_value_map;
+mod generic_value;
+mod traits;
+
+// Other modules.
 #[cfg(feature = "egui-keyframe")]
 mod egui_keyframe_integration;
 mod error;
 #[cfg(feature = "interpolation")]
 mod interpolation;
-#[cfg(feature = "lua")]
+#[cfg(all(feature = "lua", feature = "builtin-types"))]
 mod lua;
 mod shutter;
 mod time_data_map;
-mod token_value_map;
-mod value;
 
+// Re-exports: built-in types (feature-gated).
+#[cfg(feature = "builtin-types")]
 pub use animated_data::*;
+#[cfg(feature = "builtin-types")]
 pub use data::*;
+#[cfg(feature = "builtin-types")]
 pub use data_types::*;
+#[cfg(feature = "builtin-types")]
+pub use token_value_map::*;
+#[cfg(feature = "builtin-types")]
+pub use value::*;
+
+// Re-exports: always available.
 pub use error::*;
+pub use generic_token_value_map::*;
+pub use generic_value::*;
 #[cfg(feature = "interpolation")]
 pub use interpolation::*;
-#[cfg(feature = "lua")]
+#[cfg(all(feature = "lua", feature = "builtin-types"))]
 pub use lua::*;
 pub use shutter::*;
 pub use time_data_map::*;
-pub use token_value_map::*;
-pub use value::*;
+pub use traits::*;
 
 /// A time value represented as a fixed-point [`Tick`](frame_tick::Tick).
 pub type Time = frame_tick::Tick;
 
 /// Trait for getting data type information.
+///
+/// This trait is only available with the `builtin-types` feature.
+#[cfg(feature = "builtin-types")]
 pub trait DataTypeOps {
     /// Returns the [`DataType`] variant for this value.
     fn data_type(&self) -> DataType;
@@ -101,6 +139,7 @@ pub trait DataTypeOps {
     fn type_name(&self) -> &'static str;
 }
 
+#[cfg(feature = "builtin-types")]
 impl DataTypeOps for Value {
     fn data_type(&self) -> DataType {
         match self {

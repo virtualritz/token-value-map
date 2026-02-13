@@ -2,8 +2,15 @@
 //!
 //! This module provides implementations of egui-keyframe traits for
 //! token-value-map types, enabling zero-copy animation curve editing.
+//!
+//! # Generic Support
+//!
+//! For custom data systems, implement [`ToF32`](crate::ToF32) on your data enum
+//! to enable [`KeyframeSource`] for [`GenericValue<D>`](crate::GenericValue).
 
-use crate::{Data, Time, Value};
+use crate::{AnimatedDataSystem, DataSystem, GenericValue, Time, ToF32};
+#[cfg(feature = "builtin-types")]
+use crate::{Data, Value};
 use egui_keyframe::{
     BezierHandles, KeyframeId, KeyframeSource, KeyframeType, KeyframeView, TimeTick, uuid,
 };
@@ -25,14 +32,111 @@ fn time_to_timetick(time: Time) -> TimeTick {
 /// Convert Data to f32 for curve display.
 ///
 /// Returns None for non-numeric types (String, Color, Vector, etc.)
+#[cfg(feature = "builtin-types")]
 fn data_to_f32(data: &Data) -> Option<f32> {
     data.to_f32().ok()
+}
+
+// AIDEV-NOTE: Generic KeyframeSource implementation for custom data systems.
+// Users must implement ToF32 on their data enum to enable this.
+
+/// Implementation of [`KeyframeSource`] for [`GenericValue<D>`].
+///
+/// This allows custom data systems to be used with the egui-keyframe CurveEditor.
+/// Your data type `D` must implement [`ToF32`](crate::ToF32) to convert values
+/// to f32 for curve display.
+impl<D> KeyframeSource for GenericValue<D>
+where
+    D: DataSystem + ToF32,
+{
+    fn keyframes_sorted(&self) -> Vec<KeyframeView> {
+        match self {
+            GenericValue::Uniform(data) => {
+                if let Some(value) = data.to_f32() {
+                    vec![KeyframeView::new(
+                        time_to_keyframe_id(Time::from_secs(0.0)),
+                        TimeTick::new(0.0),
+                        value,
+                        BezierHandles::linear(),
+                        true,
+                        KeyframeType::Linear,
+                    )]
+                } else {
+                    vec![]
+                }
+            }
+            GenericValue::Animated(animated) => {
+                let times = animated.times();
+                let mut keyframes: Vec<_> = times
+                    .into_iter()
+                    .filter_map(|time| {
+                        let data = animated.sample_at(time)?;
+                        let value = data.to_f32()?;
+
+                        Some(KeyframeView::new(
+                            time_to_keyframe_id(time),
+                            time_to_timetick(time),
+                            value,
+                            BezierHandles::linear(),
+                            true,
+                            KeyframeType::Linear,
+                        ))
+                    })
+                    .collect();
+
+                keyframes.sort_by(|a, b| {
+                    a.position
+                        .partial_cmp(&b.position)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                });
+
+                keyframes
+            }
+        }
+    }
+
+    fn value_range(&self) -> Option<(f32, f32)> {
+        match self {
+            GenericValue::Uniform(data) => {
+                let value = data.to_f32()?;
+                Some((value, value))
+            }
+            GenericValue::Animated(animated) => {
+                let times = animated.times();
+                if times.is_empty() {
+                    return None;
+                }
+
+                let mut min = f32::MAX;
+                let mut max = f32::MIN;
+
+                for time in times {
+                    if let Some(data) = animated.sample_at(time)
+                        && let Some(value) = data.to_f32()
+                    {
+                        min = min.min(value);
+                        max = max.max(value);
+                    }
+                }
+
+                if min > max { None } else { Some((min, max)) }
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        match self {
+            GenericValue::Uniform(_) => 1,
+            GenericValue::Animated(animated) => animated.times().len(),
+        }
+    }
 }
 
 /// Implementation of KeyframeSource for Value.
 ///
 /// This allows ParameterValue (which wraps Value) to be used directly
 /// with the CurveEditor without copying to an intermediate Track<f32>.
+#[cfg(feature = "builtin-types")]
 impl KeyframeSource for Value {
     fn keyframes_sorted(&self) -> Vec<KeyframeView> {
         match self {
@@ -142,7 +246,7 @@ impl KeyframeSource for Value {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "builtin-types"))]
 mod tests {
     use super::*;
     use crate::Real;

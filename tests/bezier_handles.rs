@@ -637,7 +637,7 @@ mod mixed_modes {
 #[cfg(all(feature = "interpolation", feature = "vector3"))]
 mod vector_interpolation {
     use super::*;
-    use nalgebra::Vector3 as NVector3;
+    use token_value_map::math::Vec3Impl as NVector3;
 
     #[test]
     fn vector_with_slope_per_second() {

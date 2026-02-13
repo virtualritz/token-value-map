@@ -19,11 +19,12 @@ use std::{
 /// [`Matrix3`]), and collections of these types ([`BooleanVec`],
 /// [`IntegerVec`], etc.).
 #[derive(Debug, Clone, PartialEq, strum::AsRefStr, strum::EnumDiscriminants)]
-#[strum_discriminants(name(DataType))]
+#[strum_discriminants(name(DataType), derive(Hash))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "facet", repr(u8))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum Data {
     /// A boolean value.
     Boolean(Boolean),
@@ -208,7 +209,7 @@ impl Data {
         match self {
             Data::RealVec(value) => Ok(value.0.as_slice()),
             #[cfg(feature = "matrix4")]
-            Data::Matrix4(value) => Ok(value.0.as_slice()),
+            Data::Matrix4(value) => Ok(crate::math::mat4_as_slice(&value.0)),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             Data::Matrix4Vec(value) => {
                 // Convert Vec<nalgebra::Matrix4<f64>> to &[f64]
@@ -226,15 +227,15 @@ impl Data {
         match self {
             Data::Color(value) => Ok(value.0.as_slice()),
             #[cfg(feature = "vector2")]
-            Data::Vector2(value) => Ok(value.0.as_slice()),
+            Data::Vector2(value) => Ok(crate::math::vec2_as_slice(&value.0)),
             #[cfg(feature = "vector3")]
-            Data::Vector3(value) => Ok(value.0.as_slice()),
+            Data::Vector3(value) => Ok(crate::math::vec3_as_slice(&value.0)),
             #[cfg(feature = "matrix3")]
-            Data::Matrix3(value) => Ok(value.0.as_slice()),
+            Data::Matrix3(value) => Ok(crate::math::mat3_as_slice(&value.0)),
             #[cfg(feature = "normal3")]
-            Data::Normal3(value) => Ok(value.0.as_slice()),
+            Data::Normal3(value) => Ok(crate::math::vec3_as_slice(&value.0)),
             #[cfg(feature = "point3")]
-            Data::Point3(value) => Ok(value.0.coords.as_slice()),
+            Data::Point3(value) => Ok(crate::math::point3_as_slice(&value.0)),
             Data::ColorVec(value) => Ok(cast_slice(value.0.as_slice())),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             Data::Vector2Vec(value) => {
@@ -283,7 +284,7 @@ impl Data {
     pub fn as_vector2_ref(&self) -> Result<&[f32; 2]> {
         match self {
             #[cfg(feature = "vector2")]
-            Data::Vector2(value) => Ok(value.0.as_ref()),
+            Data::Vector2(value) => Ok(math::vec2_as_ref(&value.0)),
             _ => Err(Error::IncompatibleType {
                 method: function_name!(),
                 got: self.data_type(),
@@ -295,7 +296,7 @@ impl Data {
     pub fn as_vector3_ref(&self) -> Result<&[f32; 3]> {
         match self {
             #[cfg(feature = "vector3")]
-            Data::Vector3(value) => Ok(value.0.as_ref()),
+            Data::Vector3(value) => Ok(math::vec3_as_ref(&value.0)),
             _ => Err(Error::IncompatibleType {
                 method: function_name!(),
                 got: self.data_type(),
@@ -334,7 +335,7 @@ impl Data {
     #[cfg(feature = "normal3")]
     pub fn as_normal3_ref(&self) -> Result<&[f32; 3]> {
         match self {
-            Data::Normal3(value) => Ok(value.0.as_ref()),
+            Data::Normal3(value) => Ok(math::vec3_as_ref(&value.0)),
             _ => Err(Error::IncompatibleType {
                 method: function_name!(),
                 got: self.data_type(),
@@ -346,7 +347,7 @@ impl Data {
     #[cfg(feature = "point3")]
     pub fn as_point3_ref(&self) -> Result<&[f32; 3]> {
         match self {
-            Data::Point3(value) => Ok(value.0.coords.as_ref()),
+            Data::Point3(value) => Ok(crate::math::point3_as_ref(&value.0)),
             _ => Err(Error::IncompatibleType {
                 method: function_name!(),
                 got: self.data_type(),
@@ -449,14 +450,14 @@ impl From<[f32; 3]> for Data {
 impl From<[[f32; 3]; 3]> for Data {
     fn from(v: [[f32; 3]; 3]) -> Self {
         let arr: [f32; 9] = cast(v);
-        Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(&arr)))
+        Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&arr)))
     }
 }
 
 #[cfg(feature = "matrix3")]
 impl From<[f32; 9]> for Data {
     fn from(v: [f32; 9]) -> Self {
-        Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(&v)))
+        Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&v)))
     }
 }
 
@@ -466,24 +467,24 @@ impl From<[f32; 4]> for Data {
     }
 }
 
-// From implementations for nalgebra types
+// From implementations for math backend types.
 #[cfg(feature = "vector2")]
-impl From<nalgebra::Vector2<f32>> for Data {
-    fn from(v: nalgebra::Vector2<f32>) -> Self {
+impl From<crate::math::Vec2Impl> for Data {
+    fn from(v: crate::math::Vec2Impl) -> Self {
         Data::Vector2(Vector2(v))
     }
 }
 
 #[cfg(feature = "vector3")]
-impl From<nalgebra::Vector3<f32>> for Data {
-    fn from(v: nalgebra::Vector3<f32>) -> Self {
+impl From<crate::math::Vec3Impl> for Data {
+    fn from(v: crate::math::Vec3Impl) -> Self {
         Data::Vector3(Vector3(v))
     }
 }
 
 #[cfg(feature = "matrix3")]
-impl From<nalgebra::Matrix3<f32>> for Data {
-    fn from(v: nalgebra::Matrix3<f32>) -> Self {
+impl From<crate::math::Mat3Impl> for Data {
+    fn from(v: crate::math::Mat3Impl) -> Self {
         Data::Matrix3(Matrix3(v))
     }
 }
@@ -531,28 +532,28 @@ impl TryFrom<Vec<[f32; 4]>> for Data {
 }
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-impl TryFrom<Vec<nalgebra::Vector2<f32>>> for Data {
+impl TryFrom<Vec<crate::math::Vec2Impl>> for Data {
     type Error = Error;
 
-    fn try_from(v: Vec<nalgebra::Vector2<f32>>) -> Result<Self> {
+    fn try_from(v: Vec<crate::math::Vec2Impl>) -> Result<Self> {
         Ok(Data::Vector2Vec(Vector2Vec::new(v)?))
     }
 }
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-impl TryFrom<Vec<nalgebra::Vector3<f32>>> for Data {
+impl TryFrom<Vec<crate::math::Vec3Impl>> for Data {
     type Error = Error;
 
-    fn try_from(v: Vec<nalgebra::Vector3<f32>>) -> Result<Self> {
+    fn try_from(v: Vec<crate::math::Vec3Impl>) -> Result<Self> {
         Ok(Data::Vector3Vec(Vector3Vec::new(v)?))
     }
 }
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-impl TryFrom<Vec<nalgebra::Matrix3<f32>>> for Data {
+impl TryFrom<Vec<crate::math::Mat3Impl>> for Data {
     type Error = Error;
 
-    fn try_from(v: Vec<nalgebra::Matrix3<f32>>) -> Result<Self> {
+    fn try_from(v: Vec<crate::math::Mat3Impl>) -> Result<Self> {
         Ok(Data::Matrix3Vec(Matrix3Vec::new(v)?))
     }
 }
@@ -618,11 +619,11 @@ impl_try_from_value!(f64, Real);
 impl_try_from_value!(std::string::String, String);
 impl_try_from_value!([f32; 4], Color);
 #[cfg(feature = "vector2")]
-impl_try_from_value!(nalgebra::Vector2<f32>, Vector2);
+impl_try_from_value!(crate::math::Vec2Impl, Vector2);
 #[cfg(feature = "vector3")]
-impl_try_from_value!(nalgebra::Vector3<f32>, Vector3);
+impl_try_from_value!(crate::math::Vec3Impl, Vector3);
 #[cfg(feature = "matrix3")]
-impl_try_from_value!(nalgebra::Matrix3<f32>, Matrix3);
+impl_try_from_value!(crate::math::Mat3Impl, Matrix3);
 
 // TryFrom implementations for Vec types using macro
 impl_try_from_vec!(
@@ -635,17 +636,17 @@ impl_try_from_vec!(
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 impl_try_from_vec!(
-    nalgebra::Vector2<f32>, Vector2Vec, "Vector2<f32>";
+    crate::math::Vec2Impl, Vector2Vec, "Vector2<f32>";
 );
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
 impl_try_from_vec!(
-    nalgebra::Vector3<f32>, Vector3Vec, "Vector3<f32>";
+    crate::math::Vec3Impl, Vector3Vec, "Vector3<f32>";
 );
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
 impl_try_from_vec!(
-    nalgebra::Matrix3<f32>, Matrix3Vec, "Matrix3<f32>";
+    crate::math::Mat3Impl, Matrix3Vec, "Matrix3<f32>";
 );
 
 // Custom Hash implementation
@@ -662,27 +663,35 @@ impl Hash for Data {
             }
             #[cfg(feature = "vector2")]
             Data::Vector2(Vector2(v)) => {
-                v.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::vec2_as_slice(v)
+                    .iter()
+                    .for_each(|v| v.to_bits().hash(state));
             }
             #[cfg(feature = "vector3")]
             Data::Vector3(Vector3(v)) => {
-                v.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::vec3_as_slice(v)
+                    .iter()
+                    .for_each(|v| v.to_bits().hash(state));
             }
             #[cfg(feature = "matrix3")]
             Data::Matrix3(Matrix3(m)) => {
-                m.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::mat3_iter(m).for_each(|v| v.to_bits().hash(state));
             }
             #[cfg(feature = "normal3")]
             Data::Normal3(Normal3(v)) => {
-                v.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::vec3_as_slice(v)
+                    .iter()
+                    .for_each(|v| v.to_bits().hash(state));
             }
             #[cfg(feature = "point3")]
             Data::Point3(Point3(p)) => {
-                p.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::point3_as_slice(p)
+                    .iter()
+                    .for_each(|v| v.to_bits().hash(state));
             }
             #[cfg(feature = "matrix4")]
             Data::Matrix4(Matrix4(m)) => {
-                m.iter().for_each(|v| v.to_bits().hash(state));
+                crate::math::mat4_iter(m).for_each(|v| v.to_bits().hash(state));
             }
             Data::BooleanVec(BooleanVec(v)) => v.hash(state),
             Data::IntegerVec(IntegerVec(v)) => v.hash(state),
@@ -699,38 +708,50 @@ impl Hash for Data {
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             Data::Vector2Vec(Vector2Vec(v)) => {
                 v.len().hash(state);
-                v.iter()
-                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
+                v.iter().for_each(|v| {
+                    crate::math::vec2_as_slice(v)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state))
+                });
             }
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
             Data::Vector3Vec(Vector3Vec(v)) => {
                 v.len().hash(state);
-                v.iter()
-                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
+                v.iter().for_each(|v| {
+                    crate::math::vec3_as_slice(v)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state))
+                });
             }
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
             Data::Matrix3Vec(Matrix3Vec(v)) => {
                 v.len().hash(state);
                 v.iter()
-                    .for_each(|m| m.iter().for_each(|v| v.to_bits().hash(state)));
+                    .for_each(|m| crate::math::mat3_iter(m).for_each(|v| v.to_bits().hash(state)));
             }
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
             Data::Normal3Vec(Normal3Vec(v)) => {
                 v.len().hash(state);
-                v.iter()
-                    .for_each(|v| v.iter().for_each(|v| v.to_bits().hash(state)));
+                v.iter().for_each(|v| {
+                    crate::math::vec3_as_slice(v)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state))
+                });
             }
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
             Data::Point3Vec(Point3Vec(v)) => {
                 v.len().hash(state);
-                v.iter()
-                    .for_each(|p| p.iter().for_each(|v| v.to_bits().hash(state)));
+                v.iter().for_each(|p| {
+                    crate::math::point3_as_slice(p)
+                        .iter()
+                        .for_each(|v| v.to_bits().hash(state))
+                });
             }
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             Data::Matrix4Vec(Matrix4Vec(v)) => {
                 v.len().hash(state);
                 v.iter()
-                    .for_each(|m| m.iter().for_each(|v| v.to_bits().hash(state)));
+                    .for_each(|m| crate::math::mat4_iter(m).for_each(|v| v.to_bits().hash(state)));
             }
         }
     }
@@ -747,17 +768,17 @@ impl Data {
             Data::StringVec(StringVec(v)) => v.resize(target_len, std::string::String::new()),
             Data::ColorVec(ColorVec(v)) => v.resize(target_len, [0.0, 0.0, 0.0, 1.0]),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            Data::Vector2Vec(Vector2Vec(v)) => v.resize(target_len, nalgebra::Vector2::zeros()),
+            Data::Vector2Vec(Vector2Vec(v)) => v.resize(target_len, crate::math::vec2_zeros()),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            Data::Vector3Vec(Vector3Vec(v)) => v.resize(target_len, nalgebra::Vector3::zeros()),
+            Data::Vector3Vec(Vector3Vec(v)) => v.resize(target_len, crate::math::vec3_zeros()),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            Data::Matrix3Vec(Matrix3Vec(v)) => v.resize(target_len, nalgebra::Matrix3::zeros()),
+            Data::Matrix3Vec(Matrix3Vec(v)) => v.resize(target_len, crate::math::mat3_zeros()),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            Data::Normal3Vec(Normal3Vec(v)) => v.resize(target_len, nalgebra::Vector3::zeros()),
+            Data::Normal3Vec(Normal3Vec(v)) => v.resize(target_len, crate::math::vec3_zeros()),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            Data::Point3Vec(Point3Vec(v)) => v.resize(target_len, nalgebra::Point3::origin()),
+            Data::Point3Vec(Point3Vec(v)) => v.resize(target_len, crate::math::point3_origin()),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            Data::Matrix4Vec(Matrix4Vec(v)) => v.resize(target_len, nalgebra::Matrix4::zeros()),
+            Data::Matrix4Vec(Matrix4Vec(v)) => v.resize(target_len, crate::math::mat4_zeros()),
             _ => {} // Non-vector types are ignored
         }
     }
@@ -849,22 +870,26 @@ impl Data {
             #[cfg(feature = "vector2")]
             (Data::Integer(Integer(i)), DataType::Vector2) => {
                 let v = *i as f32;
-                Ok(Data::Vector2(Vector2(nalgebra::Vector2::new(v, v))))
+                Ok(Data::Vector2(Vector2(crate::math::Vec2Impl::new(v, v))))
             }
             #[cfg(feature = "vector2")]
             (Data::Real(Real(f)), DataType::Vector2) => {
                 let v = *f as f32;
-                Ok(Data::Vector2(Vector2(nalgebra::Vector2::new(v, v))))
+                Ok(Data::Vector2(Vector2(crate::math::Vec2Impl::new(v, v))))
             }
             #[cfg(feature = "vector2")]
             (Data::RealVec(RealVec(vec)), DataType::Vector2) if vec.len() >= 2 => {
                 let v: Vec<f32> = vec.iter().take(2).map(|&x| x as f32).collect();
-                Ok(Data::Vector2(Vector2(nalgebra::Vector2::from_vec(v))))
+                Ok(Data::Vector2(Vector2(crate::math::Vec2Impl::new(
+                    v[0], v[1],
+                ))))
             }
             #[cfg(feature = "vector2")]
             (Data::IntegerVec(IntegerVec(vec)), DataType::Vector2) if vec.len() >= 2 => {
                 let v: Vec<f32> = vec.iter().take(2).map(|&x| x as f32).collect();
-                Ok(Data::Vector2(Vector2(nalgebra::Vector2::from_vec(v))))
+                Ok(Data::Vector2(Vector2(crate::math::Vec2Impl::new(
+                    v[0], v[1],
+                ))))
             }
             #[cfg(feature = "vector2")]
             (Data::String(String(s)), DataType::Vector2) => {
@@ -875,31 +900,35 @@ impl Data {
             #[cfg(feature = "vector3")]
             (Data::Integer(Integer(i)), DataType::Vector3) => {
                 let v = *i as f32;
-                Ok(Data::Vector3(Vector3(nalgebra::Vector3::new(v, v, v))))
+                Ok(Data::Vector3(Vector3(crate::math::Vec3Impl::new(v, v, v))))
             }
             #[cfg(feature = "vector3")]
             (Data::Real(Real(f)), DataType::Vector3) => {
                 let v = *f as f32;
-                Ok(Data::Vector3(Vector3(nalgebra::Vector3::new(v, v, v))))
+                Ok(Data::Vector3(Vector3(crate::math::Vec3Impl::new(v, v, v))))
             }
             #[cfg(all(feature = "vector2", feature = "vector3"))]
             (Data::Vector2(Vector2(v)), DataType::Vector3) => Ok(Data::Vector3(Vector3(
-                nalgebra::Vector3::new(v.x, v.y, 0.0),
+                crate::math::Vec3Impl::new(v.x, v.y, 0.0),
             ))),
             #[cfg(feature = "vector3")]
             (Data::RealVec(RealVec(vec)), DataType::Vector3) if vec.len() >= 3 => {
                 let v: Vec<f32> = vec.iter().take(3).map(|&x| x as f32).collect();
-                Ok(Data::Vector3(Vector3(nalgebra::Vector3::from_vec(v))))
+                Ok(Data::Vector3(Vector3(crate::math::Vec3Impl::new(
+                    v[0], v[1], v[2],
+                ))))
             }
             #[cfg(feature = "vector3")]
             (Data::IntegerVec(IntegerVec(vec)), DataType::Vector3) if vec.len() >= 3 => {
                 let v: Vec<f32> = vec.iter().take(3).map(|&x| x as f32).collect();
-                Ok(Data::Vector3(Vector3(nalgebra::Vector3::from_vec(v))))
+                Ok(Data::Vector3(Vector3(crate::math::Vec3Impl::new(
+                    v[0], v[1], v[2],
+                ))))
             }
             #[cfg(feature = "vector3")]
             (Data::ColorVec(ColorVec(vec)), DataType::Vector3) if !vec.is_empty() => {
                 let c = &vec[0];
-                Ok(Data::Vector3(Vector3(nalgebra::Vector3::new(
+                Ok(Data::Vector3(Vector3(crate::math::Vec3Impl::new(
                     c[0], c[1], c[2],
                 ))))
             }
@@ -966,43 +995,41 @@ impl Data {
             #[cfg(feature = "matrix3")]
             (Data::Integer(Integer(i)), DataType::Matrix3) => {
                 let v = *i as f32;
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::new(
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&[
                     v, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 1.0,
-                ))))
+                ]))))
             }
             #[cfg(feature = "matrix3")]
             (Data::Real(Real(f)), DataType::Matrix3) => {
                 let v = *f as f32;
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::new(
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&[
                     v, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 1.0,
-                ))))
+                ]))))
             }
             #[cfg(feature = "matrix3")]
             (Data::RealVec(RealVec(vec)), DataType::Matrix3) if vec.len() >= 9 => {
                 // AIDEV-NOTE: Using iterator for efficient conversion.
                 let m: Vec<f32> = vec.iter().take(9).map(|&x| x as f32).collect();
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(
-                    &m,
-                ))))
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&m))))
             }
             #[cfg(feature = "matrix3")]
             (Data::IntegerVec(IntegerVec(vec)), DataType::Matrix3) if vec.len() >= 9 => {
                 let m: Vec<f32> = vec.iter().take(9).map(|&x| x as f32).collect();
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(
-                    &m,
-                ))))
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&m))))
             }
             #[cfg(all(feature = "vector3", feature = "matrix3"))]
-            (Data::Vector3(Vector3(v)), DataType::Matrix3) => Ok(Data::Matrix3(Matrix3(
-                nalgebra::Matrix3::new(v.x, 0.0, 0.0, 0.0, v.y, 0.0, 0.0, 0.0, v.z),
-            ))),
+            (Data::Vector3(Vector3(v)), DataType::Matrix3) => {
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&[
+                    v.x, 0.0, 0.0, 0.0, v.y, 0.0, 0.0, 0.0, v.z,
+                ]))))
+            }
             #[cfg(all(feature = "vector3", feature = "matrix3", feature = "vec_variants"))]
             (Data::Vector3Vec(Vector3Vec(vec)), DataType::Matrix3) if vec.len() >= 3 => {
                 // Use 3 Vector3s as columns of the matrix.
                 let cols: Vec<f32> = vec.iter().take(3).flat_map(|v| [v.x, v.y, v.z]).collect();
-                Ok(Data::Matrix3(Matrix3(
-                    nalgebra::Matrix3::from_column_slice(&cols),
-                )))
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_column_slice(
+                    &cols,
+                ))))
             }
             #[cfg(feature = "matrix3")]
             (Data::ColorVec(ColorVec(vec)), DataType::Matrix3) if vec.len() >= 3 => {
@@ -1012,7 +1039,7 @@ impl Data {
                     .take(3)
                     .flat_map(|c| c[0..3].iter().copied())
                     .collect();
-                Ok(Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(
+                Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(
                     &rows,
                 ))))
             }
@@ -1020,13 +1047,13 @@ impl Data {
             (Data::String(String(s)), DataType::Matrix3) => {
                 // Try to parse as a single value first for diagonal matrix
                 if let Ok(single_val) = s.trim().parse::<f32>() {
-                    Ok(Data::Matrix3(Matrix3(
-                        nalgebra::Matrix3::from_diagonal_element(single_val),
-                    )))
+                    Ok(Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&[
+                        single_val, 0.0, 0.0, 0.0, single_val, 0.0, 0.0, 0.0, single_val,
+                    ]))))
                 } else {
                     // Parse as 9 separate values
                     parse_to_array::<f32, 9>(s)
-                        .map(|m| Data::Matrix3(Matrix3(nalgebra::Matrix3::from_row_slice(&m))))
+                        .map(|m| Data::Matrix3(Matrix3(crate::math::mat3_from_row_slice(&m))))
                 }
             }
 
@@ -1034,113 +1061,122 @@ impl Data {
             #[cfg(feature = "normal3")]
             (Data::Integer(Integer(i)), DataType::Normal3) => {
                 let v = *i as f32;
-                Ok(Data::Normal3(Normal3(nalgebra::Vector3::new(v, v, v))))
+                Ok(Data::Normal3(Normal3(crate::math::Vec3Impl::new(v, v, v))))
             }
             #[cfg(feature = "normal3")]
             (Data::Real(Real(f)), DataType::Normal3) => {
                 let v = *f as f32;
-                Ok(Data::Normal3(Normal3(nalgebra::Vector3::new(v, v, v))))
+                Ok(Data::Normal3(Normal3(crate::math::Vec3Impl::new(v, v, v))))
             }
             #[cfg(all(feature = "vector3", feature = "normal3"))]
             (Data::Vector3(Vector3(v)), DataType::Normal3) => {
-                Ok(Data::Normal3(Normal3(v.normalize())))
+                Ok(Data::Normal3(Normal3(math::vec3_normalized(v))))
             }
             #[cfg(feature = "normal3")]
-            (Data::String(String(s)), DataType::Normal3) => parse_to_array::<f32, 3>(s)
-                .map(|v| Data::Normal3(Normal3(nalgebra::Vector3::from(v).normalize()))),
+            (Data::String(String(s)), DataType::Normal3) => parse_to_array::<f32, 3>(s).map(|v| {
+                let vec = crate::math::Vec3Impl::new(v[0], v[1], v[2]);
+                Data::Normal3(Normal3(math::vec3_normalized(&vec)))
+            }),
 
             // To Point3 conversions
             #[cfg(feature = "point3")]
             (Data::Integer(Integer(i)), DataType::Point3) => {
                 let v = *i as f32;
-                Ok(Data::Point3(Point3(nalgebra::Point3::new(v, v, v))))
+                Ok(Data::Point3(Point3(crate::math::Point3Impl::new(v, v, v))))
             }
             #[cfg(feature = "point3")]
             (Data::Real(Real(f)), DataType::Point3) => {
                 let v = *f as f32;
-                Ok(Data::Point3(Point3(nalgebra::Point3::new(v, v, v))))
+                Ok(Data::Point3(Point3(crate::math::Point3Impl::new(v, v, v))))
             }
             #[cfg(all(feature = "vector3", feature = "point3"))]
-            (Data::Vector3(Vector3(v)), DataType::Point3) => {
-                Ok(Data::Point3(Point3(nalgebra::Point3::new(v.x, v.y, v.z))))
-            }
+            (Data::Vector3(Vector3(v)), DataType::Point3) => Ok(Data::Point3(Point3(
+                crate::math::Point3Impl::new(v.x, v.y, v.z),
+            ))),
             #[cfg(feature = "point3")]
-            (Data::String(String(s)), DataType::Point3) => {
-                parse_to_array::<f32, 3>(s).map(|v| Data::Point3(Point3(nalgebra::Point3::from(v))))
-            }
+            (Data::String(String(s)), DataType::Point3) => parse_to_array::<f32, 3>(s)
+                .map(|v| Data::Point3(Point3(crate::math::Point3Impl::new(v[0], v[1], v[2])))),
 
             // To Matrix4 conversions
             #[cfg(feature = "matrix4")]
             (Data::Integer(Integer(i)), DataType::Matrix4) => {
                 let v = *i as f64;
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&[
                     v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, 1.0,
-                ))))
+                ]))))
             }
             #[cfg(feature = "matrix4")]
             (Data::Real(Real(f)), DataType::Matrix4) => {
                 let v = *f;
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&[
                     v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, v, 0.0, 0.0, 0.0, 0.0, 1.0,
-                ))))
+                ]))))
             }
             #[cfg(feature = "matrix4")]
             (Data::RealVec(RealVec(vec)), DataType::Matrix4) if vec.len() >= 16 => {
                 // AIDEV-NOTE: Direct copy when types match, using bytemuck for exact size.
                 let m: Vec<f64> = vec.iter().take(16).copied().collect();
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
-                    &m,
-                ))))
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&m))))
             }
             #[cfg(feature = "matrix4")]
             (Data::IntegerVec(IntegerVec(vec)), DataType::Matrix4) if vec.len() >= 16 => {
                 let m: Vec<f64> = vec.iter().take(16).map(|&x| x as f64).collect();
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
-                    &m,
-                ))))
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&m))))
             }
             #[cfg(all(feature = "matrix3", feature = "matrix4"))]
             (Data::Matrix3(Matrix3(m)), DataType::Matrix4) => {
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
-                    m.m11 as f64,
-                    m.m12 as f64,
-                    m.m13 as f64,
+                // AIDEV-NOTE: Use mat3_row() for row-major data since
+                // mat4_from_row_slice() expects row-major input.
+                let r0 = crate::math::mat3_row(m, 0);
+                let r1 = crate::math::mat3_row(m, 1);
+                let r2 = crate::math::mat3_row(m, 2);
+                // Expand to 4x4 with identity in the last row/column.
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&[
+                    r0[0] as f64,
+                    r0[1] as f64,
+                    r0[2] as f64,
                     0.0,
-                    m.m21 as f64,
-                    m.m22 as f64,
-                    m.m23 as f64,
+                    r1[0] as f64,
+                    r1[1] as f64,
+                    r1[2] as f64,
                     0.0,
-                    m.m31 as f64,
-                    m.m32 as f64,
-                    m.m33 as f64,
+                    r2[0] as f64,
+                    r2[1] as f64,
+                    r2[2] as f64,
                     0.0,
                     0.0,
                     0.0,
                     0.0,
                     1.0,
-                ))))
+                ]))))
             }
             #[cfg(all(feature = "matrix3", feature = "matrix4", feature = "vec_variants"))]
             (Data::Matrix3Vec(Matrix3Vec(vec)), DataType::Matrix4) if !vec.is_empty() => {
                 let m = &vec[0];
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::new(
-                    m.m11 as f64,
-                    m.m12 as f64,
-                    m.m13 as f64,
+                // AIDEV-NOTE: Use mat3_row() for row-major data since
+                // mat4_from_row_slice() expects row-major input.
+                let r0 = crate::math::mat3_row(m, 0);
+                let r1 = crate::math::mat3_row(m, 1);
+                let r2 = crate::math::mat3_row(m, 2);
+                // Expand to 4x4 with identity in the last row/column.
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&[
+                    r0[0] as f64,
+                    r0[1] as f64,
+                    r0[2] as f64,
                     0.0,
-                    m.m21 as f64,
-                    m.m22 as f64,
-                    m.m23 as f64,
+                    r1[0] as f64,
+                    r1[1] as f64,
+                    r1[2] as f64,
                     0.0,
-                    m.m31 as f64,
-                    m.m32 as f64,
-                    m.m33 as f64,
+                    r2[0] as f64,
+                    r2[1] as f64,
+                    r2[2] as f64,
                     0.0,
                     0.0,
                     0.0,
                     0.0,
                     1.0,
-                ))))
+                ]))))
             }
             #[cfg(feature = "matrix4")]
             (Data::ColorVec(ColorVec(vec)), DataType::Matrix4) if vec.len() >= 4 => {
@@ -1150,7 +1186,7 @@ impl Data {
                     .take(4)
                     .flat_map(|c| c.iter().map(|&x| x as f64))
                     .collect();
-                Ok(Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(
+                Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(
                     &rows,
                 ))))
             }
@@ -1158,13 +1194,14 @@ impl Data {
             (Data::String(String(s)), DataType::Matrix4) => {
                 // Try to parse as a single value first for diagonal matrix
                 if let Ok(single_val) = s.trim().parse::<f64>() {
-                    Ok(Data::Matrix4(Matrix4(
-                        nalgebra::Matrix4::from_diagonal_element(single_val),
-                    )))
+                    Ok(Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&[
+                        single_val, 0.0, 0.0, 0.0, 0.0, single_val, 0.0, 0.0, 0.0, 0.0, single_val,
+                        0.0, 0.0, 0.0, 0.0, single_val,
+                    ]))))
                 } else {
                     // Parse as 16 separate values
                     parse_to_array::<f64, 16>(s)
-                        .map(|m| Data::Matrix4(Matrix4(nalgebra::Matrix4::from_row_slice(&m))))
+                        .map(|m| Data::Matrix4(Matrix4(crate::math::mat4_from_row_slice(&m))))
                 }
             }
 
@@ -1176,26 +1213,35 @@ impl Data {
             (Data::Real(Real(f)), DataType::RealVec) => Ok(Data::RealVec(RealVec(vec![*f]))),
             #[cfg(feature = "vector2")]
             (Data::Vector2(Vector2(v)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
-                v.iter().map(|&x| x as f64).collect(),
+                crate::math::vec2_as_slice(v)
+                    .iter()
+                    .map(|&x| x as f64)
+                    .collect(),
             ))),
             #[cfg(feature = "vector3")]
             (Data::Vector3(Vector3(v)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
-                v.iter().map(|&x| x as f64).collect(),
+                crate::math::vec3_as_slice(v)
+                    .iter()
+                    .map(|&x| x as f64)
+                    .collect(),
             ))),
             (Data::Color(Color(c)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
                 c.iter().map(|&x| x as f64).collect(),
             ))),
             #[cfg(feature = "matrix3")]
             (Data::Matrix3(Matrix3(m)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
-                m.iter().map(|&x| x as f64).collect(),
+                crate::math::mat3_iter(m).map(|&x| x as f64).collect(),
             ))),
             #[cfg(feature = "matrix4")]
-            (Data::Matrix4(Matrix4(m)), DataType::RealVec) => {
-                Ok(Data::RealVec(RealVec(m.iter().copied().collect())))
-            }
+            (Data::Matrix4(Matrix4(m)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
+                crate::math::mat4_iter(m).copied().collect(),
+            ))),
             #[cfg(feature = "normal3")]
             (Data::Normal3(Normal3(v)), DataType::RealVec) => Ok(Data::RealVec(RealVec(
-                v.iter().map(|&x| x as f64).collect(),
+                crate::math::vec3_as_slice(v)
+                    .iter()
+                    .map(|&x| x as f64)
+                    .collect(),
             ))),
             #[cfg(feature = "point3")]
             (Data::Point3(Point3(p)), DataType::RealVec) => Ok(Data::RealVec(RealVec(vec![
@@ -1214,22 +1260,28 @@ impl Data {
             }
             #[cfg(feature = "vector2")]
             (Data::Vector2(Vector2(v)), DataType::IntegerVec) => Ok(Data::IntegerVec(IntegerVec(
-                v.iter().map(|&x| x as i64).collect(),
+                crate::math::vec2_as_slice(v)
+                    .iter()
+                    .map(|&x| x as i64)
+                    .collect(),
             ))),
             #[cfg(feature = "vector3")]
             (Data::Vector3(Vector3(v)), DataType::IntegerVec) => Ok(Data::IntegerVec(IntegerVec(
-                v.iter().map(|&x| x as i64).collect(),
+                crate::math::vec3_as_slice(v)
+                    .iter()
+                    .map(|&x| x as i64)
+                    .collect(),
             ))),
             (Data::Color(Color(c)), DataType::IntegerVec) => Ok(Data::IntegerVec(IntegerVec(
                 c.iter().map(|&x| (x * 255.0) as i64).collect(),
             ))),
             #[cfg(feature = "matrix3")]
             (Data::Matrix3(Matrix3(m)), DataType::IntegerVec) => Ok(Data::IntegerVec(IntegerVec(
-                m.iter().map(|&x| x as i64).collect(),
+                crate::math::mat3_iter(m).map(|&x| x as i64).collect(),
             ))),
             #[cfg(feature = "matrix4")]
             (Data::Matrix4(Matrix4(m)), DataType::IntegerVec) => Ok(Data::IntegerVec(IntegerVec(
-                m.iter().map(|&x| x as i64).collect(),
+                crate::math::mat4_iter(m).map(|&x| x as i64).collect(),
             ))),
 
             // To ColorVec conversions
@@ -1245,10 +1297,10 @@ impl Data {
             }
             #[cfg(feature = "matrix3")]
             (Data::Matrix3(Matrix3(m)), DataType::ColorVec) => {
-                // Convert each row to a color
+                // Convert each row to a color.
                 let colors = (0..3)
                     .map(|i| {
-                        let row = m.row(i);
+                        let row = crate::math::mat3_row(m, i);
                         [row[0], row[1], row[2], 1.0]
                     })
                     .collect();
@@ -1266,7 +1318,7 @@ impl Data {
             {
                 let vectors = vec
                     .chunks_exact(2)
-                    .map(|chunk| nalgebra::Vector2::new(chunk[0] as f32, chunk[1] as f32))
+                    .map(|chunk| crate::math::Vec2Impl::new(chunk[0] as f32, chunk[1] as f32))
                     .collect();
                 Ok(Data::Vector2Vec(Vector2Vec(vectors)))
             }
@@ -1283,7 +1335,11 @@ impl Data {
                 let vectors = vec
                     .chunks_exact(3)
                     .map(|chunk| {
-                        nalgebra::Vector3::new(chunk[0] as f32, chunk[1] as f32, chunk[2] as f32)
+                        crate::math::Vec3Impl::new(
+                            chunk[0] as f32,
+                            chunk[1] as f32,
+                            chunk[2] as f32,
+                        )
                     })
                     .collect();
                 Ok(Data::Vector3Vec(Vector3Vec(vectors)))
@@ -1295,7 +1351,11 @@ impl Data {
                 let vectors = vec
                     .chunks_exact(3)
                     .map(|chunk| {
-                        nalgebra::Vector3::new(chunk[0] as f32, chunk[1] as f32, chunk[2] as f32)
+                        crate::math::Vec3Impl::new(
+                            chunk[0] as f32,
+                            chunk[1] as f32,
+                            chunk[2] as f32,
+                        )
                     })
                     .collect();
                 Ok(Data::Vector3Vec(Vector3Vec(vectors)))
@@ -1304,7 +1364,7 @@ impl Data {
             (Data::ColorVec(ColorVec(vec)), DataType::Vector3Vec) => {
                 let vectors = vec
                     .iter()
-                    .map(|c| nalgebra::Vector3::new(c[0], c[1], c[2]))
+                    .map(|c| crate::math::Vec3Impl::new(c[0], c[1], c[2]))
                     .collect();
                 Ok(Data::Vector3Vec(Vector3Vec(vectors)))
             }
@@ -1322,7 +1382,7 @@ impl Data {
                     .chunks_exact(9)
                     .map(|chunk| {
                         let m: Vec<f32> = chunk.iter().map(|&x| x as f32).collect();
-                        nalgebra::Matrix3::from_row_slice(&m)
+                        crate::math::mat3_from_row_slice(&m)
                     })
                     .collect();
                 Ok(Data::Matrix3Vec(Matrix3Vec(matrices)))
@@ -1339,7 +1399,7 @@ impl Data {
             {
                 let matrices = vec
                     .chunks_exact(16)
-                    .map(nalgebra::Matrix4::from_row_slice)
+                    .map(crate::math::mat4_from_row_slice)
                     .collect();
                 Ok(Data::Matrix4Vec(Matrix4Vec(matrices)))
             }
@@ -1509,3 +1569,25 @@ impl_data_arithmetic!(div f64);
 // Manual Eq implementation for Data
 // This is safe because we handle floating point comparison deterministically
 impl Eq for Data {}
+
+// Implement DataSystem trait for the built-in Data type.
+impl crate::traits::DataSystem for Data {
+    type Animated = AnimatedData;
+    type DataType = DataType;
+
+    fn discriminant(&self) -> DataType {
+        DataTypeOps::data_type(self)
+    }
+
+    fn variant_name(&self) -> &'static str {
+        DataTypeOps::type_name(self)
+    }
+
+    fn try_len(&self) -> Option<usize> {
+        Data::try_len(self)
+    }
+
+    fn pad_to_length(&mut self, target_len: usize) {
+        Data::pad_to_length(self, target_len)
+    }
+}

@@ -25,11 +25,11 @@ fn non_empty_vec_creation() {
     assert!(StringVec::new(vec!["test".to_string()]).is_ok());
     assert!(ColorVec::new(vec![[1.0, 0.0, 0.0, 1.0]]).is_ok());
     #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-    assert!(Vector2Vec::new(vec![nalgebra::Vector2::new(1.0, 2.0)]).is_ok());
+    assert!(Vector2Vec::new(vec![token_value_map::math::Vec2Impl::new(1.0, 2.0)]).is_ok());
     #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-    assert!(Vector3Vec::new(vec![nalgebra::Vector3::new(1.0, 2.0, 3.0)]).is_ok());
+    assert!(Vector3Vec::new(vec![token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)]).is_ok());
     #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-    assert!(Matrix3Vec::new(vec![nalgebra::Matrix3::identity()]).is_ok());
+    assert!(Matrix3Vec::new(vec![token_value_map::math::mat3_identity()]).is_ok());
 }
 
 #[test]

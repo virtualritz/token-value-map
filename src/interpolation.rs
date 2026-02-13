@@ -4,6 +4,8 @@
 //! Higher-level animation semantics (smooth curves, angle-based tangents, etc.)
 //! should be handled by animation systems like Dopamine.
 
+#[cfg(feature = "rkyv")]
+use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -15,6 +17,7 @@ use crate::Time;
 /// Describes how values should be interpolated when entering and leaving this keyframe.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Key<T> {
     /// How to interpolate when coming into this keyframe.
     pub interpolation_in: Interpolation<T>,
@@ -39,6 +42,7 @@ where
 /// Describes how to specify a tangent at a keyframe for Bezier interpolation.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum BezierHandle<T> {
     /// Tangent specified as an angle in radians.
     Angle(f32),
@@ -53,6 +57,7 @@ pub enum BezierHandle<T> {
 /// Interpolation mode between keyframes.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 #[derive(Default)]
 pub enum Interpolation<T> {
     /// Hold value until next keyframe (step function).

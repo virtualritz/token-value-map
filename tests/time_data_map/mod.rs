@@ -100,13 +100,13 @@ fn matrix_sampling_is_deterministic() {
     assert_eq!(samples_a, samples_b);
 }
 
-#[cfg(feature = "matrix3")]
+#[cfg(all(feature = "matrix3", feature = "nalgebra"))]
 #[test]
 fn rotation_decomposition_roundtrip() {
-    use nalgebra::Matrix3;
+    use token_value_map::math::{mat3_from_row_slice, mat3_iter};
 
     let angle = std::f32::consts::PI / 3.0;
-    let rot = Matrix3::new(
+    let rot = mat3_from_row_slice(&[
         angle.cos(),
         -angle.sin(),
         0.0,
@@ -116,7 +116,7 @@ fn rotation_decomposition_roundtrip() {
         0.0,
         0.0,
         1.0,
-    );
+    ]);
 
     let matrix = Matrix3(rot);
 
@@ -127,7 +127,7 @@ fn rotation_decomposition_roundtrip() {
         &decomposed.stretch,
     );
 
-    for (a, b) in matrix.0.iter().zip(recomposed.iter()) {
+    for (a, b) in mat3_iter(&matrix.0).zip(mat3_iter(&recomposed)) {
         assert!((a - b) == 0.0);
     }
 }

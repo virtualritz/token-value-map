@@ -7,6 +7,7 @@ use std::ops::Range;
 /// generating motion blur samples. The opening function determines the weight
 /// of samples at different times within the shutter interval.
 #[derive(Clone, Debug, PartialEq, Hash, Default)]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Shutter {
     /// The overall time range for sampling.
     pub range: Range<Time>,

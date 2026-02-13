@@ -6,9 +6,10 @@ fn vec_to_matrix3_conversions() -> Result<()> {
     let real_vec = Data::RealVec(RealVec(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0]));
     let matrix3 = real_vec.try_convert(DataType::Matrix3)?;
     if let Data::Matrix3(Matrix3(m)) = matrix3 {
-        assert_eq!(m[(0, 0)], 1.0);
-        assert_eq!(m[(0, 1)], 2.0);
-        assert_eq!(m[(2, 2)], 9.0);
+        use token_value_map::math::mat3;
+        assert_eq!(mat3(&m, 0, 0), 1.0);
+        assert_eq!(mat3(&m, 0, 1), 2.0);
+        assert_eq!(mat3(&m, 2, 2), 9.0);
     } else {
         panic!("Expected Matrix3");
     }
@@ -17,8 +18,9 @@ fn vec_to_matrix3_conversions() -> Result<()> {
     let int_vec = Data::IntegerVec(IntegerVec(vec![1, 2, 3, 4, 5, 6, 7, 8, 9]));
     let matrix3 = int_vec.try_convert(DataType::Matrix3)?;
     if let Data::Matrix3(Matrix3(m)) = matrix3 {
-        assert_eq!(m[(0, 0)], 1.0);
-        assert_eq!(m[(2, 2)], 9.0);
+        use token_value_map::math::mat3;
+        assert_eq!(mat3(&m, 0, 0), 1.0);
+        assert_eq!(mat3(&m, 2, 2), 9.0);
     } else {
         panic!("Expected Matrix3");
     }
@@ -102,9 +104,10 @@ fn vec_to_matrix4_conversions() -> Result<()> {
     ]));
     let matrix4 = real_vec.try_convert(DataType::Matrix4)?;
     if let Data::Matrix4(Matrix4(m)) = matrix4 {
-        assert_eq!(m[(0, 0)], 1.0);
-        assert_eq!(m[(0, 1)], 2.0);
-        assert_eq!(m[(3, 3)], 16.0);
+        use token_value_map::math::mat4;
+        assert_eq!(mat4(&m, 0, 0), 1.0);
+        assert_eq!(mat4(&m, 0, 1), 2.0);
+        assert_eq!(mat4(&m, 3, 3), 16.0);
     } else {
         panic!("Expected Matrix4");
     }
@@ -113,8 +116,9 @@ fn vec_to_matrix4_conversions() -> Result<()> {
     let int_vec = Data::IntegerVec(IntegerVec((1..=16).collect()));
     let matrix4 = int_vec.try_convert(DataType::Matrix4)?;
     if let Data::Matrix4(Matrix4(m)) = matrix4 {
-        assert_eq!(m[(0, 0)], 1.0);
-        assert_eq!(m[(3, 3)], 16.0);
+        use token_value_map::math::mat4;
+        assert_eq!(mat4(&m, 0, 0), 1.0);
+        assert_eq!(mat4(&m, 3, 3), 16.0);
     } else {
         panic!("Expected Matrix4");
     }
@@ -211,9 +215,9 @@ fn matrix_to_vec_conversions() -> Result<()> {
     // Matrix3 to RealVec
     #[cfg(feature = "matrix3")]
     {
-        let matrix = Data::Matrix3(Matrix3(nalgebra::Matrix3::new(
+        let matrix = Data::Matrix3(Matrix3(token_value_map::math::mat3_from_row_slice(&[
             1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0,
-        )));
+        ])));
         let real_vec = matrix.try_convert(DataType::RealVec)?;
         if let Data::RealVec(RealVec(v)) = real_vec {
             assert_eq!(v.len(), 9);
@@ -237,7 +241,7 @@ fn matrix_to_vec_conversions() -> Result<()> {
     // Matrix4 to RealVec
     #[cfg(feature = "matrix4")]
     {
-        let matrix = Data::Matrix4(Matrix4(nalgebra::Matrix4::identity()));
+        let matrix = Data::Matrix4(Matrix4(token_value_map::math::mat4_identity()));
         let real_vec = matrix.try_convert(DataType::RealVec)?;
         if let Data::RealVec(RealVec(v)) = real_vec {
             assert_eq!(v.len(), 16);
@@ -256,7 +260,7 @@ fn vector_to_vec_conversions() -> Result<()> {
     // Vector3 to RealVec
     #[cfg(feature = "vector3")]
     {
-        let vec3 = Data::Vector3(Vector3(nalgebra::Vector3::new(1.5, 2.5, 3.5)));
+        let vec3 = Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(1.5, 2.5, 3.5)));
         let real_vec = vec3.try_convert(DataType::RealVec)?;
         if let Data::RealVec(RealVec(v)) = real_vec {
             assert_eq!(v.len(), 3);
@@ -282,7 +286,7 @@ fn vector_to_vec_conversions() -> Result<()> {
     // Vector2 to RealVec
     #[cfg(feature = "vector2")]
     {
-        let vec2 = Data::Vector2(Vector2(nalgebra::Vector2::new(10.0, 20.0)));
+        let vec2 = Data::Vector2(Vector2(token_value_map::math::Vec2Impl::new(10.0, 20.0)));
         let real_vec = vec2.try_convert(DataType::RealVec)?;
         if let Data::RealVec(RealVec(v)) = real_vec {
             assert_eq!(v.len(), 2);
@@ -343,10 +347,10 @@ fn vec_to_matrix_vec_conversions() -> Result<()> {
     let mat3_vec = real_vec.try_convert(DataType::Matrix3Vec)?;
     if let Data::Matrix3Vec(Matrix3Vec(mats)) = mat3_vec {
         assert_eq!(mats.len(), 2);
-        assert_eq!(mats[0][(0, 0)], 1.0);
-        assert_eq!(mats[0][(2, 2)], 9.0);
-        assert_eq!(mats[1][(0, 0)], 10.0);
-        assert_eq!(mats[1][(2, 2)], 18.0);
+        assert_eq!(token_value_map::math::mat3(&mats[0], 0, 0), 1.0);
+        assert_eq!(token_value_map::math::mat3(&mats[0], 2, 2), 9.0);
+        assert_eq!(token_value_map::math::mat3(&mats[1], 0, 0), 10.0);
+        assert_eq!(token_value_map::math::mat3(&mats[1], 2, 2), 18.0);
     } else {
         panic!("Expected Matrix3Vec");
     }
@@ -361,19 +365,19 @@ fn vector3_vec_to_matrix3() -> Result<()> {
     #[cfg(feature = "vec_variants")]
     {
         let vec3_vec = Data::Vector3Vec(Vector3Vec(vec![
-            nalgebra::Vector3::new(1.0, 2.0, 3.0),
-            nalgebra::Vector3::new(4.0, 5.0, 6.0),
-            nalgebra::Vector3::new(7.0, 8.0, 9.0),
+            token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0),
+            token_value_map::math::Vec3Impl::new(4.0, 5.0, 6.0),
+            token_value_map::math::Vec3Impl::new(7.0, 8.0, 9.0),
         ]));
         let matrix3 = vec3_vec.try_convert(DataType::Matrix3)?;
         if let Data::Matrix3(Matrix3(m)) = matrix3 {
             // Vectors are used as columns
-            assert_eq!(m[(0, 0)], 1.0);
-            assert_eq!(m[(1, 0)], 2.0);
-            assert_eq!(m[(2, 0)], 3.0);
-            assert_eq!(m[(0, 1)], 4.0);
-            assert_eq!(m[(1, 1)], 5.0);
-            assert_eq!(m[(2, 1)], 6.0);
+            assert_eq!(token_value_map::math::mat3(&m, 0, 0), 1.0);
+            assert_eq!(token_value_map::math::mat3(&m, 1, 0), 2.0);
+            assert_eq!(token_value_map::math::mat3(&m, 2, 0), 3.0);
+            assert_eq!(token_value_map::math::mat3(&m, 0, 1), 4.0);
+            assert_eq!(token_value_map::math::mat3(&m, 1, 1), 5.0);
+            assert_eq!(token_value_map::math::mat3(&m, 2, 1), 6.0);
         } else {
             panic!("Expected Matrix3");
         }
@@ -394,12 +398,13 @@ fn color_vec_to_matrix() -> Result<()> {
         ]));
         let matrix3 = color_vec.try_convert(DataType::Matrix3)?;
         if let Data::Matrix3(Matrix3(m)) = matrix3 {
+            use token_value_map::math::mat3;
             // Colors are used as rows
-            assert_eq!(m[(0, 0)], 1.0);
-            assert_eq!(m[(0, 1)], 2.0);
-            assert_eq!(m[(0, 2)], 3.0);
-            assert_eq!(m[(1, 0)], 4.0);
-            assert_eq!(m[(2, 2)], 9.0);
+            assert_eq!(mat3(&m, 0, 0), 1.0);
+            assert_eq!(mat3(&m, 0, 1), 2.0);
+            assert_eq!(mat3(&m, 0, 2), 3.0);
+            assert_eq!(mat3(&m, 1, 0), 4.0);
+            assert_eq!(mat3(&m, 2, 2), 9.0);
         } else {
             panic!("Expected Matrix3");
         }
@@ -416,9 +421,10 @@ fn color_vec_to_matrix() -> Result<()> {
         ]));
         let matrix4 = color_vec.try_convert(DataType::Matrix4)?;
         if let Data::Matrix4(Matrix4(m)) = matrix4 {
-            assert_eq!(m[(0, 0)], 1.0);
-            assert_eq!(m[(0, 3)], 4.0);
-            assert_eq!(m[(3, 3)], 16.0);
+            use token_value_map::math::mat4;
+            assert_eq!(mat4(&m, 0, 0), 1.0);
+            assert_eq!(mat4(&m, 0, 3), 4.0);
+            assert_eq!(mat4(&m, 3, 3), 16.0);
         } else {
             panic!("Expected Matrix4");
         }

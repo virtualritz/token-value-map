@@ -155,7 +155,7 @@ mod asymmetric_tangents {
     #[cfg(feature = "vector3")]
     #[test]
     fn test_vector_asymmetric_tangents() {
-        use nalgebra::Vector3 as NVector3;
+        use token_value_map::math::Vec3Impl as NVector3;
 
         // Test asymmetric tangents on vector types.
         let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
