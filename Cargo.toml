@@ -19,10 +19,11 @@ documentation = "https://docs.rs/token-value-map"
 repository = "https://github.com/virtualritz/token-value-map/"
 
 [features]
-default = ["builtin-types", "2d", "vec_variants", "glam"]
+default = ["builtin-types", "2d", "vec_variants", "glam", "ustr"]
 builtin-types = []
 lua = ["dep:mlua"]
-serde = ["dep:serde", "ustr/serde"]
+ustr = ["dep:ustr"]
+serde = ["dep:serde", "ustr?/serde"]
 
 # Math backend features (mutually exclusive).
 glam = ["dep:glam"]
@@ -34,10 +35,10 @@ ultraviolet = ["dep:ultraviolet"]
 mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
 
 # rkyv only works with glam backend.
-rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "ustr/rkyv", "glam/rkyv"]
+rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv"]
 
 # Facet support -- works with any backend.
-facet = ["dep:facet", "frame-tick/facet", "ustr/facet"]
+facet = ["dep:facet", "frame-tick/facet"]
 
 egui-keyframe = ["dep:egui-keyframe"]
 interpolation = ["dep:uniform-cubic-splines"]
@@ -62,7 +63,7 @@ bytemuck = "1"
 derive_more = { version = "2", features = ["as_ref"] }
 enum_dispatch = "0.3"
 facet = { version = ">=0.41", optional = true }
-frame-tick = { path = "../frame-tick", features = ["float_frame_rate", "serde", "std"] }
+frame-tick = { version = "0.3", path = "../frame-tick", features = ["float_frame_rate", "serde", "std"] }
 function_name = "0.3"
 log = "0.4"
 mlua = { version = "0.11", features = ["anyhow", "lua53"], optional = true }
@@ -79,7 +80,7 @@ serde = { version = "1", features = ["derive"], optional = true }
 smallvec = { version = "1", features = ["const_generics", "const_new"] }
 strum = { version = "0.27", features = ["derive"] }
 uniform-cubic-splines = { version = "0.5", optional = true }
-ustr = { path = "../ustr" }
+ustr = { version = "1", path = "../ustr", optional = true }
 egui-keyframe = { version = "0.1", optional = true }
 
 [dev-dependencies]

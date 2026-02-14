@@ -90,6 +90,9 @@ mod generic_token_value_map;
 mod generic_value;
 mod traits;
 
+// Token type.
+mod token;
+
 // Other modules.
 #[cfg(feature = "egui-keyframe")]
 mod egui_keyframe_integration;
@@ -123,6 +126,7 @@ pub use interpolation::*;
 pub use lua::*;
 pub use shutter::*;
 pub use time_data_map::*;
+pub use token::*;
 pub use traits::*;
 
 /// A time value represented as a fixed-point [`Tick`](frame_tick::Tick).
