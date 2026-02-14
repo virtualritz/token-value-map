@@ -1,11 +1,10 @@
 //! Generic token-value map that works with any [`DataSystem`].
 
-use crate::{generic_value::GenericValue, traits::DataSystem};
+use crate::{Token, generic_value::GenericValue, traits::DataSystem};
 use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
 };
-use ustr::Ustr;
 
 #[cfg(feature = "rkyv")]
 use rkyv::{Archive, Deserialize as RkyvDeserialize, Serialize as RkyvSerialize};
@@ -30,7 +29,7 @@ use serde::{Deserialize, Serialize};
 )]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct GenericTokenValueMap<D: DataSystem> {
-    attributes: HashMap<Ustr, GenericValue<D>>,
+    attributes: HashMap<Token, GenericValue<D>>,
 }
 
 impl<D: DataSystem> Hash for GenericTokenValueMap<D> {
@@ -60,27 +59,27 @@ impl<D: DataSystem> GenericTokenValueMap<D> {
     }
 
     /// Inserts a value with the given token.
-    pub fn insert(&mut self, token: impl Into<Ustr>, value: impl Into<GenericValue<D>>) {
+    pub fn insert(&mut self, token: impl Into<Token>, value: impl Into<GenericValue<D>>) {
         self.attributes.insert(token.into(), value.into());
     }
 
     /// Gets a reference to the value for a token.
-    pub fn get(&self, token: &Ustr) -> Option<&GenericValue<D>> {
+    pub fn get(&self, token: &Token) -> Option<&GenericValue<D>> {
         self.attributes.get(token)
     }
 
     /// Gets a mutable reference to the value for a token.
-    pub fn get_mut(&mut self, token: &Ustr) -> Option<&mut GenericValue<D>> {
+    pub fn get_mut(&mut self, token: &Token) -> Option<&mut GenericValue<D>> {
         self.attributes.get_mut(token)
     }
 
     /// Removes and returns the value for a token.
-    pub fn remove(&mut self, token: &Ustr) -> Option<GenericValue<D>> {
+    pub fn remove(&mut self, token: &Token) -> Option<GenericValue<D>> {
         self.attributes.remove(token)
     }
 
     /// Returns `true` if the map contains the given token.
-    pub fn contains(&self, token: &Ustr) -> bool {
+    pub fn contains(&self, token: &Token) -> bool {
         self.attributes.contains_key(token)
     }
 
@@ -100,17 +99,17 @@ impl<D: DataSystem> GenericTokenValueMap<D> {
     }
 
     /// Iterates over all token-value pairs.
-    pub fn iter(&self) -> impl Iterator<Item = (&Ustr, &GenericValue<D>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Token, &GenericValue<D>)> {
         self.attributes.iter()
     }
 
     /// Iterates mutably over all token-value pairs.
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Ustr, &mut GenericValue<D>)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Token, &mut GenericValue<D>)> {
         self.attributes.iter_mut()
     }
 
     /// Iterates over all tokens.
-    pub fn tokens(&self) -> impl Iterator<Item = &Ustr> {
+    pub fn tokens(&self) -> impl Iterator<Item = &Token> {
         self.attributes.keys()
     }
 
@@ -127,7 +126,7 @@ impl<D: DataSystem> GenericTokenValueMap<D> {
     /// Extends the map with the given iterator.
     pub fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = (Ustr, GenericValue<D>)>,
+        I: IntoIterator<Item = (Token, GenericValue<D>)>,
     {
         self.attributes.extend(iter);
     }
@@ -135,7 +134,7 @@ impl<D: DataSystem> GenericTokenValueMap<D> {
     /// Retains only the entries for which the predicate returns `true`.
     pub fn retain<F>(&mut self, mut f: F)
     where
-        F: FnMut(&Ustr, &GenericValue<D>) -> bool,
+        F: FnMut(&Token, &GenericValue<D>) -> bool,
     {
         self.attributes.retain(|k, v| f(k, v));
     }
@@ -151,16 +150,18 @@ impl<D: DataSystem> Default for GenericTokenValueMap<D> {
     }
 }
 
-impl<D: DataSystem> FromIterator<(Ustr, GenericValue<D>)> for GenericTokenValueMap<D> {
-    fn from_iter<T: IntoIterator<Item = (Ustr, GenericValue<D>)>>(iter: T) -> Self {
+impl<D: DataSystem> FromIterator<(Token, GenericValue<D>)> for GenericTokenValueMap<D> {
+    fn from_iter<T: IntoIterator<Item = (Token, GenericValue<D>)>>(iter: T) -> Self {
         Self {
             attributes: HashMap::from_iter(iter),
         }
     }
 }
 
-impl<D: DataSystem, const N: usize> From<[(Ustr, GenericValue<D>); N]> for GenericTokenValueMap<D> {
-    fn from(arr: [(Ustr, GenericValue<D>); N]) -> Self {
+impl<D: DataSystem, const N: usize> From<[(Token, GenericValue<D>); N]>
+    for GenericTokenValueMap<D>
+{
+    fn from(arr: [(Token, GenericValue<D>); N]) -> Self {
         Self {
             attributes: HashMap::from(arr),
         }
