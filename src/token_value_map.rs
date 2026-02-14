@@ -3,7 +3,6 @@ use std::{
     collections::HashMap,
     hash::{Hash, Hasher},
 };
-use ustr::Ustr;
 
 /// A collection of named values indexed by string tokens.
 ///
@@ -16,7 +15,7 @@ use ustr::Ustr;
 #[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct TokenValueMap {
-    attributes: HashMap<Ustr, Value>,
+    attributes: HashMap<Token, Value>,
 }
 
 impl Hash for TokenValueMap {
@@ -44,23 +43,23 @@ impl TokenValueMap {
         }
     }
 
-    pub fn insert<V: Into<Value>>(&mut self, token: impl Into<Ustr>, value: V) {
+    pub fn insert<V: Into<Value>>(&mut self, token: impl Into<Token>, value: V) {
         self.attributes.insert(token.into(), value.into());
     }
 
-    pub fn get(&self, token: &Ustr) -> Option<&Value> {
+    pub fn get(&self, token: &Token) -> Option<&Value> {
         self.attributes.get(token)
     }
 
-    pub fn get_mut(&mut self, token: &Ustr) -> Option<&mut Value> {
+    pub fn get_mut(&mut self, token: &Token) -> Option<&mut Value> {
         self.attributes.get_mut(token)
     }
 
-    pub fn remove(&mut self, token: &Ustr) -> Option<Value> {
+    pub fn remove(&mut self, token: &Token) -> Option<Value> {
         self.attributes.remove(token)
     }
 
-    pub fn contains(&self, token: &Ustr) -> bool {
+    pub fn contains(&self, token: &Token) -> bool {
         self.attributes.contains_key(token)
     }
 
@@ -76,15 +75,15 @@ impl TokenValueMap {
         self.attributes.clear();
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (&Ustr, &Value)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&Token, &Value)> {
         self.attributes.iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Ustr, &mut Value)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (&Token, &mut Value)> {
         self.attributes.iter_mut()
     }
 
-    pub fn tokens(&self) -> impl Iterator<Item = &Ustr> {
+    pub fn tokens(&self) -> impl Iterator<Item = &Token> {
         self.attributes.keys()
     }
 
@@ -98,14 +97,14 @@ impl TokenValueMap {
 
     pub fn extend<I>(&mut self, iter: I)
     where
-        I: IntoIterator<Item = (Ustr, Value)>,
+        I: IntoIterator<Item = (Token, Value)>,
     {
         self.attributes.extend(iter);
     }
 
     pub fn retain<F>(&mut self, mut f: F)
     where
-        F: FnMut(&Ustr, &Value) -> bool,
+        F: FnMut(&Token, &Value) -> bool,
     {
         self.attributes.retain(|k, v| f(k, v));
     }
@@ -115,16 +114,16 @@ impl TokenValueMap {
 // This is safe because we handle floating point comparison deterministically
 impl Eq for TokenValueMap {}
 
-impl FromIterator<(Ustr, Value)> for TokenValueMap {
-    fn from_iter<T: IntoIterator<Item = (Ustr, Value)>>(iter: T) -> Self {
+impl FromIterator<(Token, Value)> for TokenValueMap {
+    fn from_iter<T: IntoIterator<Item = (Token, Value)>>(iter: T) -> Self {
         Self {
             attributes: HashMap::from_iter(iter),
         }
     }
 }
 
-impl<const N: usize> From<[(Ustr, Value); N]> for TokenValueMap {
-    fn from(arr: [(Ustr, Value); N]) -> Self {
+impl<const N: usize> From<[(Token, Value); N]> for TokenValueMap {
+    fn from(arr: [(Token, Value); N]) -> Self {
         Self {
             attributes: HashMap::from(arr),
         }

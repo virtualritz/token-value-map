@@ -6,6 +6,8 @@
 //!
 //! # Core Types
 //!
+//! - [`Token`]: A string key type wrapping [`Ustr`](ustr::Ustr) (with `ustr`
+//!   feature) or [`String`] (without) for token-value map lookups.
 //! - [`Value`]: A value that can be either uniform or animated over time.
 //! - [`Data`]: A variant enum containing all supported data types.
 //! - [`AnimatedData`]: Time-indexed data with interpolation support.
@@ -29,6 +31,27 @@
 //! When the `interpolation` feature is enabled, [`TimeDataMap`] supports
 //! advanced interpolation modes including bezier curves with tangent control.
 //! This enables integration with professional animation systems like Dopamine.
+//!
+//! # Curve Types (Optional `curves` Feature)
+//!
+//! When the `curves` feature is enabled (on by default), the crate provides
+//! [`RealCurve`] and [`ColorCurve`] types for position-keyed parameter
+//! mappings. These use [`KeyDataMap<Position, T>`](KeyDataMap) under the hood,
+//! where [`Position`] is a normalized \[0, 1\] key type.
+//!
+//! ```rust
+//! use token_value_map::*;
+//!
+//! // Create a falloff curve: ramps linearly from 0 → 1.
+//! let curve = RealCurve::linear();
+//! assert_eq!(curve.evaluate(0.0), 0.0);
+//! assert_eq!(curve.evaluate(1.0), 1.0);
+//!
+//! // Create a black-to-white color gradient.
+//! let gradient = ColorCurve::black_to_white();
+//! let mid = gradient.evaluate(0.5);  // ~[0.5, 0.5, 0.5, 1.0]
+//! assert!(mid[0] > 0.4 && mid[0] < 0.6);
+//! ```
 //!
 //! # Examples
 //!
@@ -90,6 +113,13 @@ mod generic_token_value_map;
 mod generic_value;
 mod traits;
 
+// Position type for curve domains.
+#[cfg(feature = "curves")]
+mod position;
+
+// Token type.
+mod token;
+
 // Other modules.
 #[cfg(feature = "egui-keyframe")]
 mod egui_keyframe_integration;
@@ -121,8 +151,11 @@ pub use generic_value::*;
 pub use interpolation::*;
 #[cfg(all(feature = "lua", feature = "builtin-types"))]
 pub use lua::*;
+#[cfg(feature = "curves")]
+pub use position::*;
 pub use shutter::*;
 pub use time_data_map::*;
+pub use token::*;
 pub use traits::*;
 
 /// A time value represented as a fixed-point [`Tick`](frame_tick::Tick).
