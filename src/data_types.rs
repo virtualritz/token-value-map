@@ -210,6 +210,10 @@ impl From<Data> for String {
             Data::Point3Vec(v) => String(format!("{v:?}")),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             Data::Matrix4Vec(v) => String(format!("{v:?}")),
+            #[cfg(feature = "curves")]
+            Data::RealCurve(c) => String(format!("{c:?}")),
+            #[cfg(feature = "curves")]
+            Data::ColorCurve(c) => String(format!("{c:?}")),
         }
     }
 }
@@ -482,6 +486,72 @@ impl ColorVec {
 }
 
 impl Eq for ColorVec {}
+
+/// A real-valued curve mapping Position → Real.
+///
+/// Used for falloff curves and other 1D parameter mappings.
+#[cfg(feature = "curves")]
+#[derive(Clone, Debug, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct RealCurve(pub KeyDataMap<Position, Real>);
+
+#[cfg(feature = "curves")]
+impl Eq for RealCurve {}
+
+#[cfg(feature = "curves")]
+impl RealCurve {
+    /// Create a linear ramp from 0 to 1.
+    pub fn linear() -> Self {
+        RealCurve(KeyDataMap::from(std::collections::BTreeMap::from([
+            (Position(0.0), Real(0.0)),
+            (Position(1.0), Real(1.0)),
+        ])))
+    }
+
+    /// Create a constant curve.
+    pub fn constant(v: f64) -> Self {
+        RealCurve(KeyDataMap::from(std::collections::BTreeMap::from([(
+            Position(0.0),
+            Real(v),
+        )])))
+    }
+
+    /// Evaluate the curve at a normalized position.
+    pub fn evaluate(&self, position: f32) -> f64 {
+        self.0.interpolate(Position(position)).0
+    }
+}
+
+/// A color-valued curve mapping Position → Color.
+///
+/// Used for multi-stop color gradients.
+#[cfg(feature = "curves")]
+#[derive(Clone, Debug, PartialEq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+pub struct ColorCurve(pub KeyDataMap<Position, Color>);
+
+#[cfg(feature = "curves")]
+impl Eq for ColorCurve {}
+
+#[cfg(feature = "curves")]
+impl ColorCurve {
+    /// Create a black-to-white gradient.
+    pub fn black_to_white() -> Self {
+        ColorCurve(KeyDataMap::from(std::collections::BTreeMap::from([
+            (Position(0.0), Color([0.0, 0.0, 0.0, 1.0])),
+            (Position(1.0), Color([1.0, 1.0, 1.0, 1.0])),
+        ])))
+    }
+
+    /// Evaluate the curve at a normalized position.
+    pub fn evaluate(&self, position: f32) -> [f32; 4] {
+        self.0.interpolate(Position(position)).0
+    }
+}
 
 /// A vector of 2D vectors.
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
@@ -2284,6 +2354,10 @@ impl_data_ops!(RealVec, "real_vec", DataType::RealVec);
 impl_data_ops!(BooleanVec, "boolean_vec", DataType::BooleanVec);
 impl_data_ops!(StringVec, "string_vec", DataType::StringVec);
 impl_data_ops!(ColorVec, "color_vec", DataType::ColorVec);
+#[cfg(feature = "curves")]
+impl_data_ops!(RealCurve, "real_curve", DataType::RealCurve);
+#[cfg(feature = "curves")]
+impl_data_ops!(ColorCurve, "color_curve", DataType::ColorCurve);
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
 impl_data_ops!(Vector2Vec, "vec2_vec", DataType::Vector2Vec);
@@ -2395,3 +2469,7 @@ impl_try_from_value!(Normal3Vec, DataType::Normal3Vec, Normal3Vec);
 impl_try_from_value!(Point3Vec, DataType::Point3Vec, Point3Vec);
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
 impl_try_from_value!(Matrix4Vec, DataType::Matrix4Vec, Matrix4Vec);
+#[cfg(feature = "curves")]
+impl_try_from_value!(RealCurve, DataType::RealCurve, RealCurve);
+#[cfg(feature = "curves")]
+impl_try_from_value!(ColorCurve, DataType::ColorCurve, ColorCurve);

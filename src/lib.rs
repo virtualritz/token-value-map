@@ -7,7 +7,7 @@
 //! # Core Types
 //!
 //! - [`Token`]: A string key type wrapping [`Ustr`](ustr::Ustr) (with `ustr`
-//!   feature) or [`String`] (without) for token-value map lookups.
+//!   feature) or [`String`] (without) used for lookups.
 //! - [`Value`]: A value that can be either uniform or animated over time.
 //! - [`Data`]: A variant enum containing all supported data types.
 //! - [`AnimatedData`]: Time-indexed data with interpolation support.

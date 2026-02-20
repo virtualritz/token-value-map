@@ -19,8 +19,10 @@ documentation = "https://docs.rs/token-value-map"
 repository = "https://github.com/virtualritz/token-value-map/"
 
 [features]
-default = ["builtin-types", "2d", "vec_variants", "glam", "ustr"]
+default = ["builtin-types", "2d", "vec_variants", "glam", "ustr", "curves"]
 builtin-types = []
+# Curve types (RealCurve, ColorCurve, Position) for parameter mappings.
+curves = ["builtin-types"]
 lua = ["dep:mlua"]
 ustr = ["dep:ustr"]
 serde = ["dep:serde", "ustr?/serde"]
@@ -38,7 +40,7 @@ mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
 rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv"]
 
 # Facet support -- works with any backend.
-facet = ["dep:facet", "frame-tick/facet"]
+facet = ["dep:facet", "frame-tick/facet", "ustr?/facet"]
 
 egui-keyframe = ["dep:egui-keyframe"]
 interpolation = ["dep:uniform-cubic-splines"]

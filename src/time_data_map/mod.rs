@@ -10,56 +10,61 @@ use std::{
 mod sample;
 pub use sample::*;
 
-/// A mapping from time to data values with interpolation support.
+/// A generic key-value data map with interpolation support.
 ///
-/// Stores time-value pairs in a [`BTreeMap`] for efficient time-based
+/// Stores key-value pairs in a [`BTreeMap`] for efficient ordered
 /// queries and supports various interpolation methods.
 ///
 /// When the `interpolation` feature is enabled, each value can have an
 /// associated interpolation specification for animation curves.
 ///
-/// Without `interpolation` feature: `BTreeMap<Time, T>`.
-///
-/// With `interpolation` feature an entry supports a [`Key`]s:
-/// `BTreeMap<Time, (T, Option<Key<T>>)>`.
+/// Use the type alias [`TimeDataMap<V>`] for time-keyed maps (the common case),
+/// or use `KeyDataMap<Position, V>` for curve-domain maps.
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    serde(bound(
+        serialize = "K: Serialize + Ord, V: Serialize",
+        deserialize = "K: Deserialize<'de> + Ord, V: Deserialize<'de>",
+    ))
+)]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
-pub struct TimeDataMap<T> {
-    /// The time-value pairs with optional interpolation keys.
+pub struct KeyDataMap<K, V> {
+    /// The key-value pairs with optional interpolation keys.
     #[cfg(not(feature = "interpolation"))]
-    pub values: BTreeMap<Time, T>,
+    pub values: BTreeMap<K, V>,
     #[cfg(feature = "interpolation")]
-    pub values: BTreeMap<Time, (T, Option<crate::Key<T>>)>,
+    pub values: BTreeMap<K, (V, Option<crate::Key<V>>)>,
 }
 
+/// A time-keyed data map. Alias for `KeyDataMap<Time, V>`.
+pub type TimeDataMap<V> = KeyDataMap<Time, V>;
+
 // Manual Eq implementation.
-impl<T: Eq> Eq for TimeDataMap<T> {}
+impl<K: Eq, V: Eq> Eq for KeyDataMap<K, V> {}
 
 // AsRef implementation for backward compatibility.
 #[cfg(not(feature = "interpolation"))]
-impl<T> AsRef<BTreeMap<Time, T>> for TimeDataMap<T> {
-    fn as_ref(&self) -> &BTreeMap<Time, T> {
+impl<K, V> AsRef<BTreeMap<K, V>> for KeyDataMap<K, V> {
+    fn as_ref(&self) -> &BTreeMap<K, V> {
         &self.values
     }
 }
 
-// AIDEV-NOTE: These methods provide backward compatibility for code that
-// previously accessed the BTreeMap directly via .0 field.
-// With interpolation feature, these return a view without interpolation specs.
-impl<T> TimeDataMap<T> {
-    /// Get an iterator over time-value pairs.
+impl<K: Ord, V> KeyDataMap<K, V> {
+    /// Get an iterator over key-value pairs.
     #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = (&Time, &T)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         #[cfg(not(feature = "interpolation"))]
         {
             self.values.iter()
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.iter().map(|(t, (v, _))| (t, v))
+            self.values.iter().map(|(k, (v, _))| (k, v))
         }
     }
 
@@ -75,25 +80,25 @@ impl<T> TimeDataMap<T> {
         self.values.len()
     }
 
-    /// Remove a sample at the given time.
+    /// Remove a sample at the given key.
     ///
     /// Returns the removed value if it existed.
     #[inline]
-    pub fn remove(&mut self, time: &Time) -> Option<T> {
+    pub fn remove(&mut self, key: &K) -> Option<V> {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.remove(time)
+            self.values.remove(key)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.remove(time).map(|(v, _)| v)
+            self.values.remove(key).map(|(v, _)| v)
         }
     }
 }
 
-// Constructor for backward compatibility.
-impl<T> From<BTreeMap<Time, T>> for TimeDataMap<T> {
-    fn from(values: BTreeMap<Time, T>) -> Self {
+// Constructor from BTreeMap.
+impl<K: Ord, V> From<BTreeMap<K, V>> for KeyDataMap<K, V> {
+    fn from(values: BTreeMap<K, V>) -> Self {
         #[cfg(not(feature = "interpolation"))]
         {
             Self { values }
@@ -118,7 +123,7 @@ pub trait TimeDataMapControl<T> {
     fn is_animated(&self) -> bool;
 }
 
-impl<T> TimeDataMapControl<T> for TimeDataMap<T> {
+impl<V> TimeDataMapControl<V> for KeyDataMap<Time, V> {
     fn len(&self) -> usize {
         self.values.len()
     }
@@ -133,9 +138,9 @@ impl<T> TimeDataMapControl<T> for TimeDataMap<T> {
 }
 
 #[cfg(feature = "builtin-types")]
-impl<T> crate::DataTypeOps for TimeDataMap<T>
+impl<K, V> crate::DataTypeOps for KeyDataMap<K, V>
 where
-    T: crate::DataTypeOps,
+    V: crate::DataTypeOps,
 {
     fn data_type(&self) -> crate::DataType {
         // Use the first element to determine the type, or return a default if empty.
@@ -198,6 +203,9 @@ impl_from_at_time!(
     Data
 );
 
+#[cfg(all(feature = "builtin-types", feature = "curves"))]
+impl_from_at_time!(RealCurve, ColorCurve);
+
 #[cfg(all(feature = "builtin-types", feature = "vector2"))]
 impl_from_at_time!(Vector2);
 #[cfg(all(feature = "builtin-types", feature = "vector3"))]
@@ -248,76 +256,77 @@ impl_from_at_time!(Point3Vec);
 ))]
 impl_from_at_time!(Matrix4Vec);
 
-impl<T> TimeDataMap<T> {
-    /// Insert a value at the given time.
-    pub fn insert(&mut self, time: Time, value: T) {
+impl<K: Ord, V> KeyDataMap<K, V> {
+    /// Insert a value at the given key.
+    pub fn insert(&mut self, key: K, value: V) {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.insert(time, value);
+            self.values.insert(key, value);
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.insert(time, (value, None));
+            self.values.insert(key, (value, None));
         }
     }
 
-    /// Get a value at the exact time.
-    pub fn get(&self, time: &Time) -> Option<&T> {
+    /// Get a value at the exact key.
+    pub fn get(&self, key: &K) -> Option<&V> {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.get(time)
+            self.values.get(key)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.get(time).map(|(v, _)| v)
+            self.values.get(key).map(|(v, _)| v)
         }
     }
 }
 
-impl<T> TimeDataMap<T>
+impl<K, V> KeyDataMap<K, V>
 where
-    T: Clone + Add<Output = T> + Mul<f32, Output = T> + Sub<Output = T>,
+    K: Ord + Copy + Into<f32>,
+    V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
-    pub fn interpolate(&self, time: Time) -> T {
+    pub fn interpolate(&self, key: K) -> V {
         #[cfg(not(feature = "interpolation"))]
         {
-            interpolate(&self.values, time)
+            interpolate(&self.values, key)
         }
         #[cfg(feature = "interpolation")]
         {
-            interpolate_with_specs(&self.values, time)
+            interpolate_with_specs(&self.values, key)
         }
     }
 }
 
 // Interpolation-specific methods.
 #[cfg(feature = "interpolation")]
-impl<T> TimeDataMap<T> {
+impl<K: Ord, V> KeyDataMap<K, V> {
     /// Insert a value with interpolation specification.
     ///
-    /// Sets both the value at the given time and how it should interpolate
+    /// Sets both the value at the given key and how it should interpolate
     /// to neighboring keyframes.
-    pub fn insert_with_interpolation(&mut self, time: Time, value: T, spec: crate::Key<T>) {
-        self.values.insert(time, (value, Some(spec)));
+    pub fn insert_with_interpolation(&mut self, key: K, value: V, spec: crate::Key<V>) {
+        self.values.insert(key, (value, Some(spec)));
     }
 
-    /// Get interpolation spec at a given time.
+    /// Get interpolation spec at a given key.
     ///
-    /// Returns `None` if no interpolation metadata exists or no spec at this time.
-    pub fn interpolation(&self, time: &Time) -> Option<&crate::Key<T>> {
-        self.values.get(time)?.1.as_ref()
+    /// Returns `None` if no interpolation metadata exists or no spec at this key.
+    pub fn interpolation(&self, key: &K) -> Option<&crate::Key<V>> {
+        self.values.get(key)?.1.as_ref()
     }
 
-    /// Set or update the interpolation spec at a given time.
+    /// Set or update the interpolation spec at a given key.
     ///
-    /// Returns `Ok(())` if the time existed and was updated, or an error if no
-    /// sample exists at that time.
-    pub fn set_interpolation_at(&mut self, time: &Time, key: crate::Key<T>) -> crate::Result<()> {
-        if let Some(entry) = self.values.get_mut(time) {
-            entry.1 = Some(key);
+    /// Returns `Ok(())` if the key existed and was updated, or an error if no
+    /// sample exists at that key.
+    pub fn set_interpolation_at(&mut self, key: &K, spec: crate::Key<V>) -> crate::Result<()> {
+        if let Some(entry) = self.values.get_mut(key) {
+            entry.1 = Some(spec);
             Ok(())
         } else {
-            Err(crate::Error::TimeNotFound { time: *time })
+            Err(crate::Error::KeyNotFound)
         }
     }
 
@@ -338,35 +347,36 @@ impl<T> TimeDataMap<T> {
     }
 }
 
-impl<T, V> FromIterator<(Time, V)> for TimeDataMap<T>
+impl<K: Ord, V, U> FromIterator<(K, U)> for KeyDataMap<K, V>
 where
-    V: Into<T>,
+    U: Into<V>,
 {
     fn from_iter<I>(iter: I) -> Self
     where
-        I: IntoIterator<Item = (Time, V)>,
+        I: IntoIterator<Item = (K, U)>,
     {
         Self::from(BTreeMap::from_iter(
-            iter.into_iter().map(|(t, v)| (t, v.into())),
+            iter.into_iter().map(|(k, v)| (k, v.into())),
         ))
     }
 }
 
-impl<T> TimeDataMap<T> {
-    pub fn closest_sample(&self, time: Time) -> &T {
+impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
+    pub fn closest_sample(&self, key: K) -> &V {
+        let k_f32: f32 = key.into();
         #[cfg(not(feature = "interpolation"))]
         {
-            let mut range = self.values.range(time..);
+            let mut range = self.values.range(key..);
             let greater_or_equal = range.next();
 
-            let mut range = self.values.range(..time);
+            let mut range = self.values.range(..key);
             let less_than = range.next_back();
 
             match (less_than, greater_or_equal) {
                 (Some((lower_k, lower_v)), Some((upper_k, upper_v))) => {
-                    if (time.as_ref() - lower_k.as_ref()).abs()
-                        <= (upper_k.as_ref() - time.as_ref()).abs()
-                    {
+                    let lo: f32 = (*lower_k).into();
+                    let hi: f32 = (*upper_k).into();
+                    if (k_f32 - lo).abs() <= (hi - k_f32).abs() {
                         lower_v
                     } else {
                         upper_v
@@ -374,23 +384,23 @@ impl<T> TimeDataMap<T> {
                 }
                 (Some(entry), None) | (None, Some(entry)) => entry.1,
                 (None, None) => {
-                    unreachable!("TimeDataMap can never be empty")
+                    unreachable!("KeyDataMap can never be empty")
                 }
             }
         }
         #[cfg(feature = "interpolation")]
         {
-            let mut range = self.values.range(time..);
+            let mut range = self.values.range(key..);
             let greater_or_equal = range.next();
 
-            let mut range = self.values.range(..time);
+            let mut range = self.values.range(..key);
             let less_than = range.next_back();
 
             match (less_than, greater_or_equal) {
                 (Some((lower_k, (lower_v, _))), Some((upper_k, (upper_v, _)))) => {
-                    if (time.as_ref() - lower_k.as_ref()).abs()
-                        <= (upper_k.as_ref() - time.as_ref()).abs()
-                    {
+                    let lo: f32 = (*lower_k).into();
+                    let hi: f32 = (*upper_k).into();
+                    if (k_f32 - lo).abs() <= (hi - k_f32).abs() {
                         lower_v
                     } else {
                         upper_v
@@ -398,67 +408,67 @@ impl<T> TimeDataMap<T> {
                 }
                 (Some((_, (v, _))), None) | (None, Some((_, (v, _)))) => v,
                 (None, None) => {
-                    unreachable!("TimeDataMap can never be empty")
+                    unreachable!("KeyDataMap can never be empty")
                 }
             }
         }
     }
 
-    /// Sample value at exact time (no interpolation).
-    pub fn sample_at(&self, time: Time) -> Option<&T> {
-        self.get(&time)
+    /// Sample value at exact key (no interpolation).
+    pub fn sample_at(&self, key: K) -> Option<&V> {
+        self.get(&key)
     }
 
-    /// Get the value at or before the given time.
-    pub fn sample_at_or_before(&self, time: Time) -> Option<&T> {
+    /// Get the value at or before the given key.
+    pub fn sample_at_or_before(&self, key: K) -> Option<&V> {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.range(..=time).next_back().map(|(_, v)| v)
+            self.values.range(..=key).next_back().map(|(_, v)| v)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.range(..=time).next_back().map(|(_, (v, _))| v)
+            self.values.range(..=key).next_back().map(|(_, (v, _))| v)
         }
     }
 
-    /// Get the value at or after the given time.
-    pub fn sample_at_or_after(&self, time: Time) -> Option<&T> {
+    /// Get the value at or after the given key.
+    pub fn sample_at_or_after(&self, key: K) -> Option<&V> {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.range(time..).next().map(|(_, v)| v)
+            self.values.range(key..).next().map(|(_, v)| v)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.range(time..).next().map(|(_, (v, _))| v)
+            self.values.range(key..).next().map(|(_, (v, _))| v)
         }
     }
 
     /// Get surrounding samples for interpolation.
     ///
-    /// Returns up to `N` samples centered around the given time for
+    /// Returns up to `N` samples centered around the given key for
     /// use in interpolation algorithms.
-    pub fn sample_surrounding<const N: usize>(&self, time: Time) -> SmallVec<[(Time, &T); N]> {
-        // Get samples before the time.
+    pub fn sample_surrounding<const N: usize>(&self, key: K) -> SmallVec<[(K, &V); N]> {
+        // Get samples before the key.
         let before_count = N / 2;
 
         #[cfg(not(feature = "interpolation"))]
         {
             let mut result = self
                 .values
-                .range(..time)
+                .range(..key)
                 .rev()
                 .take(before_count)
-                .map(|(t, v)| (*t, v))
+                .map(|(k, v)| (*k, v))
                 .collect::<SmallVec<[_; N]>>();
             result.reverse();
 
-            // Get samples at or after the time.
+            // Get samples at or after the key.
             let after_count = N - result.len();
             result.extend(
                 self.values
-                    .range(time..)
+                    .range(key..)
                     .take(after_count)
-                    .map(|(t, v)| (*t, v)),
+                    .map(|(k, v)| (*k, v)),
             );
             result
         }
@@ -467,20 +477,20 @@ impl<T> TimeDataMap<T> {
         {
             let mut result = self
                 .values
-                .range(..time)
+                .range(..key)
                 .rev()
                 .take(before_count)
-                .map(|(t, (v, _))| (*t, v))
+                .map(|(k, (v, _))| (*k, v))
                 .collect::<SmallVec<[_; N]>>();
             result.reverse();
 
-            // Get samples at or after the time.
+            // Get samples at or after the key.
             let after_count = N - result.len();
             result.extend(
                 self.values
-                    .range(time..)
+                    .range(key..)
                     .take(after_count)
-                    .map(|(t, (v, _))| (*t, v)),
+                    .map(|(k, (v, _))| (*k, v)),
             );
             result
         }
@@ -624,24 +634,24 @@ where
 
 #[cfg(feature = "interpolation")]
 #[allow(clippy::too_many_arguments)]
-fn smooth_tangent<V>(
+fn smooth_tangent<K, V>(
     t1: f32,
     v1: &V,
     t2: f32,
     v2: &V,
-    map: &BTreeMap<Time, (V, Option<crate::Key<V>>)>,
-    _time: Time,
-    anchor: Time,
+    map: &BTreeMap<K, (V, Option<crate::Key<V>>)>,
+    _key: K,
+    anchor: K,
     incoming: bool,
 ) -> V
 where
+    K: Ord + Copy + Into<f32>,
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     use smallvec::SmallVec;
 
     // Minimal Catmull-style tangent: reuse nearby keys via existing helpers.
-    // We reuse interpolate() on a virtual window to let the hermite logic derive slopes.
-    let mut window = SmallVec::<[(Time, V); 2]>::new();
+    let mut window = SmallVec::<[(K, V); 2]>::new();
 
     if incoming {
         if let Some(prev) = map.range(..anchor).next_back() {
@@ -656,11 +666,11 @@ where
     }
 
     if window.len() == 2 {
-        let (t0, p0) = &window[0];
-        let (t1, p1) = &window[1];
-        let t0_f: f32 = (*t0).into();
-        let t1_f: f32 = (*t1).into();
-        let dt = (t1_f - t0_f).max(f32::EPSILON);
+        let (k0, p0) = &window[0];
+        let (k1, p1) = &window[1];
+        let k0_f: f32 = (*k0).into();
+        let k1_f: f32 = (*k1).into();
+        let dt = (k1_f - k0_f).max(f32::EPSILON);
         (p1.clone() - p0.clone()) * (1.0 / dt)
     } else {
         // Fall back to local linear slope.
@@ -669,28 +679,29 @@ where
 }
 
 #[cfg(feature = "interpolation")]
-fn evaluate_mixed_bezier<V>(
-    time: Time,
-    t1: Time,
+fn evaluate_mixed_bezier<K, V>(
+    key: K,
+    k1: K,
     v1: &V,
     slope_out: &V,
-    t2: Time,
+    k2: K,
     v2: &V,
     slope_in: &V,
 ) -> V
 where
+    K: Copy + Into<f32>,
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     use crate::interpolation::bezier_helpers::*;
 
-    let (p1, p2) = control_points_from_slopes(t1.into(), v1, slope_out, t2.into(), v2, slope_in);
+    let (p1, p2) = control_points_from_slopes(k1.into(), v1, slope_out, k2.into(), v2, slope_in);
 
     evaluate_bezier_component_wise(
-        time.into(),
-        (t1.into(), v1),
+        key.into(),
+        (k1.into(), v1),
         (p1.0, &p1.1),
         (p2.0, &p2.1),
-        (t2.into(), v2),
+        (k2.into(), v2),
     )
 }
 
@@ -700,11 +711,12 @@ where
 /// otherwise falls back to automatic interpolation.
 #[cfg(feature = "interpolation")]
 #[inline(always)]
-pub(crate) fn interpolate_with_specs<V>(
-    map: &BTreeMap<Time, (V, Option<crate::Key<V>>)>,
-    time: Time,
+pub(crate) fn interpolate_with_specs<K, V>(
+    map: &BTreeMap<K, (V, Option<crate::Key<V>>)>,
+    key: K,
 ) -> V
 where
+    K: Ord + Copy + Into<f32>,
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     if map.len() == 1 {
@@ -714,33 +726,30 @@ where
     let first = map.iter().next().unwrap();
     let last = map.iter().next_back().unwrap();
 
-    if time <= *first.0 {
+    if key <= *first.0 {
         return first.1.0.clone();
     }
 
-    if time >= *last.0 {
+    if key >= *last.0 {
         return last.1.0.clone();
     }
 
     // Find surrounding keyframes.
-    let lower = map.range(..time).next_back().unwrap();
-    let upper = map.range(time..).next().unwrap();
+    let lower = map.range(..key).next_back().unwrap();
+    let upper = map.range(key..).next().unwrap();
 
     // If we're exactly on a keyframe, return its value.
     if lower.0 == upper.0 {
         return lower.1.0.clone();
     }
 
-    let (t1, (v1, spec1)) = lower;
-    let (t2, (v2, spec2)) = upper;
+    let (k1, (v1, spec1)) = lower;
+    let (k2, (v2, spec2)) = upper;
 
     // Check if we have interpolation specs.
     let interp_out = spec1.as_ref().map(|s| &s.interpolation_out);
     let interp_in = spec2.as_ref().map(|s| &s.interpolation_in);
 
-    // AIDEV-NOTE: Determine interpolation mode based on specs.
-    // Hold takes precedence over everything else, then explicit Bezier handles,
-    // then Smooth (Catmull-Rom style), then Linear, then fallback to automatic.
     match (interp_out, interp_in) {
         // Step/hold beats everything else.
         (Some(crate::Interpolation::Hold), _) | (_, Some(crate::Interpolation::Hold)) => v1.clone(),
@@ -753,72 +762,73 @@ where
             use crate::interpolation::bezier_helpers::*;
 
             if let (Some(slope_out), Some(slope_in)) = (
-                bezier_handle_to_slope(out_handle, (*t1).into(), (*t2).into(), v1, v2),
-                bezier_handle_to_slope(in_handle, (*t1).into(), (*t2).into(), v1, v2),
+                bezier_handle_to_slope(out_handle, (*k1).into(), (*k2).into(), v1, v2),
+                bezier_handle_to_slope(in_handle, (*k1).into(), (*k2).into(), v1, v2),
             ) {
                 let (p1, p2) = control_points_from_slopes(
-                    (*t1).into(),
+                    (*k1).into(),
                     v1,
                     &slope_out,
-                    (*t2).into(),
+                    (*k2).into(),
                     v2,
                     &slope_in,
                 );
 
                 evaluate_bezier_component_wise(
-                    time.into(),
-                    ((*t1).into(), v1),
+                    key.into(),
+                    ((*k1).into(), v1),
                     (p1.0, &p1.1),
                     (p2.0, &p2.1),
-                    ((*t2).into(), v2),
+                    ((*k2).into(), v2),
                 )
             } else {
                 // Fall back to linear if we can't convert handles to slopes.
-                linear_interp(*t1, *t2, v1, v2, time)
+                linear_interp(*k1, *k2, v1, v2, key)
             }
         }
 
         // One side explicit, the other "smooth": derive a Catmull-style tangent for the smooth side.
         (Some(crate::Interpolation::Bezier(out_handle)), Some(crate::Interpolation::Smooth)) => {
             if let Some(slope_out) =
-                bezier_handle_to_slope(out_handle, (*t1).into(), (*t2).into(), v1, v2)
+                bezier_handle_to_slope(out_handle, (*k1).into(), (*k2).into(), v1, v2)
             {
                 let slope_in =
-                    smooth_tangent((*t1).into(), v1, (*t2).into(), v2, map, time, *t1, false);
+                    smooth_tangent((*k1).into(), v1, (*k2).into(), v2, map, key, *k1, false);
 
-                evaluate_mixed_bezier(time, *t1, v1, &slope_out, *t2, v2, &slope_in)
+                evaluate_mixed_bezier(key, *k1, v1, &slope_out, *k2, v2, &slope_in)
             } else {
-                linear_interp(*t1, *t2, v1, v2, time)
+                linear_interp(*k1, *k2, v1, v2, key)
             }
         }
         (Some(crate::Interpolation::Smooth), Some(crate::Interpolation::Bezier(in_handle))) => {
             if let Some(slope_in) =
-                bezier_handle_to_slope(in_handle, (*t1).into(), (*t2).into(), v1, v2)
+                bezier_handle_to_slope(in_handle, (*k1).into(), (*k2).into(), v1, v2)
             {
                 let slope_out =
-                    smooth_tangent((*t1).into(), v1, (*t2).into(), v2, map, time, *t1, true);
+                    smooth_tangent((*k1).into(), v1, (*k2).into(), v2, map, key, *k1, true);
 
-                evaluate_mixed_bezier(time, *t1, v1, &slope_out, *t2, v2, &slope_in)
+                evaluate_mixed_bezier(key, *k1, v1, &slope_out, *k2, v2, &slope_in)
             } else {
-                linear_interp(*t1, *t2, v1, v2, time)
+                linear_interp(*k1, *k2, v1, v2, key)
             }
         }
 
         // Symmetric "smooth" -> fall back to the existing automatic interpolation.
         (Some(crate::Interpolation::Smooth), Some(crate::Interpolation::Smooth)) | (None, None) => {
-            let values_only: BTreeMap<Time, V> =
+            let values_only: BTreeMap<K, V> =
                 map.iter().map(|(k, (v, _))| (*k, v.clone())).collect();
-            interpolate(&values_only, time)
+            interpolate(&values_only, key)
         }
 
         // Linear/linear, linear vs smooth, or any unsupported combination -> straight line.
-        _ => linear_interp(*t1, *t2, v1, v2, time),
+        _ => linear_interp(*k1, *k2, v1, v2, key),
     }
 }
 
 #[inline(always)]
-pub(crate) fn interpolate<V>(map: &BTreeMap<Time, V>, time: Time) -> V
+pub(crate) fn interpolate<K, V>(map: &BTreeMap<K, V>, key: K) -> V
 where
+    K: Ord + Copy + Into<f32>,
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     if map.len() == 1 {
@@ -828,22 +838,22 @@ where
     let first = map.iter().next().unwrap();
     let last = map.iter().next_back().unwrap();
 
-    if time <= *first.0 {
+    if key <= *first.0 {
         return first.1.clone();
     }
 
-    if time >= *last.0 {
+    if key >= *last.0 {
         return last.1.clone();
     }
 
-    let lower = map.range(..time).next_back().unwrap();
-    let upper = map.range(time..).next().unwrap();
+    let lower = map.range(..key).next_back().unwrap();
+    let upper = map.range(key..).next().unwrap();
 
     // This is our window for interpolation that holds two to four values.
     //
     // The interpolation algorithm is chosen based on how many values are in
     // the window. See the `match` block below.
-    let mut window = SmallVec::<[(Time, &V); 4]>::new();
+    let mut window = SmallVec::<[(K, &V); 4]>::new();
 
     // Extend with up to two values before `lower`.
     window.extend(map.range(..*lower.0).rev().take(2).map(|(k, v)| (*k, v)));
@@ -876,19 +886,19 @@ where
                 p1,
                 p2,
                 p3,
-                t: time,
+                t: key,
             })
         }
         3 => {
             let (t0, p0) = window[0];
             let (t1, p1) = window[1];
             let (t2, p2) = window[2];
-            quadratic_interp(t0, t1, t2, p0, p1, p2, time)
+            quadratic_interp(t0, t1, t2, p0, p1, p2, key)
         }
         2 => {
             let (x0, y0) = window[0];
             let (x1, y1) = window[1];
-            linear_interp(x0, x1, y0, y1, time)
+            linear_interp(x0, x1, y0, y1, key)
         }
         1 => {
             // Single keyframe - return its value.
@@ -913,7 +923,7 @@ where
                 p1,
                 p2,
                 p3,
-                t: time,
+                t: key,
             })
         }
     }

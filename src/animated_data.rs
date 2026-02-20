@@ -79,6 +79,12 @@ pub enum AnimatedData {
     /// Animated 4×4 matrix arrays.
     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
     Matrix4Vec(TimeDataMap<Matrix4Vec>),
+    /// Animated real curve.
+    #[cfg(feature = "curves")]
+    RealCurve(TimeDataMap<RealCurve>),
+    /// Animated color curve.
+    #[cfg(feature = "curves")]
+    ColorCurve(TimeDataMap<ColorCurve>),
 }
 
 /// Common operations `trait` for animated data types.
@@ -239,6 +245,10 @@ impl AnimatedData {
             AnimatedData::Point3Vec(map) => map.iter().map(|(t, _)| *t).collect(),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             AnimatedData::Matrix4Vec(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "curves")]
+            AnimatedData::RealCurve(map) => map.iter().map(|(t, _)| *t).collect(),
+            #[cfg(feature = "curves")]
+            AnimatedData::ColorCurve(map) => map.iter().map(|(t, _)| *t).collect(),
         }
     }
 }
@@ -295,6 +305,10 @@ impl From<(Time, Data)> for AnimatedData {
             Data::Point3Vec(v) => AnimatedData::Point3Vec(TimeDataMap::from((time, v))),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             Data::Matrix4Vec(v) => AnimatedData::Matrix4Vec(TimeDataMap::from((time, v))),
+            #[cfg(feature = "curves")]
+            Data::RealCurve(v) => AnimatedData::RealCurve(TimeDataMap::from((time, v))),
+            #[cfg(feature = "curves")]
+            Data::ColorCurve(v) => AnimatedData::ColorCurve(TimeDataMap::from((time, v))),
         }
     }
 }
@@ -442,6 +456,16 @@ impl AnimatedData {
                 map.insert(time, v);
                 Ok(())
             }
+            #[cfg(feature = "curves")]
+            (AnimatedData::RealCurve(map), Data::RealCurve(v)) => {
+                map.insert(time, v);
+                Ok(())
+            }
+            #[cfg(feature = "curves")]
+            (AnimatedData::ColorCurve(map), Data::ColorCurve(v)) => {
+                map.insert(time, v);
+                Ok(())
+            }
             (s, v) => Err(Error::SampleTypeMismatch {
                 expected: s.data_type(),
                 got: v.data_type(),
@@ -488,6 +512,10 @@ impl AnimatedData {
             AnimatedData::Point3Vec(map) => map.remove(time).map(Data::Point3Vec),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             AnimatedData::Matrix4Vec(map) => map.remove(time).map(Data::Matrix4Vec),
+            #[cfg(feature = "curves")]
+            AnimatedData::RealCurve(map) => map.remove(time).map(Data::RealCurve),
+            #[cfg(feature = "curves")]
+            AnimatedData::ColorCurve(map) => map.remove(time).map(Data::ColorCurve),
         }
     }
 
@@ -527,6 +555,10 @@ impl AnimatedData {
             AnimatedData::Point3Vec(map) => map.get(&time).map(|v| Data::Point3Vec(v.clone())),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
             AnimatedData::Matrix4Vec(map) => map.get(&time).map(|v| Data::Matrix4Vec(v.clone())),
+            #[cfg(feature = "curves")]
+            AnimatedData::RealCurve(map) => map.get(&time).map(|v| Data::RealCurve(v.clone())),
+            #[cfg(feature = "curves")]
+            AnimatedData::ColorCurve(map) => map.get(&time).map(|v| Data::ColorCurve(v.clone())),
         }
     }
 
@@ -674,6 +706,10 @@ impl AnimatedData {
                     Data::Matrix4Vec(map.iter().next().unwrap().1.clone())
                 }
             }
+            #[cfg(feature = "curves")]
+            AnimatedData::RealCurve(map) => Data::RealCurve(map.closest_sample(time).clone()),
+            #[cfg(feature = "curves")]
+            AnimatedData::ColorCurve(map) => Data::ColorCurve(map.closest_sample(time).clone()),
         }
     }
 }
@@ -1075,6 +1111,36 @@ impl Hash for AnimatedData {
                     value.0.iter().for_each(|m| {
                         crate::math::mat4_iter(m).for_each(|f| f.to_bits().hash(state));
                     });
+                    spec.hash(state);
+                }
+            }
+            #[cfg(feature = "curves")]
+            AnimatedData::RealCurve(map) => {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
+                    time.hash(state);
+                    value.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.hash(state);
+                    spec.hash(state);
+                }
+            }
+            #[cfg(feature = "curves")]
+            AnimatedData::ColorCurve(map) => {
+                map.len().hash(state);
+                #[cfg(not(feature = "interpolation"))]
+                for (time, value) in &map.values {
+                    time.hash(state);
+                    value.hash(state);
+                }
+                #[cfg(feature = "interpolation")]
+                for (time, (value, spec)) in &map.values {
+                    time.hash(state);
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
