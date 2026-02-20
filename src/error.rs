@@ -107,12 +107,9 @@ pub enum Error {
         type_name: &'static str,
     },
 
-    /// Time not found in animated data.
-    #[error("time {time} not found in animated data")]
-    TimeNotFound {
-        /// The time that was not found.
-        time: Time,
-    },
+    /// Key not found in data map.
+    #[error("key not found in data map")]
+    KeyNotFound,
 
     /// Cannot extract value from animated data.
     #[error("cannot extract {type_name} from animated Value")]

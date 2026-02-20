@@ -140,6 +140,18 @@ impl HandleValue for crate::Integer {
     }
 }
 
+#[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
+impl HandleValue for crate::Color {
+    fn to_handle_f64(&self) -> f64 {
+        // Use luminance as scalar proxy for handle editing.
+        self.0[0] as f64 * 0.299 + self.0[1] as f64 * 0.587 + self.0[2] as f64 * 0.114
+    }
+    fn from_handle_f64(v: f64) -> Self {
+        let v = v as f32;
+        crate::Color([v, v, v, 1.0])
+    }
+}
+
 /// Convert a Key<T> to egui_keyframe BezierHandles.
 #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
 pub fn key_to_bezier_handles<T: HandleValue>(key: &Key<T>) -> egui_keyframe::BezierHandles {

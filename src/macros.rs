@@ -40,6 +40,10 @@ macro_rules! impl_data_type_ops {
                     $enum_name::Point3Vec(_) => DataType::Point3Vec,
                     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
                     $enum_name::Matrix4Vec(_) => DataType::Matrix4Vec,
+                    #[cfg(feature = "curves")]
+                    $enum_name::RealCurve(_) => DataType::RealCurve,
+                    #[cfg(feature = "curves")]
+                    $enum_name::ColorCurve(_) => DataType::ColorCurve,
                 }
             }
 
@@ -79,6 +83,10 @@ macro_rules! impl_data_type_ops {
                     $enum_name::Point3Vec(_) => "point3_vec",
                     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
                     $enum_name::Matrix4Vec(_) => "matrix4_vec",
+                    #[cfg(feature = "curves")]
+                    $enum_name::RealCurve(_) => "real_curve",
+                    #[cfg(feature = "curves")]
+                    $enum_name::ColorCurve(_) => "color_curve",
                 }
             }
         }
@@ -225,6 +233,14 @@ macro_rules! impl_data_arithmetic {
                     Data::Point3Vec(a) => Data::Point3Vec(a * scalar),
                     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
                     Data::Matrix4Vec(a) => Data::Matrix4Vec(a * scalar),
+                    // Curve types don't support scalar multiply; return unchanged.
+                    other => {
+                        log::warn!(
+                            "Cannot multiply {:?} by scalar, returning unchanged",
+                            other.data_type()
+                        );
+                        other
+                    }
                 }
             }
         }
@@ -269,6 +285,14 @@ macro_rules! impl_data_arithmetic {
                     Data::Point3Vec(a) => Data::Point3Vec(a / scalar),
                     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
                     Data::Matrix4Vec(a) => Data::Matrix4Vec(a / scalar),
+                    // Curve types don't support scalar divide; return unchanged.
+                    other => {
+                        log::warn!(
+                            "Cannot divide {:?} by scalar, returning unchanged",
+                            other.data_type()
+                        );
+                        other
+                    }
                 }
             }
         }

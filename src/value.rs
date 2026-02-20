@@ -314,6 +314,28 @@ impl Value {
                     .collect();
                 AnimatedData::Matrix4Vec(TimeDataMap::from_iter(typed_samples))
             }
+            #[cfg(feature = "curves")]
+            DataType::RealCurve => {
+                let typed_samples: Vec<(Time, RealCurve)> = samples_vec
+                    .into_iter()
+                    .map(|(t, data)| match data {
+                        Data::RealCurve(v) => (t, v),
+                        _ => unreachable!("Type validation should have caught this"),
+                    })
+                    .collect();
+                AnimatedData::RealCurve(TimeDataMap::from_iter(typed_samples))
+            }
+            #[cfg(feature = "curves")]
+            DataType::ColorCurve => {
+                let typed_samples: Vec<(Time, ColorCurve)> = samples_vec
+                    .into_iter()
+                    .map(|(t, data)| match data {
+                        Data::ColorCurve(v) => (t, v),
+                        _ => unreachable!("Type validation should have caught this"),
+                    })
+                    .collect();
+                AnimatedData::ColorCurve(TimeDataMap::from_iter(typed_samples))
+            }
         };
 
         Ok(Value::Animated(animated_data))

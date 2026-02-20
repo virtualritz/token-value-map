@@ -82,6 +82,12 @@ pub enum Data {
     /// A vector of 4×4 matrices.
     #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
     Matrix4Vec(Matrix4Vec),
+    /// A real-valued curve (Position → Real).
+    #[cfg(feature = "curves")]
+    RealCurve(RealCurve),
+    /// A color-valued curve (Position → Color).
+    #[cfg(feature = "curves")]
+    ColorCurve(ColorCurve),
 }
 
 impl_data_type_ops!(Data);
@@ -753,6 +759,10 @@ impl Hash for Data {
                 v.iter()
                     .for_each(|m| crate::math::mat4_iter(m).for_each(|v| v.to_bits().hash(state)));
             }
+            #[cfg(feature = "curves")]
+            Data::RealCurve(c) => c.hash(state),
+            #[cfg(feature = "curves")]
+            Data::ColorCurve(c) => c.hash(state),
         }
     }
 }
