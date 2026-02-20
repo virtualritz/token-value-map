@@ -40,7 +40,7 @@ mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
 rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv"]
 
 # Facet support -- works with any backend.
-facet = ["dep:facet", "frame-tick/facet", "ustr?/facet"]
+facet = ["dep:facet", "frame-tick/facet"]
 
 egui-keyframe = ["dep:egui-keyframe"]
 interpolation = ["dep:uniform-cubic-splines"]

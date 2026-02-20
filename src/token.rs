@@ -1,7 +1,5 @@
 //! A string token type used as a key in token-value maps.
 
-#[cfg(feature = "facet")]
-use facet::Facet;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -21,8 +19,6 @@ use std::fmt;
 #[cfg_attr(feature = "ustr", derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde", serde(transparent))]
-#[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
 #[repr(transparent)]
 pub struct Token(
     #[cfg(feature = "ustr")] pub ustr::Ustr,
@@ -63,6 +59,76 @@ const _: () = {
         fn deserialize(&self, _: &mut D) -> Result<Token, D::Error> {
             Ok(Token::from(self.as_str()))
         }
+    }
+};
+
+// AIDEV-NOTE: Manual Facet impl marks Token as opaque without requiring
+// Facet on the inner type (Ustr or String). The derive macro would add
+// a Facet bound on the field, which fails when crates.io ustr lacks facet.
+// All vtable fns go through Token::as_str() / Token::new() so facet always
+// sees the string content, never the raw Ustr pointer/index.
+#[cfg(feature = "facet")]
+const _: () = {
+    use facet::{
+        Def, Facet, OxPtrConst, OxPtrUninit, ParseError, PtrConst, Shape, ShapeBuilder,
+        TryFromOutcome, Type, UserType, VTableIndirect,
+    };
+
+    unsafe fn display_token(
+        source: OxPtrConst,
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> Option<core::fmt::Result> {
+        unsafe { Some(write!(f, "{}", source.get::<Token>())) }
+    }
+
+    unsafe fn partial_eq_token(a: OxPtrConst, b: OxPtrConst) -> Option<bool> {
+        unsafe { Some(a.get::<Token>() == b.get::<Token>()) }
+    }
+
+    unsafe fn try_from_token(
+        target: OxPtrUninit,
+        src_shape: &'static Shape,
+        src: PtrConst,
+    ) -> TryFromOutcome {
+        unsafe {
+            if src_shape.id == <&str as Facet>::SHAPE.id {
+                target.put(Token::new(src.get::<&str>()));
+                TryFromOutcome::Converted
+            } else if src_shape.id == <std::string::String as Facet>::SHAPE.id {
+                target.put(Token::from(src.read::<std::string::String>()));
+                TryFromOutcome::Converted
+            } else {
+                TryFromOutcome::Unsupported
+            }
+        }
+    }
+
+    /// Reconstruct a [`Token`] from its string representation.
+    unsafe fn parse_token(s: &str, target: OxPtrUninit) -> Option<Result<(), ParseError>> {
+        unsafe {
+            target.put(Token::new(s));
+            Some(Ok(()))
+        }
+    }
+
+    static TOKEN_VTABLE: VTableIndirect = VTableIndirect {
+        display: Some(display_token),
+        partial_eq: Some(partial_eq_token),
+        try_from: Some(try_from_token),
+        parse: Some(parse_token),
+        ..VTableIndirect::EMPTY
+    };
+
+    unsafe impl Facet<'_> for Token {
+        const SHAPE: &'static Shape = &const {
+            ShapeBuilder::for_sized::<Token>("Token")
+                .module_path("token_value_map::token")
+                .ty(Type::User(UserType::Opaque))
+                .def(Def::Scalar)
+                .vtable_indirect(&TOKEN_VTABLE)
+                .eq()
+                .build()
+        };
     }
 };
 
