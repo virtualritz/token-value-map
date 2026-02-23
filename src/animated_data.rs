@@ -475,47 +475,53 @@ impl AnimatedData {
 
     /// Remove a sample at the given time.
     ///
-    /// Returns the removed value as `Data` if it existed.
+    /// Returns the removed value as [`Data`] if it existed. Returns `None`
+    /// if the key was not found or if it was the last sample (the non-empty
+    /// invariant prevents removing it). Use
+    /// [`Value::remove_or_make_uniform`](crate::Value::remove_or_make_uniform)
+    /// to degrade to uniform instead.
     pub fn remove_at(&mut self, time: &Time) -> Option<Data> {
+        // AIDEV-NOTE: map.remove() returns Result<Option<V>>. Err(LastSample)
+        // is flattened to None -- callers use remove_or_make_uniform for that case.
         match self {
-            AnimatedData::Boolean(map) => map.remove(time).map(Data::Boolean),
-            AnimatedData::Integer(map) => map.remove(time).map(Data::Integer),
-            AnimatedData::Real(map) => map.remove(time).map(Data::Real),
-            AnimatedData::String(map) => map.remove(time).map(Data::String),
-            AnimatedData::Color(map) => map.remove(time).map(Data::Color),
+            AnimatedData::Boolean(map) => map.remove(time).ok()?.map(Data::Boolean),
+            AnimatedData::Integer(map) => map.remove(time).ok()?.map(Data::Integer),
+            AnimatedData::Real(map) => map.remove(time).ok()?.map(Data::Real),
+            AnimatedData::String(map) => map.remove(time).ok()?.map(Data::String),
+            AnimatedData::Color(map) => map.remove(time).ok()?.map(Data::Color),
             #[cfg(feature = "vector2")]
-            AnimatedData::Vector2(map) => map.remove(time).map(Data::Vector2),
+            AnimatedData::Vector2(map) => map.remove(time).ok()?.map(Data::Vector2),
             #[cfg(feature = "vector3")]
-            AnimatedData::Vector3(map) => map.remove(time).map(Data::Vector3),
+            AnimatedData::Vector3(map) => map.remove(time).ok()?.map(Data::Vector3),
             #[cfg(feature = "matrix3")]
-            AnimatedData::Matrix3(map) => map.remove(time).map(Data::Matrix3),
+            AnimatedData::Matrix3(map) => map.remove(time).ok()?.map(Data::Matrix3),
             #[cfg(feature = "normal3")]
-            AnimatedData::Normal3(map) => map.remove(time).map(Data::Normal3),
+            AnimatedData::Normal3(map) => map.remove(time).ok()?.map(Data::Normal3),
             #[cfg(feature = "point3")]
-            AnimatedData::Point3(map) => map.remove(time).map(Data::Point3),
+            AnimatedData::Point3(map) => map.remove(time).ok()?.map(Data::Point3),
             #[cfg(feature = "matrix4")]
-            AnimatedData::Matrix4(map) => map.remove(time).map(Data::Matrix4),
-            AnimatedData::BooleanVec(map) => map.remove(time).map(Data::BooleanVec),
-            AnimatedData::IntegerVec(map) => map.remove(time).map(Data::IntegerVec),
-            AnimatedData::RealVec(map) => map.remove(time).map(Data::RealVec),
-            AnimatedData::ColorVec(map) => map.remove(time).map(Data::ColorVec),
-            AnimatedData::StringVec(map) => map.remove(time).map(Data::StringVec),
+            AnimatedData::Matrix4(map) => map.remove(time).ok()?.map(Data::Matrix4),
+            AnimatedData::BooleanVec(map) => map.remove(time).ok()?.map(Data::BooleanVec),
+            AnimatedData::IntegerVec(map) => map.remove(time).ok()?.map(Data::IntegerVec),
+            AnimatedData::RealVec(map) => map.remove(time).ok()?.map(Data::RealVec),
+            AnimatedData::ColorVec(map) => map.remove(time).ok()?.map(Data::ColorVec),
+            AnimatedData::StringVec(map) => map.remove(time).ok()?.map(Data::StringVec),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            AnimatedData::Vector2Vec(map) => map.remove(time).map(Data::Vector2Vec),
+            AnimatedData::Vector2Vec(map) => map.remove(time).ok()?.map(Data::Vector2Vec),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            AnimatedData::Vector3Vec(map) => map.remove(time).map(Data::Vector3Vec),
+            AnimatedData::Vector3Vec(map) => map.remove(time).ok()?.map(Data::Vector3Vec),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            AnimatedData::Matrix3Vec(map) => map.remove(time).map(Data::Matrix3Vec),
+            AnimatedData::Matrix3Vec(map) => map.remove(time).ok()?.map(Data::Matrix3Vec),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            AnimatedData::Normal3Vec(map) => map.remove(time).map(Data::Normal3Vec),
+            AnimatedData::Normal3Vec(map) => map.remove(time).ok()?.map(Data::Normal3Vec),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            AnimatedData::Point3Vec(map) => map.remove(time).map(Data::Point3Vec),
+            AnimatedData::Point3Vec(map) => map.remove(time).ok()?.map(Data::Point3Vec),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            AnimatedData::Matrix4Vec(map) => map.remove(time).map(Data::Matrix4Vec),
+            AnimatedData::Matrix4Vec(map) => map.remove(time).ok()?.map(Data::Matrix4Vec),
             #[cfg(feature = "curves")]
-            AnimatedData::RealCurve(map) => map.remove(time).map(Data::RealCurve),
+            AnimatedData::RealCurve(map) => map.remove(time).ok()?.map(Data::RealCurve),
             #[cfg(feature = "curves")]
-            AnimatedData::ColorCurve(map) => map.remove(time).map(Data::ColorCurve),
+            AnimatedData::ColorCurve(map) => map.remove(time).ok()?.map(Data::ColorCurve),
         }
     }
 

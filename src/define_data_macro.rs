@@ -190,7 +190,7 @@ macro_rules! define_data_types {
                 match self {
                     $(
                         $animated_name::$variant(map) => {
-                            map.remove(time).map($data_name::$variant)
+                            map.remove(time).ok()?.map($data_name::$variant)
                         }
                     )+
                 }

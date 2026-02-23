@@ -226,7 +226,9 @@ pub trait AnimatedDataSystem:
 
     /// Removes the keyframe at the given time.
     ///
-    /// Returns the removed value if it existed.
+    /// Returns the removed value if it existed. Returns `None` if the key
+    /// was not found or if it was the last sample (the non-empty invariant
+    /// prevents removing it).
     fn remove_at(&mut self, time: &Time) -> Option<Self::Data>;
 
     /// Returns the data type discriminant for this animated data.
