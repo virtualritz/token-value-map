@@ -45,6 +45,10 @@ pub enum Error {
     #[error("cannot create animated value with no samples")]
     EmptySamples,
 
+    /// Cannot remove the last sample from animated data.
+    #[error("cannot remove the last sample from animated data")]
+    LastSample,
+
     /// Type mismatch in animated samples.
     #[cfg(feature = "builtin-types")]
     #[error("animated sample type mismatch: expected `{expected:?}`, got `{got:?}` at time {time}")]
