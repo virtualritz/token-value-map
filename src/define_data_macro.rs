@@ -208,9 +208,7 @@ macro_rules! define_data_types {
                 match value {
                     $(
                         $data_name::$variant(v) => {
-                            let mut map = ::std::collections::BTreeMap::new();
-                            map.insert(time, v);
-                            $animated_name::$variant($crate::TimeDataMap::from(map))
+                            $animated_name::$variant($crate::KeyDataMap::from_single(time, v))
                         }
                     )+
                 }

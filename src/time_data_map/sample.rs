@@ -74,16 +74,16 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
         let mut stretches = BTreeMap::new();
 
         #[cfg(not(feature = "interpolation"))]
-        for (time, matrix) in self.values.iter() {
-            let crate::Matrix3(inner) = matrix;
+        for (time, matrix) in self.values.as_btree_map().iter() {
+            let crate::Matrix3(ref inner) = *matrix;
             let (translate, rotate, stretch) = decompose_matrix(inner);
             translations.insert(*time, translate);
             rotations.insert(*time, rotate);
             stretches.insert(*time, stretch);
         }
         #[cfg(feature = "interpolation")]
-        for (time, (matrix, _spec)) in self.values.iter() {
-            let crate::Matrix3(inner) = matrix;
+        for (time, (matrix, _spec)) in self.values.as_btree_map().iter() {
+            let crate::Matrix3(ref inner) = *matrix;
             let (translate, rotate, stretch) = decompose_matrix(inner);
             translations.insert(*time, translate);
             rotations.insert(*time, rotate);

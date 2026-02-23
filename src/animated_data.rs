@@ -100,15 +100,15 @@ pub trait AnimatedDataOps {
 
 impl<T> AnimatedDataOps for TimeDataMap<T> {
     fn len(&self) -> usize {
-        self.values.len()
+        self.values.len().get()
     }
 
     fn is_empty(&self) -> bool {
-        self.values.is_empty()
+        false
     }
 
     fn is_animated(&self) -> bool {
-        self.values.len() > 1
+        self.values.len().get() > 1
     }
 }
 

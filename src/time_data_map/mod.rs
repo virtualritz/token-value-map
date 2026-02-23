@@ -1,5 +1,6 @@
 use crate::*;
 use enum_dispatch::enum_dispatch;
+use mitsein::btree_map1::BTreeMap1;
 
 use std::{
     collections::BTreeMap,
@@ -12,14 +13,17 @@ pub use sample::*;
 
 /// A generic key-value data map with interpolation support.
 ///
-/// Stores key-value pairs in a [`BTreeMap`] for efficient ordered
-/// queries and supports various interpolation methods.
+/// Stores key-value pairs in a [`BTreeMap1`] for efficient ordered
+/// queries and supports various interpolation methods. The map is
+/// guaranteed to be non-empty at the type level.
 ///
 /// When the `interpolation` feature is enabled, each value can have an
 /// associated interpolation specification for animation curves.
 ///
 /// Use the type alias [`TimeDataMap<V>`] for time-keyed maps (the common case),
 /// or use `KeyDataMap<Position, V>` for curve-domain maps.
+// AIDEV-NOTE: BTreeMap1 enforces the non-empty invariant at the type level.
+// This eliminates the class of panics from unwrap() on empty-map iteration.
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -31,13 +35,14 @@ pub use sample::*;
 )]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
-#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct KeyDataMap<K, V> {
     /// The key-value pairs with optional interpolation keys.
+    ///
+    /// Guaranteed non-empty by [`BTreeMap1`].
     #[cfg(not(feature = "interpolation"))]
-    pub values: BTreeMap<K, V>,
+    pub values: BTreeMap1<K, V>,
     #[cfg(feature = "interpolation")]
-    pub values: BTreeMap<K, (V, Option<crate::Key<V>>)>,
+    pub values: BTreeMap1<K, (V, Option<crate::Key<V>>)>,
 }
 
 /// A time-keyed data map. Alias for `KeyDataMap<Time, V>`.
@@ -50,7 +55,7 @@ impl<K: Eq, V: Eq> Eq for KeyDataMap<K, V> {}
 #[cfg(not(feature = "interpolation"))]
 impl<K, V> AsRef<BTreeMap<K, V>> for KeyDataMap<K, V> {
     fn as_ref(&self) -> &BTreeMap<K, V> {
-        &self.values
+        self.values.as_btree_map()
     }
 }
 
@@ -60,53 +65,96 @@ impl<K: Ord, V> KeyDataMap<K, V> {
     pub fn iter(&self) -> impl Iterator<Item = (&K, &V)> {
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.iter()
+            self.values.as_btree_map().iter()
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.iter().map(|(k, (v, _))| (k, v))
+            self.values.as_btree_map().iter().map(|(k, (v, _))| (k, v))
         }
     }
 
-    /// Check if empty.
+    /// Always returns `false` -- [`BTreeMap1`] guarantees at least one entry.
     #[inline]
     pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
+        false
     }
 
     /// Get the number of entries.
     #[inline]
     pub fn len(&self) -> usize {
-        self.values.len()
+        self.values.len().get()
     }
 
     /// Remove a sample at the given key.
     ///
-    /// Returns the removed value if it existed.
+    /// Returns `Ok(Some(value))` if the key existed and was removed,
+    /// `Ok(None)` if the key was not found, or `Err(LastSample)` if
+    /// removing the key would empty the map.
     #[inline]
-    pub fn remove(&mut self, key: &K) -> Option<V> {
+    pub fn remove(&mut self, key: &K) -> crate::Result<Option<V>> {
+        if !self.values.contains_key(key) {
+            return Ok(None);
+        }
+        if self.values.len().get() == 1 {
+            return Err(crate::Error::LastSample);
+        }
+        // SAFETY: len >= 2 and key exists, so removing won't empty the map.
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.remove(key)
+            Ok(unsafe { self.values.as_mut_btree_map() }.remove(key))
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.remove(key).map(|(v, _)| v)
+            Ok(unsafe { self.values.as_mut_btree_map() }
+                .remove(key)
+                .map(|(v, _)| v))
         }
     }
 }
 
-// Constructor from BTreeMap.
-impl<K: Ord, V> From<BTreeMap<K, V>> for KeyDataMap<K, V> {
-    fn from(values: BTreeMap<K, V>) -> Self {
+// Fallible constructor from BTreeMap.
+impl<K: Ord, V> TryFrom<BTreeMap<K, V>> for KeyDataMap<K, V> {
+    type Error = crate::Error;
+
+    fn try_from(values: BTreeMap<K, V>) -> crate::Result<Self> {
         #[cfg(not(feature = "interpolation"))]
         {
-            Self { values }
+            let values =
+                BTreeMap1::try_from(values).map_err(|_| crate::Error::EmptySamples)?;
+            Ok(Self { values })
+        }
+        #[cfg(feature = "interpolation")]
+        {
+            let interp_values: BTreeMap<K, (V, Option<crate::Key<V>>)> =
+                values.into_iter().map(|(k, v)| (k, (v, None))).collect();
+            let values =
+                BTreeMap1::try_from(interp_values).map_err(|_| crate::Error::EmptySamples)?;
+            Ok(Self { values })
+        }
+    }
+}
+
+// Direct constructor from BTreeMap1 (already validated non-empty).
+#[cfg(not(feature = "interpolation"))]
+impl<K: Ord, V> From<BTreeMap1<K, V>> for KeyDataMap<K, V> {
+    fn from(values: BTreeMap1<K, V>) -> Self {
+        Self { values }
+    }
+}
+
+impl<K: Ord, V> KeyDataMap<K, V> {
+    /// Create a map with a single key-value pair.
+    pub fn from_single(key: K, value: V) -> Self {
+        #[cfg(not(feature = "interpolation"))]
+        {
+            Self {
+                values: BTreeMap1::from_one((key, value)),
+            }
         }
         #[cfg(feature = "interpolation")]
         {
             Self {
-                values: values.into_iter().map(|(k, v)| (k, (v, None))).collect(),
+                values: BTreeMap1::from_one((key, (value, None))),
             }
         }
     }
@@ -125,72 +173,57 @@ pub trait TimeDataMapControl<T> {
 
 impl<V> TimeDataMapControl<V> for KeyDataMap<Time, V> {
     fn len(&self) -> usize {
-        self.values.len()
+        self.values.len().get()
     }
 
     fn is_empty(&self) -> bool {
-        self.values.is_empty()
+        false
     }
 
     fn is_animated(&self) -> bool {
-        self.values.len() > 1
+        self.values.len().get() > 1
     }
 }
 
 #[cfg(feature = "builtin-types")]
-impl<K, V> crate::DataTypeOps for KeyDataMap<K, V>
+impl<K: Ord, V> crate::DataTypeOps for KeyDataMap<K, V>
 where
     V: crate::DataTypeOps,
 {
     fn data_type(&self) -> crate::DataType {
-        // Use the first element to determine the type, or return a default if empty.
+        // SAFETY: BTreeMap1 guarantees at least one entry.
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values
-                .values()
-                .next()
-                .map(|v| v.data_type())
-                .unwrap_or(DataType::Real)
+            self.values.first_key_value().1.data_type()
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values
-                .values()
-                .next()
-                .map(|(v, _)| v.data_type())
-                .unwrap_or(DataType::Real)
+            self.values.first_key_value().1.0.data_type()
         }
     }
 
     fn type_name(&self) -> &'static str {
-        // Use the first element to determine the type name.
+        // SAFETY: BTreeMap1 guarantees at least one entry.
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values
-                .values()
-                .next()
-                .map(|v| v.type_name())
-                .unwrap_or("unknown")
+            self.values.first_key_value().1.type_name()
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values
-                .values()
-                .next()
-                .map(|(v, _)| v.type_name())
-                .unwrap_or("unknown")
+            self.values.first_key_value().1.0.type_name()
         }
     }
 }
 
 // AIDEV-NOTE: These From impls are only available with builtin-types feature.
+// They delegate to KeyDataMap::from_single which uses BTreeMap1::from_one.
 #[cfg(feature = "builtin-types")]
 macro_rules! impl_from_at_time {
     ($($t:ty),+) => {
         $(
             impl From<(Time, $t)> for TimeDataMap<$t> {
                 fn from((time, value): (Time, $t)) -> Self {
-                    TimeDataMap::from(BTreeMap::from([(time, value)]))
+                    KeyDataMap::from_single(time, value)
                 }
             }
         )+
@@ -290,11 +323,11 @@ where
     pub fn interpolate(&self, key: K) -> V {
         #[cfg(not(feature = "interpolation"))]
         {
-            interpolate(&self.values, key)
+            interpolate(self.values.as_btree_map(), key)
         }
         #[cfg(feature = "interpolation")]
         {
-            interpolate_with_specs(&self.values, key)
+            interpolate_with_specs(self.values.as_btree_map(), key)
         }
     }
 }
@@ -334,7 +367,8 @@ impl<K: Ord, V> KeyDataMap<K, V> {
     ///
     /// After calling this, all interpolation reverts to automatic mode.
     pub fn clear_interpolation(&mut self) {
-        for (_, interp) in self.values.values_mut() {
+        // SAFETY: Only modifying values in-place, not removing entries.
+        for (_, interp) in unsafe { self.values.as_mut_btree_map() }.values_mut() {
             *interp = None;
         }
     }
@@ -343,7 +377,10 @@ impl<K: Ord, V> KeyDataMap<K, V> {
     ///
     /// Returns `true` if any interpolation metadata is present.
     pub fn has_interpolation(&self) -> bool {
-        self.values.values().any(|(_, interp)| interp.is_some())
+        self.values
+            .as_btree_map()
+            .values()
+            .any(|(_, interp)| interp.is_some())
     }
 }
 
@@ -355,22 +392,21 @@ where
     where
         I: IntoIterator<Item = (K, U)>,
     {
-        Self::from(BTreeMap::from_iter(
-            iter.into_iter().map(|(k, v)| (k, v.into())),
-        ))
+        let btree: BTreeMap<K, V> = iter.into_iter().map(|(k, v)| (k, v.into())).collect();
+        // SAFETY: All callers (Value::animated, GenericValue::animated) validate non-empty
+        // before calling from_iter. This is enforced by EmptySamples checks upstream.
+        Self::try_from(btree).expect("KeyDataMap::from_iter called with empty iterator")
     }
 }
 
 impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
     pub fn closest_sample(&self, key: K) -> &V {
         let k_f32: f32 = key.into();
+        let map = self.values.as_btree_map();
         #[cfg(not(feature = "interpolation"))]
         {
-            let mut range = self.values.range(key..);
-            let greater_or_equal = range.next();
-
-            let mut range = self.values.range(..key);
-            let less_than = range.next_back();
+            let greater_or_equal = map.range(key..).next();
+            let less_than = map.range(..key).next_back();
 
             match (less_than, greater_or_equal) {
                 (Some((lower_k, lower_v)), Some((upper_k, upper_v))) => {
@@ -383,18 +419,16 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
                     }
                 }
                 (Some(entry), None) | (None, Some(entry)) => entry.1,
+                // SAFETY: BTreeMap1 guarantees at least one entry exists.
                 (None, None) => {
-                    unreachable!("KeyDataMap can never be empty")
+                    unreachable!("BTreeMap1 guarantees KeyDataMap is never empty")
                 }
             }
         }
         #[cfg(feature = "interpolation")]
         {
-            let mut range = self.values.range(key..);
-            let greater_or_equal = range.next();
-
-            let mut range = self.values.range(..key);
-            let less_than = range.next_back();
+            let greater_or_equal = map.range(key..).next();
+            let less_than = map.range(..key).next_back();
 
             match (less_than, greater_or_equal) {
                 (Some((lower_k, (lower_v, _))), Some((upper_k, (upper_v, _)))) => {
@@ -407,8 +441,9 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
                     }
                 }
                 (Some((_, (v, _))), None) | (None, Some((_, (v, _)))) => v,
+                // SAFETY: BTreeMap1 guarantees at least one entry exists.
                 (None, None) => {
-                    unreachable!("KeyDataMap can never be empty")
+                    unreachable!("BTreeMap1 guarantees KeyDataMap is never empty")
                 }
             }
         }
@@ -421,25 +456,27 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
 
     /// Get the value at or before the given key.
     pub fn sample_at_or_before(&self, key: K) -> Option<&V> {
+        let map = self.values.as_btree_map();
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.range(..=key).next_back().map(|(_, v)| v)
+            map.range(..=key).next_back().map(|(_, v)| v)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.range(..=key).next_back().map(|(_, (v, _))| v)
+            map.range(..=key).next_back().map(|(_, (v, _))| v)
         }
     }
 
     /// Get the value at or after the given key.
     pub fn sample_at_or_after(&self, key: K) -> Option<&V> {
+        let map = self.values.as_btree_map();
         #[cfg(not(feature = "interpolation"))]
         {
-            self.values.range(key..).next().map(|(_, v)| v)
+            map.range(key..).next().map(|(_, v)| v)
         }
         #[cfg(feature = "interpolation")]
         {
-            self.values.range(key..).next().map(|(_, (v, _))| v)
+            map.range(key..).next().map(|(_, (v, _))| v)
         }
     }
 
@@ -448,13 +485,13 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
     /// Returns up to `N` samples centered around the given key for
     /// use in interpolation algorithms.
     pub fn sample_surrounding<const N: usize>(&self, key: K) -> SmallVec<[(K, &V); N]> {
+        let map = self.values.as_btree_map();
         // Get samples before the key.
         let before_count = N / 2;
 
         #[cfg(not(feature = "interpolation"))]
         {
-            let mut result = self
-                .values
+            let mut result = map
                 .range(..key)
                 .rev()
                 .take(before_count)
@@ -465,8 +502,7 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
             // Get samples at or after the key.
             let after_count = N - result.len();
             result.extend(
-                self.values
-                    .range(key..)
+                map.range(key..)
                     .take(after_count)
                     .map(|(k, v)| (*k, v)),
             );
@@ -475,8 +511,7 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
 
         #[cfg(feature = "interpolation")]
         {
-            let mut result = self
-                .values
+            let mut result = map
                 .range(..key)
                 .rev()
                 .take(before_count)
@@ -487,8 +522,7 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
             // Get samples at or after the key.
             let after_count = N - result.len();
             result.extend(
-                self.values
-                    .range(key..)
+                map.range(key..)
                     .take(after_count)
                     .map(|(k, (v, _))| (*k, v)),
             );
