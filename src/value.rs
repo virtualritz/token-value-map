@@ -371,12 +371,39 @@ impl Value {
     /// Remove a sample at a specific time.
     ///
     /// Returns the removed value if it existed. For uniform values, this is a
-    /// no-op and returns `None`. If the last sample is removed from an
-    /// animated value, the value remains animated but empty.
+    /// no-op and returns `None`. The last sample in an animated value cannot
+    /// be removed (returns `None`). Use [`remove_or_make_uniform`](Self::remove_or_make_uniform)
+    /// to degrade to uniform instead.
     pub fn remove_sample(&mut self, time: &Time) -> Option<Data> {
         match self {
             Value::Uniform(_) => None,
             Value::Animated(samples) => samples.remove_at(time),
+        }
+    }
+
+    /// Remove a sample, converting to uniform if it was the last keyframe.
+    ///
+    /// If the value is uniform, returns `None`. If the removed sample was
+    /// the last keyframe, the value degrades from [`Value::Animated`] to
+    /// [`Value::Uniform`] with that keyframe's value and returns `None`
+    /// (the data is preserved, not lost). Otherwise returns the removed value.
+    pub fn remove_or_make_uniform(&mut self, time: &Time) -> Option<Data> {
+        match self {
+            Value::Uniform(_) => None,
+            Value::Animated(samples) => {
+                let removed = samples.remove_at(time);
+                if removed.is_some() {
+                    return removed;
+                }
+                // remove_at returned None -- either key not found or last sample.
+                // Check if it's the last sample at this time.
+                if samples.sample_at(*time).is_some() {
+                    // It's the last sample -- degrade to uniform.
+                    let data = samples.interpolate(Time::default());
+                    *self = Value::Uniform(data);
+                }
+                None
+            }
         }
     }
 
