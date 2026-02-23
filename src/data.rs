@@ -1564,7 +1564,7 @@ where
         result.extend((0..N - result.len()).map(|_| T::default()));
     }
 
-    // This cannot Err
+    // SAFETY: SmallVec was extended to exactly N elements above; into_inner() cannot fail.
     Ok(result.into_inner().unwrap())
 }
 

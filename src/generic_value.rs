@@ -259,6 +259,7 @@ impl<D: DataSystem> GenericValue<D> {
 
                 if combined_samples.len() == 1 {
                     Ok(GenericValue::Uniform(
+                        // SAFETY: Guarded by combined_samples.len() == 1 check above.
                         combined_samples.into_iter().next().unwrap().1,
                     ))
                 } else {

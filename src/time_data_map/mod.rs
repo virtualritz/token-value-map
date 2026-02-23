@@ -599,9 +599,11 @@ impl Mul<f32> for DiagStretch {
 #[inline(always)]
 fn interpolate_rotation(map: &BTreeMap<Time, f32>, time: Time) -> f32 {
     if map.len() == 1 {
+        // SAFETY: Guarded by len == 1 check above.
         return *map.values().next().unwrap();
     }
 
+    // SAFETY: Past the len == 1 early return, map has >= 2 entries.
     let first = map.iter().next().unwrap();
     let last = map.iter().next_back().unwrap();
 
@@ -613,6 +615,7 @@ fn interpolate_rotation(map: &BTreeMap<Time, f32>, time: Time) -> f32 {
         return *last.1;
     }
 
+    // SAFETY: key is strictly between first and last keys (boundary checks above).
     let lower = map.range(..=time).next_back().unwrap();
     let upper = map.range(time..).next().unwrap();
 
@@ -754,9 +757,11 @@ where
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     if map.len() == 1 {
+        // SAFETY: Guarded by len == 1 check above.
         return map.values().next().unwrap().0.clone();
     }
 
+    // SAFETY: Past the len == 1 early return, map has >= 2 entries.
     let first = map.iter().next().unwrap();
     let last = map.iter().next_back().unwrap();
 
@@ -768,7 +773,7 @@ where
         return last.1.0.clone();
     }
 
-    // Find surrounding keyframes.
+    // SAFETY: key is strictly between first and last keys (boundary checks above).
     let lower = map.range(..key).next_back().unwrap();
     let upper = map.range(key..).next().unwrap();
 
@@ -866,9 +871,11 @@ where
     V: Clone + Add<Output = V> + Mul<f32, Output = V> + Sub<Output = V>,
 {
     if map.len() == 1 {
+        // SAFETY: Guarded by len == 1 check above.
         return map.values().next().unwrap().clone();
     }
 
+    // SAFETY: Past the len == 1 early return, map has >= 2 entries.
     let first = map.iter().next().unwrap();
     let last = map.iter().next_back().unwrap();
 
@@ -880,6 +887,7 @@ where
         return last.1.clone();
     }
 
+    // SAFETY: key is strictly between first and last keys (boundary checks above).
     let lower = map.range(..key).next_back().unwrap();
     let upper = map.range(key..).next().unwrap();
 

@@ -575,6 +575,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Integer(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Integer(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -582,6 +583,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Real(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Real(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -590,6 +592,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Color(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Color(*map.iter().next().unwrap().1)
                 }
             }
@@ -598,6 +601,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Vector2(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Vector2(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -606,6 +610,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Vector3(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Vector3(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -614,6 +619,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Matrix3(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Matrix3(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -622,6 +628,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Normal3(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Normal3(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -630,6 +637,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Point3(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Point3(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -638,6 +646,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Matrix4(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Matrix4(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -646,6 +655,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::IntegerVec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::IntegerVec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -653,6 +663,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::RealVec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::RealVec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -660,6 +671,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::ColorVec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::ColorVec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -669,6 +681,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Vector2Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Vector2Vec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -677,6 +690,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Vector3Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Vector3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -685,6 +699,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Matrix3Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Matrix3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -693,6 +708,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Normal3Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Normal3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -701,6 +717,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Point3Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Point3Vec(map.iter().next().unwrap().1.clone())
                 }
             }
@@ -709,6 +726,7 @@ impl AnimatedData {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Matrix4Vec(map.interpolate(time))
                 } else {
+                    // SAFETY: BTreeMap1 guarantees non-empty; !is_animated() means exactly one entry.
                     Data::Matrix4Vec(map.iter().next().unwrap().1.clone())
                 }
             }

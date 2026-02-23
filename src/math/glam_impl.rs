@@ -70,6 +70,7 @@ pub fn mat3_from_row_slice(data: &[f32]) -> Mat3Impl {
 #[inline(always)]
 pub fn mat3_from_column_slice(data: &[f32]) -> Mat3Impl {
     assert_eq!(data.len(), 9, "Matrix3 requires exactly 9 elements");
+    // SAFETY: assert_eq!(data.len(), 9) above guarantees the slice is exactly 9 elements.
     Mat3Impl::from_cols_array(data.try_into().unwrap())
 }
 
