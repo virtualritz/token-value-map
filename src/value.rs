@@ -341,8 +341,8 @@ impl Value {
         Ok(Value::Animated(animated_data))
     }
 
-    /// Add a sample at a specific time, checking length constraints
-    pub fn add_sample<V: Into<Data>>(&mut self, time: Time, val: V) -> Result<()> {
+    /// Add a sample at a specific time, checking length constraints.
+    pub fn add_at<V: Into<Data>>(&mut self, time: Time, val: V) -> Result<()> {
         let value = val.into();
 
         match self {
@@ -366,6 +366,12 @@ impl Value {
                 samples.try_insert(time, value)
             }
         }
+    }
+
+    /// Deprecated alias for [`add_at`](Self::add_at).
+    #[deprecated(since = "0.2.3", note = "renamed to `add_at`")]
+    pub fn add_sample<V: Into<Data>>(&mut self, time: Time, val: V) -> Result<()> {
+        self.add_at(time, val)
     }
 
     /// Remove a sample at a specific time.

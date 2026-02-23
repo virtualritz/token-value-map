@@ -570,7 +570,7 @@ impl AnimatedData {
 
     pub fn interpolate(&self, time: Time) -> Data {
         match self {
-            AnimatedData::Boolean(map) => Data::Boolean(map.closest_sample(time).clone()),
+            AnimatedData::Boolean(map) => Data::Boolean(map.sample_closest_at(time).clone()),
             AnimatedData::Integer(map) => {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Integer(map.interpolate(time))
@@ -587,7 +587,7 @@ impl AnimatedData {
                     Data::Real(map.iter().next().unwrap().1.clone())
                 }
             }
-            AnimatedData::String(map) => Data::String(map.closest_sample(time).clone()),
+            AnimatedData::String(map) => Data::String(map.sample_closest_at(time).clone()),
             AnimatedData::Color(map) => {
                 if TimeDataMapControl::is_animated(map) {
                     Data::Color(map.interpolate(time))
@@ -650,7 +650,7 @@ impl AnimatedData {
                     Data::Matrix4(map.iter().next().unwrap().1.clone())
                 }
             }
-            AnimatedData::BooleanVec(map) => Data::BooleanVec(map.closest_sample(time).clone()),
+            AnimatedData::BooleanVec(map) => Data::BooleanVec(map.sample_closest_at(time).clone()),
             AnimatedData::IntegerVec(map) => {
                 if TimeDataMapControl::is_animated(map) {
                     Data::IntegerVec(map.interpolate(time))
@@ -675,7 +675,7 @@ impl AnimatedData {
                     Data::ColorVec(map.iter().next().unwrap().1.clone())
                 }
             }
-            AnimatedData::StringVec(map) => Data::StringVec(map.closest_sample(time).clone()),
+            AnimatedData::StringVec(map) => Data::StringVec(map.sample_closest_at(time).clone()),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
             AnimatedData::Vector2Vec(map) => {
                 if TimeDataMapControl::is_animated(map) {
@@ -731,9 +731,9 @@ impl AnimatedData {
                 }
             }
             #[cfg(feature = "curves")]
-            AnimatedData::RealCurve(map) => Data::RealCurve(map.closest_sample(time).clone()),
+            AnimatedData::RealCurve(map) => Data::RealCurve(map.sample_closest_at(time).clone()),
             #[cfg(feature = "curves")]
-            AnimatedData::ColorCurve(map) => Data::ColorCurve(map.closest_sample(time).clone()),
+            AnimatedData::ColorCurve(map) => Data::ColorCurve(map.sample_closest_at(time).clone()),
         }
     }
 }

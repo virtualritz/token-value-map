@@ -51,6 +51,12 @@ pub type TimeDataMap<V> = KeyDataMap<Time, V>;
 // Manual Eq implementation.
 impl<K: Eq, V: Eq> Eq for KeyDataMap<K, V> {}
 
+// AIDEV-NOTE: KeyDataMap intentionally has NO rkyv derives or manual impls.
+// BTreeMap1 (mitsein) lacks rkyv support, and frame-tick's ArchivedTick lacks Ord,
+// blocking BTreeMap-delegation. The #![feature(trivial_bounds)] gate in lib.rs lets
+// AnimatedData's rkyv derive compile with inert (unsatisfied) bounds. Full rkyv
+// support requires upstream: ArchivedTick: Ord + Portable in frame-tick.
+
 // AsRef implementation for backward compatibility.
 #[cfg(not(feature = "interpolation"))]
 impl<K, V> AsRef<BTreeMap<K, V>> for KeyDataMap<K, V> {
@@ -399,7 +405,7 @@ where
 }
 
 impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
-    pub fn closest_sample(&self, key: K) -> &V {
+    pub fn sample_closest_at(&self, key: K) -> &V {
         let k_f32: f32 = key.into();
         let map = self.values.as_btree_map();
         #[cfg(not(feature = "interpolation"))]
@@ -523,6 +529,12 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
             );
             result
         }
+    }
+
+    /// Deprecated alias for [`sample_closest_at`](Self::sample_closest_at).
+    #[deprecated(since = "0.2.3", note = "renamed to `sample_closest_at`")]
+    pub fn closest_sample(&self, key: K) -> &V {
+        self.sample_closest_at(key)
     }
 }
 
