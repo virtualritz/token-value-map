@@ -1,6 +1,6 @@
 [package]
 name = "token-value-map"
-version = "0.2.3"
+version = "0.2.4"
 authors = ["Moritz Moeller <virtualritz@gmail.com>"]
 edition = "2024"
 keywords = [
@@ -37,7 +37,9 @@ ultraviolet = ["dep:ultraviolet"]
 mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
 
 # rkyv only works with glam backend.
-rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv"]
+rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "frame-tick/bytecheck", "glam/rkyv"]
+# Standalone bytecheck for frame-tick (also pulled in by rkyv).
+bytecheck = ["dep:rkyv", "frame-tick/bytecheck"]
 
 # Facet support -- works with any backend.
 facet = ["dep:facet", "frame-tick/facet"]

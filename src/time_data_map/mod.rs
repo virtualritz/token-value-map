@@ -51,11 +51,169 @@ pub type TimeDataMap<V> = KeyDataMap<Time, V>;
 // Manual Eq implementation.
 impl<K: Eq, V: Eq> Eq for KeyDataMap<K, V> {}
 
-// AIDEV-NOTE: KeyDataMap intentionally has NO rkyv derives or manual impls.
-// BTreeMap1 (mitsein) lacks rkyv support, and frame-tick's ArchivedTick lacks Ord,
-// blocking BTreeMap-delegation. The #![feature(trivial_bounds)] gate in lib.rs lets
-// AnimatedData's rkyv derive compile with inert (unsatisfied) bounds. Full rkyv
-// support requires upstream: ArchivedTick: Ord + Portable in frame-tick.
+// AIDEV-NOTE: KeyDataMap has manual rkyv impls (Archive/Serialize/Deserialize)
+// that delegate to BTreeMap via `as_btree_map()`. A #[repr(transparent)] newtype
+// `ArchivedKeyDataMap` wraps `ArchivedBTreeMap` to satisfy orphan rules. Two cfg
+// variants exist: `not(interpolation)` stores `BTreeMap<K, V>`, `interpolation`
+// stores `BTreeMap<K, (V, Option<Key<V>>)>`. The non-empty invariant is restored
+// on deserialization via `BTreeMap1::try_from`.
+#[cfg(feature = "rkyv")]
+const _: () = {
+    use rkyv::rancor::{Fallible, Source};
+    use rkyv::{
+        Archive, Deserialize, Place, Serialize,
+        collections::btree_map::{ArchivedBTreeMap, BTreeMapResolver},
+        traits::Portable,
+    };
+    use std::collections::BTreeMap;
+
+    /// Archived form of [`KeyDataMap`]. Transparent wrapper over
+    /// [`ArchivedBTreeMap`].
+    #[repr(transparent)]
+    pub struct ArchivedKeyDataMap<K, V>(ArchivedBTreeMap<K, V>);
+
+    // SAFETY: `ArchivedBTreeMap` is `Portable` and our newtype is
+    // `#[repr(transparent)]`, so it has identical layout.
+    unsafe impl<K: Portable, V: Portable> Portable for ArchivedKeyDataMap<K, V> {}
+
+    // ---- not(interpolation) variant ----
+
+    #[cfg(not(feature = "interpolation"))]
+    impl<K, V> Archive for super::KeyDataMap<K, V>
+    where
+        K: Archive + Ord,
+        K::Archived: Ord,
+        V: Archive,
+    {
+        type Archived = ArchivedKeyDataMap<K::Archived, V::Archived>;
+        type Resolver = BTreeMapResolver;
+
+        fn resolve(&self, resolver: Self::Resolver, out: Place<Self::Archived>) {
+            // SAFETY: ArchivedKeyDataMap is #[repr(transparent)] over ArchivedBTreeMap.
+            let out = unsafe { out.cast_unchecked::<ArchivedBTreeMap<K::Archived, V::Archived>>() };
+            ArchivedBTreeMap::resolve_from_len(self.values.len().get(), resolver, out);
+        }
+    }
+
+    #[cfg(not(feature = "interpolation"))]
+    impl<K, V, S> Serialize<S> for super::KeyDataMap<K, V>
+    where
+        K: Serialize<S> + Ord,
+        K::Archived: Ord,
+        V: Serialize<S>,
+        S: rkyv::ser::Allocator + Fallible + rkyv::ser::Writer + ?Sized,
+        S::Error: Source,
+    {
+        fn serialize(&self, serializer: &mut S) -> std::result::Result<Self::Resolver, S::Error> {
+            <ArchivedBTreeMap<K::Archived, V::Archived>>::serialize_from_ordered_iter::<
+                _,
+                _,
+                _,
+                K,
+                V,
+                _,
+            >(self.values.as_btree_map().iter(), serializer)
+        }
+    }
+
+    #[cfg(not(feature = "interpolation"))]
+    impl<K, V, D> Deserialize<super::KeyDataMap<K, V>, D>
+        for ArchivedKeyDataMap<K::Archived, V::Archived>
+    where
+        K: Archive + Ord,
+        K::Archived: Deserialize<K, D> + Ord,
+        V: Archive,
+        V::Archived: Deserialize<V, D>,
+        D: Fallible + ?Sized,
+    {
+        fn deserialize(
+            &self,
+            deserializer: &mut D,
+        ) -> std::result::Result<super::KeyDataMap<K, V>, D::Error> {
+            let btree: BTreeMap<K, V> = self.0.deserialize(deserializer)?;
+            // SAFETY: rkyv serialization preserves the non-empty invariant.
+            Ok(super::KeyDataMap {
+                values: mitsein::btree_map1::BTreeMap1::try_from(btree)
+                    .expect("archived KeyDataMap was empty"),
+            })
+        }
+    }
+
+    // ---- interpolation variant ----
+    // AIDEV-NOTE: The value type in the BTreeMap is `(V, Option<Key<V>>)`. rkyv
+    // archives tuples as `ArchivedTuple2`, not raw tuples, so we must use
+    // `<(V, Option<Key<V>>) as Archive>::Archived` to get the correct type.
+
+    /// Shorthand for the archived tuple value type used by the interpolation variant.
+    #[cfg(feature = "interpolation")]
+    type ArchivedInterp<V> = <(V, Option<crate::Key<V>>) as Archive>::Archived;
+
+    #[cfg(feature = "interpolation")]
+    impl<K, V> Archive for super::KeyDataMap<K, V>
+    where
+        K: Archive + Ord,
+        K::Archived: Ord,
+        V: Archive,
+        (V, Option<crate::Key<V>>): Archive,
+    {
+        type Archived = ArchivedKeyDataMap<K::Archived, ArchivedInterp<V>>;
+        type Resolver = BTreeMapResolver;
+
+        fn resolve(&self, resolver: Self::Resolver, out: Place<Self::Archived>) {
+            // SAFETY: ArchivedKeyDataMap is #[repr(transparent)] over ArchivedBTreeMap.
+            let out =
+                unsafe { out.cast_unchecked::<ArchivedBTreeMap<K::Archived, ArchivedInterp<V>>>() };
+            ArchivedBTreeMap::resolve_from_len(self.values.len().get(), resolver, out);
+        }
+    }
+
+    #[cfg(feature = "interpolation")]
+    impl<K, V, S> Serialize<S> for super::KeyDataMap<K, V>
+    where
+        K: Serialize<S> + Ord,
+        K::Archived: Ord,
+        V: Serialize<S>,
+        (V, Option<crate::Key<V>>): Serialize<S>,
+        S: rkyv::ser::Allocator + Fallible + rkyv::ser::Writer + ?Sized,
+        S::Error: Source,
+    {
+        fn serialize(&self, serializer: &mut S) -> std::result::Result<Self::Resolver, S::Error> {
+            <ArchivedBTreeMap<K::Archived, ArchivedInterp<V>>>::serialize_from_ordered_iter::<
+                _,
+                _,
+                _,
+                K,
+                (V, Option<crate::Key<V>>),
+                _,
+            >(self.values.as_btree_map().iter(), serializer)
+        }
+    }
+
+    #[cfg(feature = "interpolation")]
+    impl<K, V, D> Deserialize<super::KeyDataMap<K, V>, D>
+        for ArchivedKeyDataMap<K::Archived, ArchivedInterp<V>>
+    where
+        K: Archive + Ord,
+        K::Archived: Deserialize<K, D> + Ord,
+        V: Archive,
+        (V, Option<crate::Key<V>>): Archive,
+        ArchivedInterp<V>: Deserialize<(V, Option<crate::Key<V>>), D>,
+        D: Fallible + ?Sized,
+    {
+        fn deserialize(
+            &self,
+            deserializer: &mut D,
+        ) -> std::result::Result<super::KeyDataMap<K, V>, D::Error> {
+            let btree: BTreeMap<K, (V, Option<crate::Key<V>>)> =
+                self.0.deserialize(deserializer)?;
+            // SAFETY: rkyv serialization preserves the non-empty invariant.
+            Ok(super::KeyDataMap {
+                values: mitsein::btree_map1::BTreeMap1::try_from(btree)
+                    .expect("archived KeyDataMap was empty"),
+            })
+        }
+    }
+};
 
 // AsRef implementation for backward compatibility.
 #[cfg(not(feature = "interpolation"))]
