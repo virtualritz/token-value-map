@@ -478,11 +478,11 @@ impl AnimatedData {
     /// Returns the removed value as [`Data`] if it existed. Returns `None`
     /// if the key was not found or if it was the last sample (the non-empty
     /// invariant prevents removing it). Use
-    /// [`Value::remove_or_make_uniform`](crate::Value::remove_or_make_uniform)
+    /// [`Value::remove_at_or_to_uniform`](crate::Value::remove_at_or_to_uniform)
     /// to degrade to uniform instead.
     pub fn remove_at(&mut self, time: &Time) -> Option<Data> {
         // AIDEV-NOTE: map.remove() returns Result<Option<V>>. Err(LastSample)
-        // is flattened to None -- callers use remove_or_make_uniform for that case.
+        // is flattened to None -- callers use remove_at_or_to_uniform for that case.
         match self {
             AnimatedData::Boolean(map) => map.remove(time).ok()?.map(Data::Boolean),
             AnimatedData::Integer(map) => map.remove(time).ok()?.map(Data::Integer),

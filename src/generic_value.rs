@@ -122,13 +122,19 @@ impl<D: DataSystem> GenericValue<D> {
     ///
     /// Returns the removed value if it existed. For uniform values, this is a
     /// no-op and returns `None`. The last sample in an animated value cannot
-    /// be removed (returns `None`). Use [`remove_or_make_uniform`](Self::remove_or_make_uniform)
+    /// be removed (returns `None`). Use [`remove_at_or_to_uniform`](Self::remove_at_or_to_uniform)
     /// to degrade to uniform instead.
-    pub fn remove_sample(&mut self, time: &Time) -> Option<D> {
+    pub fn remove_at(&mut self, time: &Time) -> Option<D> {
         match self {
             GenericValue::Uniform(_) => None,
             GenericValue::Animated(samples) => samples.remove_at(time),
         }
+    }
+
+    /// Deprecated alias for [`remove_at`](Self::remove_at).
+    #[deprecated(since = "0.2.2", note = "renamed to `remove_at`")]
+    pub fn remove_sample(&mut self, time: &Time) -> Option<D> {
+        self.remove_at(time)
     }
 
     /// Remove a sample, converting to uniform if it was the last keyframe.
@@ -138,7 +144,7 @@ impl<D: DataSystem> GenericValue<D> {
     /// to [`GenericValue::Uniform`] with that keyframe's value and returns
     /// `None` (the data is preserved, not lost). Otherwise returns the
     /// removed value.
-    pub fn remove_or_make_uniform(&mut self, time: &Time) -> Option<D> {
+    pub fn remove_at_or_to_uniform(&mut self, time: &Time) -> Option<D> {
         match self {
             GenericValue::Uniform(_) => None,
             GenericValue::Animated(samples) => {
