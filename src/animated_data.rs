@@ -727,12 +727,12 @@ impl Hash for AnimatedData {
             AnimatedData::Boolean(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -741,12 +741,12 @@ impl Hash for AnimatedData {
             AnimatedData::Integer(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -755,12 +755,12 @@ impl Hash for AnimatedData {
             AnimatedData::Real(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.to_bits().hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.to_bits().hash(state);
                     spec.hash(state);
@@ -769,12 +769,12 @@ impl Hash for AnimatedData {
             AnimatedData::String(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -783,12 +783,12 @@ impl Hash for AnimatedData {
             AnimatedData::Color(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
@@ -798,14 +798,14 @@ impl Hash for AnimatedData {
             AnimatedData::Vector2(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec2_as_slice(&value.0)
                         .iter()
                         .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec2_as_slice(&value.0)
                         .iter()
@@ -817,14 +817,14 @@ impl Hash for AnimatedData {
             AnimatedData::Vector3(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec3_as_slice(&value.0)
                         .iter()
                         .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec3_as_slice(&value.0)
                         .iter()
@@ -836,12 +836,12 @@ impl Hash for AnimatedData {
             AnimatedData::Matrix3(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
@@ -851,14 +851,14 @@ impl Hash for AnimatedData {
             AnimatedData::Normal3(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec3_as_slice(&value.0)
                         .iter()
                         .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::vec3_as_slice(&value.0)
                         .iter()
@@ -870,14 +870,14 @@ impl Hash for AnimatedData {
             AnimatedData::Point3(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::point3_as_slice(&value.0)
                         .iter()
                         .for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::point3_as_slice(&value.0)
                         .iter()
@@ -889,12 +889,12 @@ impl Hash for AnimatedData {
             AnimatedData::Matrix4(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
                     spec.hash(state);
@@ -903,12 +903,12 @@ impl Hash for AnimatedData {
             AnimatedData::BooleanVec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -917,12 +917,12 @@ impl Hash for AnimatedData {
             AnimatedData::IntegerVec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -931,13 +931,13 @@ impl Hash for AnimatedData {
             AnimatedData::RealVec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| v.to_bits().hash(state));
@@ -947,7 +947,7 @@ impl Hash for AnimatedData {
             AnimatedData::ColorVec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|c| {
@@ -955,7 +955,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|c| {
@@ -967,12 +967,12 @@ impl Hash for AnimatedData {
             AnimatedData::StringVec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.hash(state);
                     spec.hash(state);
@@ -982,7 +982,7 @@ impl Hash for AnimatedData {
             AnimatedData::Vector2Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -992,7 +992,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -1007,7 +1007,7 @@ impl Hash for AnimatedData {
             AnimatedData::Vector3Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -1017,7 +1017,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -1032,7 +1032,7 @@ impl Hash for AnimatedData {
             AnimatedData::Matrix3Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
@@ -1040,7 +1040,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
@@ -1053,7 +1053,7 @@ impl Hash for AnimatedData {
             AnimatedData::Normal3Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -1063,7 +1063,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|v| {
@@ -1078,7 +1078,7 @@ impl Hash for AnimatedData {
             AnimatedData::Point3Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|p| {
@@ -1088,7 +1088,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|p| {
@@ -1103,7 +1103,7 @@ impl Hash for AnimatedData {
             AnimatedData::Matrix4Vec(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
@@ -1111,7 +1111,7 @@ impl Hash for AnimatedData {
                     });
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.0.len().hash(state);
                     value.0.iter().for_each(|m| {
@@ -1124,12 +1124,12 @@ impl Hash for AnimatedData {
             AnimatedData::RealCurve(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.hash(state);
                     spec.hash(state);
@@ -1139,12 +1139,12 @@ impl Hash for AnimatedData {
             AnimatedData::ColorCurve(map) => {
                 map.len().hash(state);
                 #[cfg(not(feature = "interpolation"))]
-                for (time, value) in &map.values {
+                for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
                     value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
-                for (time, (value, spec)) in &map.values {
+                for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
                     value.hash(state);
                     spec.hash(state);
