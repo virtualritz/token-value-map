@@ -504,10 +504,13 @@ impl Eq for RealCurve {}
 impl RealCurve {
     /// Create a linear ramp from 0 to 1.
     pub fn linear() -> Self {
-        RealCurve(KeyDataMap::try_from(std::collections::BTreeMap::from([
-            (Position(0.0), Real(0.0)),
-            (Position(1.0), Real(1.0)),
-        ])).expect("non-empty"))
+        RealCurve(
+            KeyDataMap::try_from(std::collections::BTreeMap::from([
+                (Position(0.0), Real(0.0)),
+                (Position(1.0), Real(1.0)),
+            ]))
+            .expect("non-empty"),
+        )
     }
 
     /// Create a constant curve.
@@ -538,10 +541,13 @@ impl Eq for ColorCurve {}
 impl ColorCurve {
     /// Create a black-to-white gradient.
     pub fn black_to_white() -> Self {
-        ColorCurve(KeyDataMap::try_from(std::collections::BTreeMap::from([
-            (Position(0.0), Color([0.0, 0.0, 0.0, 1.0])),
-            (Position(1.0), Color([1.0, 1.0, 1.0, 1.0])),
-        ])).expect("non-empty"))
+        ColorCurve(
+            KeyDataMap::try_from(std::collections::BTreeMap::from([
+                (Position(0.0), Color([0.0, 0.0, 0.0, 1.0])),
+                (Position(1.0), Color([1.0, 1.0, 1.0, 1.0])),
+            ]))
+            .expect("non-empty"),
+        )
     }
 
     /// Evaluate the curve at a normalized position.

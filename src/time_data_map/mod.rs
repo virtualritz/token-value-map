@@ -119,8 +119,7 @@ impl<K: Ord, V> TryFrom<BTreeMap<K, V>> for KeyDataMap<K, V> {
     fn try_from(values: BTreeMap<K, V>) -> crate::Result<Self> {
         #[cfg(not(feature = "interpolation"))]
         {
-            let values =
-                BTreeMap1::try_from(values).map_err(|_| crate::Error::EmptySamples)?;
+            let values = BTreeMap1::try_from(values).map_err(|_| crate::Error::EmptySamples)?;
             Ok(Self { values })
         }
         #[cfg(feature = "interpolation")]
@@ -501,11 +500,7 @@ impl<K: Ord + Copy + Into<f32>, V> KeyDataMap<K, V> {
 
             // Get samples at or after the key.
             let after_count = N - result.len();
-            result.extend(
-                map.range(key..)
-                    .take(after_count)
-                    .map(|(k, v)| (*k, v)),
-            );
+            result.extend(map.range(key..).take(after_count).map(|(k, v)| (*k, v)));
             result
         }
 
