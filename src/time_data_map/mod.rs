@@ -33,6 +33,7 @@ pub use sample::*;
         deserialize = "K: Deserialize<'de> + Ord, V: Deserialize<'de>",
     ))
 )]
+#[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
 pub struct KeyDataMap<K, V> {
@@ -50,6 +51,7 @@ pub type TimeDataMap<V> = KeyDataMap<Time, V>;
 
 // Manual Eq implementation.
 impl<K: Eq, V: Eq> Eq for KeyDataMap<K, V> {}
+
 
 // AsRef implementation for backward compatibility.
 #[cfg(not(feature = "interpolation"))]

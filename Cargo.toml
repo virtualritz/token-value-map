@@ -37,7 +37,7 @@ ultraviolet = ["dep:ultraviolet"]
 mint = ["dep:mint", "glam?/mint", "nalgebra?/convert-mint", "ultraviolet?/mint"]
 
 # rkyv only works with glam backend.
-rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv"]
+rkyv = ["dep:rkyv", "glam", "frame-tick/rkyv", "glam/rkyv", "mitsein/rkyv"]
 
 # Facet support -- works with any backend.
 facet = ["dep:facet", "frame-tick/facet"]
@@ -76,7 +76,7 @@ nalgebra = { version = "0.34", optional = true, features = ["bytemuck", "serde-s
 ultraviolet = { version = "0.10", optional = true, features = ["bytemuck", "serde", "f64"] }
 mint = { version = "0.5", optional = true }
 
-mitsein = { version = "0.9", default-features = false, features = ["std", "rayon"] }
+mitsein = { git = "https://github.com/virtualritz/mitsein.git", rev = "ff4161b", default-features = false, features = ["std", "rayon"] }
 rayon = "1"
 rkyv = { version = "0.8", features = ["bytecheck"], optional = true }
 serde = { version = "1", features = ["derive"], optional = true }
