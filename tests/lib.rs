@@ -224,7 +224,7 @@ fn value_add_sample_conversion() -> token_value_map::Result<()> {
     assert_eq!(value.sample_count(), 1);
 
     // Add a sample - should convert to animated and drop uniform content
-    value.add_sample(Time::from_secs(1.0), 2.0)?;
+    value.add_at(Time::from_secs(1.0), 2.0)?;
     // With only one sample, it's not considered "animated" yet.
     assert!(!value.is_animated());
     assert_eq!(value.sample_count(), 1); // Only the new sample should remain
@@ -234,7 +234,7 @@ fn value_add_sample_conversion() -> token_value_map::Result<()> {
     assert_eq!(sample, Some(Data::Real(Real(2.0))));
 
     // Add another sample - now animated.
-    value.add_sample(Time::from_secs(2.0), 3.0)?;
+    value.add_at(Time::from_secs(2.0), 3.0)?;
     assert!(value.is_animated());
     assert_eq!(value.sample_count(), 2);
 
@@ -246,7 +246,7 @@ fn value_type_safety() -> token_value_map::Result<()> {
     // Test that adding different types fails
     let mut real_value = Value::animated(vec![(Time::from_secs(0.0), 1.0)])?;
 
-    let result = real_value.add_sample(Time::from_secs(1.0), true);
+    let result = real_value.add_at(Time::from_secs(1.0), true);
     assert!(result.is_err());
 
     // Test that creating animated value with mixed types fails
@@ -303,7 +303,7 @@ fn value_uses_generic_insert() -> token_value_map::Result<()> {
 
     // Test adding more samples
     let mut mutable_value = animated_mixed;
-    mutable_value.add_sample(Time::from_secs(3.0), Data::Real(Real(3.0)))?;
+    mutable_value.add_at(Time::from_secs(3.0), Data::Real(Real(3.0)))?;
     assert_eq!(mutable_value.sample_count(), 4);
 
     Ok(())
@@ -396,23 +396,25 @@ fn sample_trait_implementations() -> token_value_map::Result<()> {
 #[cfg(all(test, feature = "rkyv"))]
 mod rkyv_tests {
     use super::*;
-    use rkyv::{Deserialize, archived_root, to_bytes};
+    use rkyv::{Archive, access_unchecked, deserialize, rancor::Error as RkyvError, to_bytes};
 
     #[test]
     fn test_data_rkyv_roundtrip() {
         let original = Data::Integer(Integer(42));
-        let bytes = to_bytes::<_, 256>(&original).unwrap();
-        let archived = unsafe { archived_root::<Data>(&bytes) };
-        let deserialized: Data = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        let bytes = to_bytes::<RkyvError>(&original).unwrap();
+        // SAFETY: `bytes` was produced by `to_bytes` on the same type.
+        let archived = unsafe { access_unchecked::<<Data as Archive>::Archived>(&bytes) };
+        let deserialized: Data = deserialize::<Data, RkyvError>(archived).unwrap();
         assert_eq!(original, deserialized);
     }
 
     #[test]
     fn test_value_rkyv_roundtrip() {
         let original = Value::uniform(42.0);
-        let bytes = to_bytes::<_, 256>(&original).unwrap();
-        let archived = unsafe { archived_root::<Value>(&bytes) };
-        let deserialized: Value = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        let bytes = to_bytes::<RkyvError>(&original).unwrap();
+        // SAFETY: `bytes` was produced by `to_bytes` on the same type.
+        let archived = unsafe { access_unchecked::<<Value as Archive>::Archived>(&bytes) };
+        let deserialized: Value = deserialize::<Value, RkyvError>(archived).unwrap();
         assert_eq!(original, deserialized);
     }
 
@@ -423,9 +425,10 @@ mod rkyv_tests {
             (Time::from_secs(1.0), 1.0),
             (Time::from_secs(2.0), 2.0),
         ])?;
-        let bytes = to_bytes::<_, 1024>(&original).unwrap();
-        let archived = unsafe { archived_root::<Value>(&bytes) };
-        let deserialized: Value = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        let bytes = to_bytes::<RkyvError>(&original).unwrap();
+        // SAFETY: `bytes` was produced by `to_bytes` on the same type.
+        let archived = unsafe { access_unchecked::<<Value as Archive>::Archived>(&bytes) };
+        let deserialized: Value = deserialize::<Value, RkyvError>(archived).unwrap();
         assert_eq!(original, deserialized);
         Ok(())
     }
@@ -434,9 +437,10 @@ mod rkyv_tests {
     #[cfg(feature = "vector3")]
     fn test_vector3_rkyv_roundtrip() {
         let original = Data::Vector3(Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0)));
-        let bytes = to_bytes::<_, 256>(&original).unwrap();
-        let archived = unsafe { archived_root::<Data>(&bytes) };
-        let deserialized: Data = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        let bytes = to_bytes::<RkyvError>(&original).unwrap();
+        // SAFETY: `bytes` was produced by `to_bytes` on the same type.
+        let archived = unsafe { access_unchecked::<<Data as Archive>::Archived>(&bytes) };
+        let deserialized: Data = deserialize::<Data, RkyvError>(archived).unwrap();
         assert_eq!(original, deserialized);
     }
 
@@ -452,9 +456,11 @@ mod rkyv_tests {
             ])?,
         );
 
-        let bytes = to_bytes::<_, 2048>(&original).unwrap();
-        let archived = unsafe { archived_root::<TokenValueMap>(&bytes) };
-        let deserialized: TokenValueMap = archived.deserialize(&mut rkyv::Infallible).unwrap();
+        let bytes = to_bytes::<RkyvError>(&original).unwrap();
+        // SAFETY: `bytes` was produced by `to_bytes` on the same type.
+        let archived = unsafe { access_unchecked::<<TokenValueMap as Archive>::Archived>(&bytes) };
+        let deserialized: TokenValueMap =
+            deserialize::<TokenValueMap, RkyvError>(archived).unwrap();
         assert_eq!(original, deserialized);
         Ok(())
     }

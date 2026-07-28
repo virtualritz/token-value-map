@@ -236,13 +236,12 @@ macro_rules! define_data_types {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{AnimatedDataSystem, DataSystem, GenericValue, Time};
     use std::ops::{Add, Div, Mul, Sub};
 
     // Wrapper type that implements all required traits for interpolation.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    struct TestFloat(i64); // Store as fixed-point for Eq/Hash.
+    pub struct TestFloat(i64); // Store as fixed-point for Eq/Hash.
 
     impl TestFloat {
         fn new(v: f32) -> Self {
@@ -298,7 +297,7 @@ mod tests {
 
     // Integer wrapper that supports interpolation via f32 multiplication.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-    struct TestInt(i64);
+    pub struct TestInt(i64);
 
     impl Add for TestInt {
         type Output = Self;

@@ -135,7 +135,7 @@ where
 /// Implementation of KeyframeSource for Value.
 ///
 /// This allows ParameterValue (which wraps Value) to be used directly
-/// with the CurveEditor without copying to an intermediate Track<f32>.
+/// with the CurveEditor without copying to an intermediate `Track<f32>`.
 #[cfg(feature = "builtin-types")]
 impl KeyframeSource for Value {
     fn keyframes_sorted(&self) -> Vec<KeyframeView> {
