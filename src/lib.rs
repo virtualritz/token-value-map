@@ -71,6 +71,11 @@
 //! let interpolated = animated.interpolate(Tick::new(5));
 //! ```
 
+// AIDEV-NOTE: trivial_bounds is required because BTreeMap1 (from mitsein) generates
+// rkyv derive bounds that the compiler considers trivially true. Without this feature
+// gate, `cargo check --features rkyv` fails on AnimatedData's derived impls.
+#![cfg_attr(feature = "rkyv", feature(trivial_bounds))]
+
 #[cfg(feature = "facet")]
 use facet::Facet;
 #[cfg(feature = "builtin-types")]

@@ -1327,7 +1327,9 @@ impl Data {
                 if vec.len() >= 2 && vec.len() % 2 == 0 =>
             {
                 let vectors = vec
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|chunk| crate::math::Vec2Impl::new(chunk[0] as f32, chunk[1] as f32))
                     .collect();
                 Ok(Data::Vector2Vec(Vector2Vec(vectors)))
@@ -1343,7 +1345,9 @@ impl Data {
                 if vec.len() >= 3 && vec.len() % 3 == 0 =>
             {
                 let vectors = vec
-                    .chunks_exact(3)
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
                     .map(|chunk| {
                         crate::math::Vec3Impl::new(
                             chunk[0] as f32,
@@ -1359,7 +1363,9 @@ impl Data {
                 if vec.len() >= 3 && vec.len() % 3 == 0 =>
             {
                 let vectors = vec
-                    .chunks_exact(3)
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
                     .map(|chunk| {
                         crate::math::Vec3Impl::new(
                             chunk[0] as f32,
@@ -1389,7 +1395,9 @@ impl Data {
                 if vec.len() >= 9 && vec.len() % 9 == 0 =>
             {
                 let matrices = vec
-                    .chunks_exact(9)
+                    .as_chunks::<9>()
+                    .0
+                    .iter()
                     .map(|chunk| {
                         let m: Vec<f32> = chunk.iter().map(|&x| x as f32).collect();
                         crate::math::mat3_from_row_slice(&m)
@@ -1408,8 +1416,10 @@ impl Data {
                 if vec.len() >= 16 && vec.len() % 16 == 0 =>
             {
                 let matrices = vec
-                    .chunks_exact(16)
-                    .map(crate::math::mat4_from_row_slice)
+                    .as_chunks::<16>()
+                    .0
+                    .iter()
+                    .map(|chunk| crate::math::mat4_from_row_slice(chunk))
                     .collect();
                 Ok(Data::Matrix4Vec(Matrix4Vec(matrices)))
             }

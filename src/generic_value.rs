@@ -100,7 +100,7 @@ impl<D: DataSystem> GenericValue<D> {
     /// Adds a sample at a specific time.
     ///
     /// If the value is uniform, it becomes animated with the new sample.
-    pub fn add_sample(&mut self, time: Time, value: D) -> Result<()> {
+    pub fn add_at(&mut self, time: Time, value: D) -> Result<()> {
         match self {
             GenericValue::Uniform(_) => {
                 *self = GenericValue::animated(vec![(time, value)])?;
@@ -116,6 +116,12 @@ impl<D: DataSystem> GenericValue<D> {
                 samples.try_insert(time, value)
             }
         }
+    }
+
+    /// Deprecated alias for [`add_at`](Self::add_at).
+    #[deprecated(since = "0.2.3", note = "renamed to `add_at`")]
+    pub fn add_sample(&mut self, time: Time, value: D) -> Result<()> {
+        self.add_at(time, value)
     }
 
     /// Removes a sample at a specific time.

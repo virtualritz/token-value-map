@@ -5,23 +5,23 @@
 
 #[cfg(feature = "interpolation")]
 mod asymmetric_tangents {
-    use std::collections::BTreeMap;
     use token_value_map::*;
 
     #[test]
     fn test_symmetric_speed_tangents() {
         // Test that symmetric speeds produce smooth curves.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
         // Keyframe at t=0 with value 0.0, speed 1.0/frame.
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
             },
-        );
+        )
+        .unwrap();
 
         // Keyframe at t=10 with value 10.0, speed 1.0/frame.
         map.insert_with_interpolation(
@@ -41,17 +41,18 @@ mod asymmetric_tangents {
     #[test]
     fn test_asymmetric_speed_tangents() {
         // Test that asymmetric speeds produce asymmetric curves.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
         // Keyframe at t=0 with value 0.0, outgoing speed 2.0/frame (fast).
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
             },
-        );
+        )
+        .unwrap();
 
         // Keyframe at t=10 with value 10.0, incoming speed 0.5/frame (slow).
         map.insert_with_interpolation(
@@ -97,16 +98,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_hold_interpolation() {
         // Test that Hold takes precedence.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Hold,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -125,16 +126,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_linear_interpolation() {
         // Test explicit Linear interpolation.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Linear,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -158,7 +159,6 @@ mod asymmetric_tangents {
         use token_value_map::math::Vec3Impl as NVector3;
 
         // Test asymmetric tangents on vector types.
-        let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
 
         let v0 = Vector3(NVector3::new(0.0, 0.0, 0.0));
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
@@ -168,14 +168,15 @@ mod asymmetric_tangents {
         // Slow incoming speed.
         let speed_in = Vector3(NVector3::new(0.5, 0.5, 0.5));
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            v0,
+        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(speed_out)),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -199,16 +200,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_mixed_interpolation_modes() {
         // Test mixed modes (one Speed, one Linear).
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -227,16 +228,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_boundary_conditions() {
         // Test that values at keyframes are exact.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -259,16 +260,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_extreme_asymmetric_speeds() {
         // Test very different speeds.
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(10.0))), // Very fast.
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -302,16 +303,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_zero_speed_tangents() {
         // Test zero speeds (flat tangents).
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.0))), // Flat outgoing.
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -344,16 +345,16 @@ mod asymmetric_tangents {
     #[test]
     fn test_negative_speeds() {
         // Test negative speeds (curves going backwards).
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(5.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(5.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(-2.0))), // Going down.
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),

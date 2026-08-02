@@ -10,8 +10,6 @@
 //! - Mixed combinations (Bezier/Smooth, etc.)
 
 #[cfg(feature = "interpolation")]
-use std::collections::BTreeMap;
-#[cfg(feature = "interpolation")]
 use token_value_map::*;
 
 #[cfg(feature = "interpolation")]
@@ -20,16 +18,15 @@ mod hold_interpolation {
 
     #[test]
     fn hold_takes_precedence_over_linear() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(5.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(5.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Hold,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -47,16 +44,15 @@ mod hold_interpolation {
 
     #[test]
     fn hold_on_incoming_side() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(5.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(5.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Linear,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -73,16 +69,15 @@ mod hold_interpolation {
 
     #[test]
     fn hold_beats_bezier() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Hold,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -99,16 +94,15 @@ mod hold_interpolation {
 
     #[test]
     fn hold_beats_smooth() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(3.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(3.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Hold,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -130,16 +124,15 @@ mod smooth_interpolation {
 
     #[test]
     fn smooth_symmetric_uses_automatic() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -158,17 +151,17 @@ mod smooth_interpolation {
 
     #[test]
     fn smooth_with_multiple_keyframes() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
         // Three keyframes to test Catmull-Rom style tangents.
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -204,16 +197,15 @@ mod bezier_slope_per_second {
 
     #[test]
     fn symmetric_slopes() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(1.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -231,16 +223,15 @@ mod bezier_slope_per_second {
 
     #[test]
     fn asymmetric_slopes() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(3.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -264,16 +255,15 @@ mod bezier_slope_per_second {
 
     #[test]
     fn zero_slope() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(0.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -295,16 +285,15 @@ mod bezier_slope_per_second {
 
     #[test]
     fn negative_slope() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(5.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(5.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(-1.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -327,17 +316,17 @@ mod bezier_slope_per_frame {
 
     #[test]
     fn slope_per_frame_conversion() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
         // 10 frames between keyframes.
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerFrame(Real(1.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -355,16 +344,15 @@ mod bezier_slope_per_frame {
 
     #[test]
     fn asymmetric_frame_slopes() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerFrame(Real(2.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -387,11 +375,9 @@ mod bezier_delta {
 
     #[test]
     fn delta_specification() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
@@ -399,7 +385,8 @@ mod bezier_delta {
                     value: Real(1.0),
                 }),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -420,11 +407,9 @@ mod bezier_delta {
 
     #[test]
     fn delta_with_zero_dt_falls_back() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
@@ -432,7 +417,8 @@ mod bezier_delta {
                     value: Real(5.0),
                 }),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -454,11 +440,9 @@ mod bezier_delta {
 
     #[test]
     fn asymmetric_deltas() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
@@ -466,7 +450,8 @@ mod bezier_delta {
                     value: Real(5.0),
                 }),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -492,17 +477,17 @@ mod mixed_modes {
 
     #[test]
     fn bezier_and_smooth_outgoing() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
         // Add extra keyframes for Smooth to calculate tangent.
-        map.insert_with_interpolation(
-            Time::from(-10.0),
-            Real(-10.0),
+
+        let mut map = TimeDataMap::from_single(Time::from(-10.0), Real(-10.0));
+        map.set_interpolation_at(
+            &Time::from(-10.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(0.0),
@@ -533,16 +518,15 @@ mod mixed_modes {
 
     #[test]
     fn smooth_and_bezier_incoming() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -573,16 +557,15 @@ mod mixed_modes {
 
     #[test]
     fn linear_and_smooth_falls_back() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Linear,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -604,16 +587,15 @@ mod mixed_modes {
 
     #[test]
     fn bezier_and_linear_falls_back() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(0.0),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -641,22 +623,21 @@ mod vector_interpolation {
 
     #[test]
     fn vector_with_slope_per_second() {
-        let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
-
         let v0 = Vector3(NVector3::new(0.0, 0.0, 0.0));
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
         let slope = Vector3(NVector3::new(1.0, 1.0, 1.0));
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            v0,
+        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(
                     slope.clone(),
                 )),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -680,19 +661,18 @@ mod vector_interpolation {
 
     #[test]
     fn vector_with_smooth() {
-        let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
-
         let v0 = Vector3(NVector3::new(0.0, 0.0, 0.0));
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            v0,
+        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -714,15 +694,13 @@ mod vector_interpolation {
 
     #[test]
     fn vector_with_delta() {
-        let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
-
         let v0 = Vector3(NVector3::new(0.0, 0.0, 0.0));
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
         let dv = Vector3(NVector3::new(1.0, 1.0, 1.0));
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            v0,
+        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
@@ -730,7 +708,8 @@ mod vector_interpolation {
                     value: dv.clone(),
                 }),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -755,19 +734,18 @@ mod vector_interpolation {
 
     #[test]
     fn vector_hold_mode() {
-        let mut map = TimeDataMap::<Vector3>::from(BTreeMap::new());
-
         let v0 = Vector3(NVector3::new(1.0, 2.0, 3.0));
         let v1 = Vector3(NVector3::new(10.0, 20.0, 30.0));
 
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            v0.clone(),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), v0.clone());
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Hold,
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -789,17 +767,18 @@ mod boundary_cases {
     use super::*;
 
     #[test]
+    // `3.14` here is arbitrary keyframe data, not an approximation of `PI`.
+    #[allow(clippy::approx_constant)]
     fn exact_keyframe_values_with_bezier() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(0.0),
-            Real(3.14),
+        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(3.14));
+        map.set_interpolation_at(
+            &Time::from(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(10.0))),
             },
-        );
+        )
+        .unwrap();
 
         map.insert_with_interpolation(
             Time::from(10.0),
@@ -817,16 +796,15 @@ mod boundary_cases {
 
     #[test]
     fn clamping_before_first_keyframe() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(10.0),
-            Real(10.0),
+        let mut map = TimeDataMap::from_single(Time::from(10.0), Real(10.0));
+        map.set_interpolation_at(
+            &Time::from(10.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         // Before first keyframe should clamp.
         assert_eq!(map.interpolate(Time::from(0.0)), Real(10.0));
@@ -835,16 +813,15 @@ mod boundary_cases {
 
     #[test]
     fn clamping_after_last_keyframe() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(10.0),
-            Real(99.0),
+        let mut map = TimeDataMap::from_single(Time::from(10.0), Real(99.0));
+        map.set_interpolation_at(
+            &Time::from(10.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
             },
-        );
+        )
+        .unwrap();
 
         // After last keyframe should clamp.
         assert_eq!(map.interpolate(Time::from(20.0)), Real(99.0));
@@ -853,18 +830,17 @@ mod boundary_cases {
 
     #[test]
     fn single_keyframe_with_bezier() {
-        let mut map = TimeDataMap::<Real>::from(BTreeMap::new());
-
-        map.insert_with_interpolation(
-            Time::from(5.0),
-            Real(7.0),
+        let mut map = TimeDataMap::from_single(Time::from(5.0), Real(7.0));
+        map.set_interpolation_at(
+            &Time::from(5.0),
             Key {
                 interpolation_in: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(100.0))),
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(
                     -100.0,
                 ))),
             },
-        );
+        )
+        .unwrap();
 
         // With single keyframe, always return that value regardless of slopes.
         assert_eq!(map.interpolate(Time::from(0.0)), Real(7.0));

@@ -152,7 +152,7 @@ impl HandleValue for crate::Color {
     }
 }
 
-/// Convert a Key<T> to egui_keyframe BezierHandles.
+/// Convert a [`Key<T>`](Key) to `egui_keyframe` `BezierHandles`.
 #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
 pub fn key_to_bezier_handles<T: HandleValue>(key: &Key<T>) -> egui_keyframe::BezierHandles {
     let (left_x, left_y) = match &key.interpolation_in {
@@ -175,7 +175,7 @@ pub fn key_to_bezier_handles<T: HandleValue>(key: &Key<T>) -> egui_keyframe::Bez
     }
 }
 
-/// Convert egui_keyframe BezierHandles to a Key<T>.
+/// Convert `egui_keyframe` `BezierHandles` to a [`Key<T>`](Key).
 #[cfg(all(feature = "interpolation", feature = "egui-keyframe"))]
 pub fn bezier_handles_to_key<T: HandleValue>(handles: &egui_keyframe::BezierHandles) -> Key<T> {
     Key {
