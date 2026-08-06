@@ -97,3 +97,5 @@ ustr = { version = ">=1", optional = true }
 
 [dev-dependencies]
 anyhow = "1"
+facet-json = ">=0.44"
+
