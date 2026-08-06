@@ -85,6 +85,36 @@ const _: () = {
     // `#[repr(transparent)]`, so it has identical layout.
     unsafe impl<K: Portable, V: Portable> Portable for ArchivedKeyDataMap<K, V> {}
 
+    // Validation delegates to the wrapped map for the same layout reason. Without
+    // it `rkyv::from_bytes` -- the checked entry point every consumer that
+    // enables `bytecheck` uses -- cannot see through the newtype, and a
+    // `KeyDataMap` nested anywhere in an archived document fails to compile at
+    // the call site rather than at the impl.
+    //
+    // SAFETY: `ArchivedKeyDataMap` is `#[repr(transparent)]` over
+    // `ArchivedBTreeMap`, so a pointer to one is a pointer to the other and the
+    // wrapped check covers every byte of the value. The non-emptiness invariant
+    // is not checked here: it is restored by `Deserialize`, which is where the
+    // `BTreeMap1` is built.
+    #[cfg(feature = "bytecheck")]
+    unsafe impl<K, V, C> rkyv::bytecheck::CheckBytes<C> for ArchivedKeyDataMap<K, V>
+    where
+        C: rkyv::rancor::Fallible + ?Sized,
+        ArchivedBTreeMap<K, V>: rkyv::bytecheck::CheckBytes<C>,
+    {
+        unsafe fn check_bytes(
+            value: *const Self,
+            context: &mut C,
+        ) -> std::result::Result<(), C::Error> {
+            unsafe {
+                <ArchivedBTreeMap<K, V> as rkyv::bytecheck::CheckBytes<C>>::check_bytes(
+                    value.cast::<ArchivedBTreeMap<K, V>>(),
+                    context,
+                )
+            }
+        }
+    }
+
     // ---- not(interpolation) variant ----
 
     #[cfg(not(feature = "interpolation"))]
