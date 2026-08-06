@@ -16,6 +16,7 @@ use crate::Time;
 ///
 /// Describes how values should be interpolated when entering and leaving this keyframe.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "facet", derive(facet::Facet))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Key<T> {
@@ -41,6 +42,8 @@ where
 ///
 /// Describes how to specify a tangent at a keyframe for Bezier interpolation.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "facet", derive(facet::Facet))]
+#[cfg_attr(feature = "facet", repr(u8))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum BezierHandle<T> {
@@ -56,6 +59,8 @@ pub enum BezierHandle<T> {
 
 /// Interpolation mode between keyframes.
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "facet", derive(facet::Facet))]
+#[cfg_attr(feature = "facet", repr(u8))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 #[derive(Default)]

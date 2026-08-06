@@ -99,6 +99,7 @@ macro_rules! impl_nalgebra_arithmetic {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Boolean(pub bool);
 
@@ -118,6 +119,7 @@ impl From<Data> for Boolean {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Integer(pub i64);
 
@@ -137,6 +139,7 @@ impl From<Data> for Integer {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct Real(pub f64);
 
@@ -170,6 +173,7 @@ impl From<f32> for Real {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct String(pub std::string::String);
 
@@ -225,6 +229,7 @@ impl From<Data> for String {
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 #[repr(transparent)]
 pub struct Color(pub [f32; 4]);
@@ -286,6 +291,9 @@ impl From<Data> for Color {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f32; 2]>))]
 pub struct Vector2(pub Vec2Impl);
 
 #[cfg(feature = "vector2")]
@@ -296,6 +304,9 @@ impl Eq for Vector2 {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f32; 3]>))]
 pub struct Vector3(pub Vec3Impl);
 
 #[cfg(feature = "vector3")]
@@ -306,6 +317,9 @@ impl Eq for Vector3 {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f32; 9]>))]
 pub struct Matrix3(pub Mat3Impl);
 
 #[cfg(feature = "matrix3")]
@@ -343,8 +357,11 @@ impl From<[f32; 9]> for Matrix3 {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f32; 3]>))]
 #[repr(transparent)]
-pub struct Normal3(pub Vec3Impl);
+pub struct Normal3(#[cfg_attr(feature = "facet", facet(opaque))] pub Vec3Impl);
 
 #[cfg(feature = "normal3")]
 impl Eq for Normal3 {}
@@ -354,6 +371,9 @@ impl Eq for Normal3 {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f32; 3]>))]
 pub struct Point3(pub Point3Impl);
 
 #[cfg(feature = "point3")]
@@ -364,6 +384,9 @@ impl Eq for Point3 {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<[f64; 16]>))]
 pub struct Matrix4(pub Mat4Impl);
 
 #[cfg(feature = "matrix4")]
@@ -373,6 +396,7 @@ impl Eq for Matrix4 {}
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct IntegerVec(pub Vec<i64>);
 
@@ -403,6 +427,7 @@ impl From<Vec<i32>> for IntegerVec {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct RealVec(pub Vec<f64>);
 
@@ -435,6 +460,7 @@ impl Eq for RealVec {}
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct BooleanVec(pub Vec<bool>);
 
@@ -453,6 +479,7 @@ impl BooleanVec {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct StringVec(pub Vec<std::string::String>);
 
@@ -471,6 +498,7 @@ impl StringVec {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct ColorVec(pub Vec<[f32; 4]>);
 
@@ -494,6 +522,7 @@ impl Eq for ColorVec {}
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct RealCurve(pub KeyDataMap<Position, Real>);
 
@@ -531,6 +560,7 @@ impl RealCurve {
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub struct ColorCurve(pub KeyDataMap<Position, Color>);
 
@@ -561,6 +591,9 @@ impl ColorCurve {
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f32; 2]>>))]
 pub struct Vector2Vec(pub Vec<Vec2Impl>);
 
 #[cfg(all(feature = "vector2", feature = "vec_variants"))]
@@ -583,6 +616,9 @@ impl Eq for Vector2Vec {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f32; 3]>>))]
 pub struct Vector3Vec(pub Vec<Vec3Impl>);
 
 #[cfg(all(feature = "vector3", feature = "vec_variants"))]
@@ -605,6 +641,9 @@ impl Eq for Vector3Vec {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f32; 9]>>))]
 pub struct Matrix3Vec(pub Vec<Mat3Impl>);
 
 #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
@@ -627,6 +666,9 @@ impl Eq for Matrix3Vec {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f32; 3]>>))]
 pub struct Normal3Vec(pub Vec<Vec3Impl>);
 
 #[cfg(all(feature = "normal3", feature = "vec_variants"))]
@@ -649,6 +691,9 @@ impl Eq for Normal3Vec {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f32; 3]>>))]
 pub struct Point3Vec(pub Vec<Point3Impl>);
 
 #[cfg(all(feature = "point3", feature = "vec_variants"))]
@@ -671,6 +716,9 @@ impl Eq for Point3Vec {}
 #[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
+#[cfg_attr(feature = "facet", derive(Facet))]
+#[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(feature = "facet", facet(proxy = crate::MathProxy<Vec<[f64; 16]>>))]
 pub struct Matrix4Vec(pub Vec<Mat4Impl>);
 
 #[cfg(all(feature = "matrix4", feature = "vec_variants"))]

@@ -19,10 +19,9 @@ use std::{
 /// [`Matrix3`]), and collections of these types ([`BooleanVec`],
 /// [`IntegerVec`], etc.).
 #[derive(Debug, Clone, PartialEq, strum::AsRefStr, strum::EnumDiscriminants)]
-#[strum_discriminants(name(DataType), derive(Hash))]
+#[strum_discriminants(name(DataType), derive(Hash, strum::EnumIter))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "facet", repr(u8))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum Data {

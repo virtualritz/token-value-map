@@ -33,8 +33,17 @@ pub use sample::*;
         deserialize = "K: Deserialize<'de> + Ord, V: Deserialize<'de>",
     ))
 )]
+// AIDEV-NOTE: `opaque` is what keeps the derive off `BTreeMap1`, which is not
+// `Facet`; `proxy` is what makes the type introspectable anyway. `facet`
+// resolves a container proxy ahead of the opaque marker in both directions, so
+// the marker is inert for serialization. See `crate::facet_proxy`.
 #[cfg_attr(feature = "facet", derive(Facet))]
 #[cfg_attr(feature = "facet", facet(opaque))]
+#[cfg_attr(
+    feature = "facet",
+    facet(where K: facet::Facet<'ʄ> + Clone + Ord, V: facet::Facet<'ʄ> + Clone)
+)]
+#[cfg_attr(feature = "facet", facet(proxy = crate::KeyDataMapProxy<K, V>))]
 pub struct KeyDataMap<K, V> {
     /// The key-value pairs with optional interpolation keys.
     ///

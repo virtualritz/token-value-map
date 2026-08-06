@@ -12,6 +12,8 @@ use std::hash::{Hash, Hasher};
 
 /// A normalized position in [0, 1] for curve stop domains.
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "facet", derive(facet::Facet))]
+#[cfg_attr(feature = "facet", facet(transparent))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 #[cfg_attr(feature = "rkyv", rkyv(attr(derive(Debug, Clone, Copy))))]

@@ -12,7 +12,6 @@ type BracketSample = (Option<(Time, Data)>, Option<(Time, Data)>);
 #[derive(Clone, Debug, PartialEq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "facet", derive(Facet))]
-#[cfg_attr(feature = "facet", facet(opaque))]
 #[cfg_attr(feature = "facet", repr(u8))]
 #[cfg_attr(feature = "rkyv", derive(Archive, RkyvSerialize, RkyvDeserialize))]
 pub enum Value {

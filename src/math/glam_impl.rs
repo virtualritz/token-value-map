@@ -191,3 +191,29 @@ pub fn mat3_sub(a: Mat3Impl, b: Mat3Impl) -> Mat3Impl {
 pub fn mat3_from_diagonal_element(v: f32) -> Mat3Impl {
     Mat3Impl::from_diagonal(glam::Vec3::splat(v))
 }
+
+/// Create a `Vec2` from a `[f32; 2]` array.
+#[inline(always)]
+pub fn vec2_from_array(a: [f32; 2]) -> Vec2Impl {
+    Vec2Impl::from_array(a)
+}
+
+/// Create a `Vec3` from a `[f32; 3]` array.
+#[inline(always)]
+pub fn vec3_from_array(a: [f32; 3]) -> Vec3Impl {
+    Vec3Impl::from_array(a)
+}
+
+/// Create a point from a `[f32; 3]` array.
+#[inline(always)]
+pub fn point3_from_array(a: [f32; 3]) -> Point3Impl {
+    Vec3Impl::from_array(a)
+}
+
+/// Create a `DMat4` from a column-major slice.
+#[inline(always)]
+pub fn mat4_from_column_slice(data: &[f64]) -> Mat4Impl {
+    assert_eq!(data.len(), 16, "Matrix4 requires exactly 16 elements");
+    // SAFETY: the assert above guarantees the slice is exactly 16 elements.
+    Mat4Impl::from_cols_array(data.try_into().unwrap())
+}

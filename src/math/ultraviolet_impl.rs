@@ -204,3 +204,33 @@ pub fn mat3_sub(a: Mat3Impl, b: Mat3Impl) -> Mat3Impl {
 pub fn mat3_from_diagonal_element(v: f32) -> Mat3Impl {
     Mat3Impl::from_scale(v)
 }
+
+/// Create a `Vec2` from a `[f32; 2]` array.
+#[inline(always)]
+pub fn vec2_from_array(a: [f32; 2]) -> Vec2Impl {
+    Vec2Impl::new(a[0], a[1])
+}
+
+/// Create a `Vec3` from a `[f32; 3]` array.
+#[inline(always)]
+pub fn vec3_from_array(a: [f32; 3]) -> Vec3Impl {
+    Vec3Impl::new(a[0], a[1], a[2])
+}
+
+/// Create a point from a `[f32; 3]` array.
+#[inline(always)]
+pub fn point3_from_array(a: [f32; 3]) -> Point3Impl {
+    Vec3Impl::new(a[0], a[1], a[2])
+}
+
+/// Create a `DMat4` from a column-major slice.
+#[inline(always)]
+pub fn mat4_from_column_slice(data: &[f64]) -> Mat4Impl {
+    assert_eq!(data.len(), 16, "Matrix4 requires exactly 16 elements");
+    Mat4Impl::new(
+        ultraviolet::DVec4::new(data[0], data[1], data[2], data[3]),
+        ultraviolet::DVec4::new(data[4], data[5], data[6], data[7]),
+        ultraviolet::DVec4::new(data[8], data[9], data[10], data[11]),
+        ultraviolet::DVec4::new(data[12], data[13], data[14], data[15]),
+    )
+}

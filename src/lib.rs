@@ -129,6 +129,8 @@ mod token;
 #[cfg(feature = "egui-keyframe")]
 mod egui_keyframe_integration;
 mod error;
+#[cfg(all(feature = "facet", feature = "builtin-types"))]
+mod facet_proxy;
 #[cfg(feature = "interpolation")]
 mod interpolation;
 #[cfg(all(feature = "lua", feature = "builtin-types"))]
@@ -150,6 +152,8 @@ pub use value::*;
 
 // Re-exports: always available.
 pub use error::*;
+#[cfg(all(feature = "facet", feature = "builtin-types"))]
+pub use facet_proxy::*;
 pub use generic_token_value_map::*;
 pub use generic_value::*;
 #[cfg(feature = "interpolation")]
