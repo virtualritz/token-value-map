@@ -15,7 +15,7 @@ use std::{
 /// A variant `enum` containing all supported data types.
 ///
 /// [`Data`] can hold scalar values ([`Boolean`], [`Integer`], [`Real`],
-/// [`String`]), vector types ([`Vector2`], [`Vector3`], [`Color`],
+/// [`String`]), vector types ([`Vector2`], `Vector3` with the `vector3` feature, [`Color`],
 /// [`Matrix3`]), and collections of these types ([`BooleanVec`],
 /// [`IntegerVec`], etc.).
 #[derive(Debug, Clone, PartialEq, strum::AsRefStr, strum::EnumDiscriminants)]

@@ -17,7 +17,7 @@
 //! # Data Types
 //!
 //! The library supports scalar types ([`Boolean`], [`Integer`], [`Real`],
-//! [`String`]), vector types ([`Vector2`], [`Vector3`], [`Color`],
+//! [`String`]), vector types ([`Vector2`], `Vector3` with the `vector3` feature, [`Color`],
 //! [`Matrix3`]), and collections of these types ([`BooleanVec`],
 //! [`IntegerVec`], etc.).
 //!
