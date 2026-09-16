@@ -303,14 +303,10 @@ macro_rules! impl_data_arithmetic {
 macro_rules! impl_sample_for_value {
     ($type:ty, $data_variant:ident) => {
         impl Sample<$type> for Value {
-            fn sample(
-                &self,
-                shutter: &Shutter,
-                samples: NonZeroU16,
-            ) -> Result<Vec<($type, SampleWeight)>> {
+            fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<$type>> {
                 match self {
                     Value::Uniform(data) => match data {
-                        Data::$data_variant(value) => Ok(vec![(value.clone(), 1.0)]),
+                        Data::$data_variant(value) => Ok(vec![value.clone()]),
                         _ => Err(Error::SampleVariantMismatch {
                             sample_type: stringify!($type),
                             got: data.data_type(),
@@ -394,7 +390,7 @@ macro_rules! impl_sample_for_animated_data {
                     &self,
                     shutter: &Shutter,
                     samples: NonZeroU16,
-                ) -> Result<Vec<($type, SampleWeight)>> {
+                ) -> Result<Vec<$type>> {
                     match self {
                         AnimatedData::$data_variant(map) => map.sample(shutter, samples),
                         _ => Err(Error::SampleVariantMismatch {
@@ -413,7 +409,7 @@ macro_rules! impl_sample_for_animated_data {
                     &self,
                     shutter: &Shutter,
                     samples: NonZeroU16,
-                ) -> Result<Vec<($type, SampleWeight)>> {
+                ) -> Result<Vec<$type>> {
                     match self {
                         AnimatedData::$data_variant(map) => map.sample(shutter, samples),
                         _ => Err(Error::SampleVariantMismatch {

@@ -652,11 +652,11 @@ impl_sample_for_value!(Matrix4, Matrix4);
 
 // Special implementations for Real and Integer that handle type conversion
 impl Sample<Real> for Value {
-    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<(Real, SampleWeight)>> {
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<Real>> {
         match self {
             Value::Uniform(data) => {
                 let value = Real(data.to_f32()? as f64);
-                Ok(vec![(value, 1.0)])
+                Ok(vec![value])
             }
             Value::Animated(animated_data) => animated_data.sample(shutter, samples),
         }
@@ -664,15 +664,11 @@ impl Sample<Real> for Value {
 }
 
 impl Sample<Integer> for Value {
-    fn sample(
-        &self,
-        shutter: &Shutter,
-        samples: NonZeroU16,
-    ) -> Result<Vec<(Integer, SampleWeight)>> {
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<Integer>> {
         match self {
             Value::Uniform(data) => {
                 let value = Integer(data.to_i64()?);
-                Ok(vec![(value, 1.0)])
+                Ok(vec![value])
             }
             Value::Animated(animated_data) => animated_data.sample(shutter, samples),
         }

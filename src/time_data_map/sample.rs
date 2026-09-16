@@ -3,38 +3,46 @@ use core::num::NonZeroU16;
 #[cfg(feature = "builtin-types")]
 use rayon::prelude::*;
 
-/// Weight value for motion blur sampling.
-pub type SampleWeight = f32;
-
 /// `trait` for generating motion blur samples with shutter timing.
 ///
 /// The [`Sample`] `trait` generates multiple samples across a [`Shutter`]
-/// interval for motion blur rendering. Each sample includes the interpolated
-/// value and a weight based on the shutter opening at that time.
+/// interval for motion blur rendering.
+///
+/// # Why samples carry no weights
+///
+/// A motion-blurred result is the exposure-weighted average of the value over
+/// the shutter interval. There are two ways to estimate it with `n` samples:
+///
+/// - Spread the sample times evenly and weight each sample by how far the
+///   shutter is open at its time, then divide by the sum of the weights.
+/// - Place the sample times by the exposure itself -- more of them where the
+///   shutter is fully open, fewer on its ramps -- so that each sample stands
+///   for the same share of the exposure, and take a plain average.
+///
+/// Both converge to the same result, but the second spends no samples where
+/// the shutter is nearly closed, so it is less noisy for the same `n`. [`Sample`]
+/// uses the second: times come from [`Shutter::sample_times`], and callers
+/// combine the returned values with a plain average (sum, then divide by the
+/// number of samples). Weighting them again by the shutter would count the
+/// exposure twice.
 pub trait Sample<T> {
     /// Generate samples across the shutter interval.
     ///
-    /// Returns a vector of value-weight pairs for the specified number of
-    /// samples distributed across the shutter's time range.
-    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<(T, SampleWeight)>>;
+    /// Returns up to `samples` values, placed by the shutter's exposure; see
+    /// the [trait documentation](Sample) for how to combine them. A value that
+    /// does not change over time returns a single sample.
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<T>>;
 }
 
 #[cfg(feature = "builtin-types")]
 macro_rules! impl_sample {
     ($data_type:ty) => {
         impl Sample<$data_type> for TimeDataMap<$data_type> {
-            fn sample(
-                &self,
-                shutter: &Shutter,
-                samples: NonZeroU16,
-            ) -> Result<Vec<($data_type, SampleWeight)>> {
-                Ok((0..samples.into())
+            fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<$data_type>> {
+                Ok((0..u16::from(samples))
                     .into_par_iter()
-                    .map(|t| {
-                        let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
-                        (self.interpolate(time), shutter.opening(time))
-                    })
-                    .collect::<Vec<_>>())
+                    .map(|index| self.interpolate(shutter.sample_time(index, samples)))
+                    .collect())
             }
         }
     };
@@ -63,11 +71,7 @@ impl_sample!(Matrix4);
 // shortest-path angle slerp; translation and stretch are interpolated linearly.
 #[cfg(all(feature = "builtin-types", feature = "matrix3"))]
 impl Sample<Matrix3> for TimeDataMap<Matrix3> {
-    fn sample(
-        &self,
-        shutter: &Shutter,
-        samples: NonZeroU16,
-    ) -> Result<Vec<(Matrix3, SampleWeight)>> {
+    fn sample(&self, shutter: &Shutter, samples: NonZeroU16) -> Result<Vec<Matrix3>> {
         // Split all matrices into their component parts via analytical 2×2 SVD.
         let mut translations = BTreeMap::new();
         let mut rotations = BTreeMap::new();
@@ -91,19 +95,16 @@ impl Sample<Matrix3> for TimeDataMap<Matrix3> {
         }
 
         // Interpolate the samples and recompose the matrices.
-        Ok((0..samples.into())
+        Ok((0..u16::from(samples))
             .into_par_iter()
-            .map(|t| {
-                let time = shutter.evaluate(t as f32 / u16::from(samples) as f32);
-                (
-                    crate::Matrix3(recompose_matrix(
-                        interpolate(&translations, time),
-                        interpolate_rotation(&rotations, time),
-                        interpolate(&stretches, time),
-                    )),
-                    shutter.opening(time),
-                )
+            .map(|index| {
+                let time = shutter.sample_time(index, samples);
+                crate::Matrix3(recompose_matrix(
+                    interpolate(&translations, time),
+                    interpolate_rotation(&rotations, time),
+                    interpolate(&stretches, time),
+                ))
             })
-            .collect::<Vec<_>>())
+            .collect())
     }
 }

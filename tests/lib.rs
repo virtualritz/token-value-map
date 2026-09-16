@@ -356,24 +356,18 @@ fn sample_trait_implementations() -> token_value_map::Result<()> {
         range: Time::from_secs(0.0)..Time::from_secs(1.0),
         opening: Time::from_secs(0.0)..Time::from_secs(1.0),
     };
-    let samples: Vec<(Real, SampleWeight)> =
-        uniform_real.sample(&shutter, NonZeroU16::new(5).unwrap())?;
-    assert_eq!(samples.len(), 1);
-    assert_eq!(samples[0].0, Real(42.0));
-    assert_eq!(samples[0].1, 1.0);
+    let samples: Vec<Real> = uniform_real.sample(&shutter, NonZeroU16::new(5).unwrap())?;
+    assert_eq!(samples, vec![Real(42.0)]);
 
     // Test uniform Vector3 sampling
     #[cfg(feature = "vector3")]
     {
         let uniform_vector = Value::uniform([1.0f32, 2.0, 3.0]);
-        let samples: Vec<(Vector3, SampleWeight)> =
-            uniform_vector.sample(&shutter, NonZeroU16::new(3).unwrap())?;
-        assert_eq!(samples.len(), 1);
+        let samples: Vec<Vector3> = uniform_vector.sample(&shutter, NonZeroU16::new(3).unwrap())?;
         assert_eq!(
-            samples[0].0,
-            Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0))
+            samples,
+            vec![Vector3(token_value_map::math::Vec3Impl::new(1.0, 2.0, 3.0))]
         );
-        assert_eq!(samples[0].1, 1.0);
     }
 
     // Test animated Value sampling - should return the requested number of
@@ -382,12 +376,16 @@ fn sample_trait_implementations() -> token_value_map::Result<()> {
         (Time::from_secs(0.0), 0.0),
         (Time::from_secs(1.0), 100.0),
     ])?;
-    let samples: Vec<(Real, SampleWeight)> =
-        animated_real.sample(&shutter, NonZeroU16::new(3).unwrap())?;
-    assert_eq!(samples.len(), 3);
-    // All samples should be valid (values between 0 and 100)
-    for (value, _weight) in samples {
-        assert!(value.0 >= 0.0 && value.0 <= 100.0);
+    let samples: Vec<Real> = animated_real.sample(&shutter, NonZeroU16::new(3).unwrap())?;
+    // Box shutter: one sample at the middle of each third of the interval.
+    let expected = [100.0 / 6.0, 50.0, 500.0 / 6.0];
+    assert_eq!(samples.len(), expected.len());
+    for (value, expected) in samples.iter().zip(expected) {
+        assert!(
+            (value.0 - expected).abs() < 1e-3,
+            "{} != {expected}",
+            value.0
+        );
     }
 
     Ok(())
