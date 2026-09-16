@@ -62,8 +62,8 @@ bytemuck = "1"
 derive_more = { version = "2", features = ["as_ref"] }
 egui-keyframe = { version = "0.1", optional = true }
 enum_dispatch = "0.3"
-facet = { version = ">=0.46", optional = true }
-frame-tick = { version = ">=0.3.3", features = [
+facet = { version = "0.46", optional = true }
+frame-tick = { version = "0.3", features = [
     "float_frame_rate",
     "serde",
     "std",
@@ -93,9 +93,9 @@ ultraviolet = { version = "0.10", optional = true, features = [
     "f64",
 ] }
 uniform-cubic-splines = { version = "0.5", optional = true }
-ustr = { version = ">=1", optional = true }
+ustr = { version = "1", optional = true }
 
 [dev-dependencies]
 anyhow = "1"
-facet-json = ">=0.44"
+facet-json = "0.46"
 
