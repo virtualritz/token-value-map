@@ -203,9 +203,10 @@ pub(crate) mod bezier_helpers {
 
     /// Clamp handle lengths to prevent overlap on time axis.
     ///
-    /// When handles are too long, they can overlap on the time axis, making the knot
-    /// vector non-monotonic which breaks uniform-cubic-splines. Each handle can use
-    /// at most slightly under half the interval.
+    /// When handles are too long, they can overlap on the time axis, making the
+    /// time curve non-monotonic so it no longer has a unique inverse (see
+    /// [`evaluate_bezier_component_wise`]). Each handle can use at most slightly
+    /// under half the interval.
     pub fn clamp_handle_lengths(
         k1_time: f32,
         k2_time: f32,
@@ -272,18 +273,15 @@ pub(crate) mod bezier_helpers {
         (p1, p2)
     }
 
-    /// Calculate bezier control points from slope values.
+    /// Calculate bezier control points from slopes and explicit handle lengths.
     ///
-    /// Similar to [`control_points_from_speed`], but accepts arbitrary slopes
-    /// instead of specifically "speed" values. This is used when working with
-    /// [`BezierHandle`] variants that specify tangents in different ways.
-    pub fn control_points_from_slopes<T>(
-        t1: f32,
-        v1: &T,
-        slope1: &T,
-        t2: f32,
-        v2: &T,
-        slope2: &T,
+    /// Each handle reaches `length` along the time axis, clamped by
+    /// [`clamp_handle_lengths`]. A handle's length is what makes a curve ease: a
+    /// long outgoing handle holds the value near the key before moving on. A
+    /// third of the interval keeps the curve's timing linear.
+    pub fn control_points_from_slopes_with_handle_lengths<T>(
+        (t1, v1, slope1, length1): (f32, &T, &T, f32),
+        (t2, v2, slope2, length2): (f32, &T, &T, f32),
     ) -> ((f32, T), (f32, T))
     where
         T: Clone
@@ -291,9 +289,7 @@ pub(crate) mod bezier_helpers {
             + std::ops::Sub<Output = T>
             + std::ops::Mul<f32, Output = T>,
     {
-        let dt = t2 - t1;
-        let base_handle = dt / 3.0;
-        let (h1, h2) = clamp_handle_lengths(t1, t2, base_handle, base_handle);
+        let (h1, h2) = clamp_handle_lengths(t1, t2, length1.abs(), length2.abs());
 
         let p1 = (t1 + h1, v1.clone() + slope1.clone() * h1);
         let p2 = (t2 - h2, v2.clone() - slope2.clone() * h2);
@@ -303,8 +299,13 @@ pub(crate) mod bezier_helpers {
 
     /// Evaluate a cubic bezier curve using component-wise interpolation.
     ///
-    /// Uses the standard cubic Bezier formula. This works for vector types
-    /// where the interpolation is applied component-wise.
+    /// The curve is two-dimensional: each control point is `(time, value)`. The
+    /// time curve is solved for the bezier parameter at `t` first
+    /// (`uniform_cubic_splines::spline_inverse_segment`), then the value curve is
+    /// evaluated at that parameter. Mapping `t` linearly onto the parameter is
+    /// only correct when the handles sit at exactly a third of the interval;
+    /// any other handle length would change the curve's shape but not its
+    /// timing. Works for vector types, applied component-wise.
     pub fn evaluate_bezier_component_wise<T>(
         t: f32,
         p0: (f32, &T),
@@ -315,8 +316,14 @@ pub(crate) mod bezier_helpers {
     where
         T: Clone + std::ops::Add<Output = T> + std::ops::Mul<f32, Output = T>,
     {
-        // Normalize t to [0, 1] range based on time coordinates.
-        let t_norm = ((t - p0.0) / (p3.0 - p0.0)).clamp(0.0, 1.0);
+        use uniform_cubic_splines::{basis::Bezier, spline_inverse_segment};
+
+        let t = t.clamp(p0.0, p3.0);
+        // `clamp_handle_lengths` keeps the time control points monotonic, so the
+        // inverse exists; the linear mapping is only a guard for degenerate
+        // input.
+        let t_norm = spline_inverse_segment::<Bezier, f32>(t, &[p0.0, p1.0, p2.0, p3.0])
+            .unwrap_or_else(|| ((t - p0.0) / (p3.0 - p0.0)).clamp(0.0, 1.0));
 
         // Cubic Bezier formula: B(t) = (1-t)³P0 + 3(1-t)²tP1 + 3(1-t)t²P2 + t³P3.
         let one_minus_t = 1.0 - t_norm;

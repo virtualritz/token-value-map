@@ -873,6 +873,26 @@ where
     }
 }
 
+/// How far a handle reaches along the time axis, in seconds.
+///
+/// Only [`BezierHandle::Delta`](crate::BezierHandle::Delta) carries a length;
+/// every other handle, and a zero-length delta, reaches a third of the
+/// interval -- the length at which the curve's timing stays linear.
+#[cfg(feature = "interpolation")]
+fn bezier_handle_length<V>(handle: &crate::BezierHandle<V>, t1: f32, t2: f32) -> f32 {
+    match handle {
+        crate::BezierHandle::Delta { time, .. } => {
+            let length = f32::from(*time).abs();
+            if length > f32::EPSILON {
+                length
+            } else {
+                (t2 - t1) / 3.0
+            }
+        }
+        _ => (t2 - t1) / 3.0,
+    }
+}
+
 #[cfg(feature = "interpolation")]
 #[allow(clippy::too_many_arguments)]
 fn smooth_tangent<K, V>(
@@ -922,12 +942,8 @@ where
 #[cfg(feature = "interpolation")]
 fn evaluate_mixed_bezier<K, V>(
     key: K,
-    k1: K,
-    v1: &V,
-    slope_out: &V,
-    k2: K,
-    v2: &V,
-    slope_in: &V,
+    (k1, v1, slope_out, length_out): (K, &V, &V, f32),
+    (k2, v2, slope_in, length_in): (K, &V, &V, f32),
 ) -> V
 where
     K: Copy + Into<f32>,
@@ -935,7 +951,10 @@ where
 {
     use crate::interpolation::bezier_helpers::*;
 
-    let (p1, p2) = control_points_from_slopes(k1.into(), v1, slope_out, k2.into(), v2, slope_in);
+    let (p1, p2) = control_points_from_slopes_with_handle_lengths(
+        (k1.into(), v1, slope_out, length_out),
+        (k2.into(), v2, slope_in, length_in),
+    );
 
     evaluate_bezier_component_wise(
         key.into(),
@@ -1008,13 +1027,10 @@ where
                 bezier_handle_to_slope(out_handle, (*k1).into(), (*k2).into(), v1, v2),
                 bezier_handle_to_slope(in_handle, (*k1).into(), (*k2).into(), v1, v2),
             ) {
-                let (p1, p2) = control_points_from_slopes(
-                    (*k1).into(),
-                    v1,
-                    &slope_out,
-                    (*k2).into(),
-                    v2,
-                    &slope_in,
+                let (t1, t2) = ((*k1).into(), (*k2).into());
+                let (p1, p2) = control_points_from_slopes_with_handle_lengths(
+                    (t1, v1, &slope_out, bezier_handle_length(out_handle, t1, t2)),
+                    (t2, v2, &slope_in, bezier_handle_length(in_handle, t1, t2)),
                 );
 
                 evaluate_bezier_component_wise(
@@ -1037,8 +1053,18 @@ where
             {
                 let slope_in =
                     smooth_tangent((*k1).into(), v1, (*k2).into(), v2, map, key, *k1, false);
+                let (t1, t2) = ((*k1).into(), (*k2).into());
 
-                evaluate_mixed_bezier(key, *k1, v1, &slope_out, *k2, v2, &slope_in)
+                evaluate_mixed_bezier(
+                    key,
+                    (
+                        *k1,
+                        v1,
+                        &slope_out,
+                        bezier_handle_length(out_handle, t1, t2),
+                    ),
+                    (*k2, v2, &slope_in, (t2 - t1) / 3.0),
+                )
             } else {
                 linear_interp(*k1, *k2, v1, v2, key)
             }
@@ -1049,8 +1075,13 @@ where
             {
                 let slope_out =
                     smooth_tangent((*k1).into(), v1, (*k2).into(), v2, map, key, *k1, true);
+                let (t1, t2) = ((*k1).into(), (*k2).into());
 
-                evaluate_mixed_bezier(key, *k1, v1, &slope_out, *k2, v2, &slope_in)
+                evaluate_mixed_bezier(
+                    key,
+                    (*k1, v1, &slope_out, (t2 - t1) / 3.0),
+                    (*k2, v2, &slope_in, bezier_handle_length(in_handle, t1, t2)),
+                )
             } else {
                 linear_interp(*k1, *k2, v1, v2, key)
             }

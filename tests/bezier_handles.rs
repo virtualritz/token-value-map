@@ -469,6 +469,88 @@ mod bezier_delta {
         let early = map.interpolate(Time::from(1.0));
         assert!(early.0 > 1.0, "Early should be > 1.0, got {:?}", early);
     }
+
+    /// Keys at (0 s, 0) and (1 s, 1) with flat handles reaching `length` seconds.
+    fn flat_handles(length: f64) -> TimeDataMap<Real> {
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), Real(0.0));
+        map.set_interpolation_at(
+            &Time::from_secs(0.0),
+            Key {
+                interpolation_in: Interpolation::Linear,
+                interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
+                    time: Time::from_secs(length),
+                    value: Real(0.0),
+                }),
+            },
+        )
+        .unwrap();
+        map.insert_with_interpolation(
+            Time::from_secs(1.0),
+            Real(1.0),
+            Key {
+                interpolation_in: Interpolation::Bezier(BezierHandle::Delta {
+                    time: Time::from_secs(length),
+                    value: Real(0.0),
+                }),
+                interpolation_out: Interpolation::Linear,
+            },
+        );
+        map
+    }
+
+    fn cubic_bezier(s: f64, p: [f64; 4]) -> f64 {
+        let u = 1.0 - s;
+        u * u * u * p[0] + 3.0 * u * u * s * p[1] + 3.0 * u * s * s * p[2] + s * s * s * p[3]
+    }
+
+    #[test]
+    fn delta_handle_length_changes_timing() {
+        let length = 0.45;
+        let map = flat_handles(length);
+        let times = [0.0, length, 1.0 - length, 1.0];
+        let values = [0.0, 0.0, 1.0, 1.0];
+
+        for t in [0.1, 0.25, 0.4, 0.6, 0.9] {
+            // Independent reference: bisect the time curve for the parameter.
+            let (mut lo, mut hi) = (0.0, 1.0);
+            for _ in 0..60 {
+                let mid = 0.5 * (lo + hi);
+                if cubic_bezier(mid, times) < t {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            let expected = cubic_bezier(0.5 * (lo + hi), values);
+            // What mapping time linearly onto the parameter would give.
+            let linear_timing = cubic_bezier(t, values);
+
+            let got = map.interpolate(Time::from_secs(t)).0;
+            assert!(
+                (got - expected).abs() < 1e-3,
+                "t={t}: expected {expected}, got {got}"
+            );
+            assert!(
+                (expected - linear_timing).abs() > 0.01,
+                "t={t}: handle length should change timing ({expected} vs {linear_timing})"
+            );
+        }
+    }
+
+    #[test]
+    fn third_length_handles_keep_linear_timing() {
+        // Handles at a third of the interval: the time curve is linear, so the
+        // result is the value curve at `t`.
+        let map = flat_handles(1.0 / 3.0);
+        for t in [0.1, 0.25, 0.5, 0.75, 0.9] {
+            let expected = cubic_bezier(t, [0.0, 0.0, 1.0, 1.0]);
+            let got = map.interpolate(Time::from_secs(t)).0;
+            assert!(
+                (got - expected).abs() < 1e-3,
+                "t={t}: expected {expected}, got {got}"
+            );
+        }
+    }
 }
 
 #[cfg(feature = "interpolation")]
@@ -490,7 +572,7 @@ mod mixed_modes {
         .unwrap();
 
         map.insert_with_interpolation(
-            Time::from(0.0),
+            Time::from_secs(0.0),
             Real(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
@@ -518,9 +600,9 @@ mod mixed_modes {
 
     #[test]
     fn smooth_and_bezier_incoming() {
-        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), Real(0.0));
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
@@ -557,9 +639,9 @@ mod mixed_modes {
 
     #[test]
     fn linear_and_smooth_falls_back() {
-        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), Real(0.0));
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Linear,
@@ -587,9 +669,9 @@ mod mixed_modes {
 
     #[test]
     fn bezier_and_linear_falls_back() {
-        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(0.0));
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), Real(0.0));
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(2.0))),
@@ -627,9 +709,9 @@ mod vector_interpolation {
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
         let slope = Vector3(NVector3::new(1.0, 1.0, 1.0));
 
-        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), v0);
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(
@@ -664,9 +746,9 @@ mod vector_interpolation {
         let v0 = Vector3(NVector3::new(0.0, 0.0, 0.0));
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
 
-        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), v0);
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Smooth,
                 interpolation_out: Interpolation::Smooth,
@@ -698,13 +780,13 @@ mod vector_interpolation {
         let v1 = Vector3(NVector3::new(10.0, 10.0, 10.0));
         let dv = Vector3(NVector3::new(1.0, 1.0, 1.0));
 
-        let mut map = TimeDataMap::from_single(Time::from(0.0), v0);
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), v0);
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::Delta {
-                    time: Time::from(1.0),
+                    time: Time::from_secs(1.0),
                     value: dv.clone(),
                 }),
             },
@@ -716,7 +798,7 @@ mod vector_interpolation {
             v1,
             Key {
                 interpolation_in: Interpolation::Bezier(BezierHandle::Delta {
-                    time: Time::from(1.0),
+                    time: Time::from_secs(1.0),
                     value: dv,
                 }),
                 interpolation_out: Interpolation::Linear,
@@ -737,9 +819,9 @@ mod vector_interpolation {
         let v0 = Vector3(NVector3::new(1.0, 2.0, 3.0));
         let v1 = Vector3(NVector3::new(10.0, 20.0, 30.0));
 
-        let mut map = TimeDataMap::from_single(Time::from(0.0), v0.clone());
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), v0.clone());
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Hold,
@@ -770,9 +852,9 @@ mod boundary_cases {
     // `3.14` here is arbitrary keyframe data, not an approximation of `PI`.
     #[allow(clippy::approx_constant)]
     fn exact_keyframe_values_with_bezier() {
-        let mut map = TimeDataMap::from_single(Time::from(0.0), Real(3.14));
+        let mut map = TimeDataMap::from_single(Time::from_secs(0.0), Real(3.14));
         map.set_interpolation_at(
-            &Time::from(0.0),
+            &Time::from_secs(0.0),
             Key {
                 interpolation_in: Interpolation::Linear,
                 interpolation_out: Interpolation::Bezier(BezierHandle::SlopePerSecond(Real(10.0))),
@@ -790,7 +872,7 @@ mod boundary_cases {
         );
 
         // Values at keyframes must be exact.
-        assert_eq!(map.interpolate(Time::from(0.0)), Real(3.14));
+        assert_eq!(map.interpolate(Time::from_secs(0.0)), Real(3.14));
         assert_eq!(map.interpolate(Time::from(10.0)), Real(42.0));
     }
 
@@ -807,7 +889,7 @@ mod boundary_cases {
         .unwrap();
 
         // Before first keyframe should clamp.
-        assert_eq!(map.interpolate(Time::from(0.0)), Real(10.0));
+        assert_eq!(map.interpolate(Time::from_secs(0.0)), Real(10.0));
         assert_eq!(map.interpolate(Time::from(-100.0)), Real(10.0));
     }
 
@@ -843,7 +925,7 @@ mod boundary_cases {
         .unwrap();
 
         // With single keyframe, always return that value regardless of slopes.
-        assert_eq!(map.interpolate(Time::from(0.0)), Real(7.0));
+        assert_eq!(map.interpolate(Time::from_secs(0.0)), Real(7.0));
         assert_eq!(map.interpolate(Time::from(5.0)), Real(7.0));
         assert_eq!(map.interpolate(Time::from(10.0)), Real(7.0));
     }
