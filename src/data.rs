@@ -654,114 +654,51 @@ impl_try_from_vec!(
     crate::math::Mat3Impl, Matrix3Vec, "Matrix3<f32>";
 );
 
-// Custom Hash implementation
+// Each wrapper type hashes its floats with `-0.0` as `0.0`, the way `==`
+// compares them, so `Data` delegates rather than reading raw bits: equal
+// values must hash equally, and `0.0 == -0.0`.
 impl Hash for Data {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
         match self {
-            Data::Boolean(Boolean(b)) => b.hash(state),
-            Data::Integer(Integer(i)) => i.hash(state),
-            Data::Real(Real(f)) => f.to_bits().hash(state),
-            Data::String(String(s)) => s.hash(state),
-            Data::Color(Color(c)) => {
-                c.iter().for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Boolean(value) => value.hash(state),
+            Data::Integer(value) => value.hash(state),
+            Data::Real(value) => value.hash(state),
+            Data::String(value) => value.hash(state),
+            Data::Color(value) => value.hash(state),
             #[cfg(feature = "vector2")]
-            Data::Vector2(Vector2(v)) => {
-                crate::math::vec2_as_slice(v)
-                    .iter()
-                    .for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Vector2(value) => value.hash(state),
             #[cfg(feature = "vector3")]
-            Data::Vector3(Vector3(v)) => {
-                crate::math::vec3_as_slice(v)
-                    .iter()
-                    .for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Vector3(value) => value.hash(state),
             #[cfg(feature = "matrix3")]
-            Data::Matrix3(Matrix3(m)) => {
-                crate::math::mat3_iter(m).for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Matrix3(value) => value.hash(state),
             #[cfg(feature = "normal3")]
-            Data::Normal3(Normal3(v)) => {
-                crate::math::vec3_as_slice(v)
-                    .iter()
-                    .for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Normal3(value) => value.hash(state),
             #[cfg(feature = "point3")]
-            Data::Point3(Point3(p)) => {
-                crate::math::point3_as_slice(p)
-                    .iter()
-                    .for_each(|v| v.to_bits().hash(state));
-            }
+            Data::Point3(value) => value.hash(state),
             #[cfg(feature = "matrix4")]
-            Data::Matrix4(Matrix4(m)) => {
-                crate::math::mat4_iter(m).for_each(|v| v.to_bits().hash(state));
-            }
-            Data::BooleanVec(BooleanVec(v)) => v.hash(state),
-            Data::IntegerVec(IntegerVec(v)) => v.hash(state),
-            Data::RealVec(RealVec(v)) => {
-                v.len().hash(state);
-                v.iter().for_each(|v| v.to_bits().hash(state));
-            }
-            Data::StringVec(StringVec(v)) => v.hash(state),
-            Data::ColorVec(ColorVec(v)) => {
-                v.len().hash(state);
-                v.iter()
-                    .for_each(|c| c.iter().for_each(|v| v.to_bits().hash(state)));
-            }
+            Data::Matrix4(value) => value.hash(state),
+            Data::BooleanVec(value) => value.hash(state),
+            Data::IntegerVec(value) => value.hash(state),
+            Data::RealVec(value) => value.hash(state),
+            Data::ColorVec(value) => value.hash(state),
+            Data::StringVec(value) => value.hash(state),
             #[cfg(all(feature = "vector2", feature = "vec_variants"))]
-            Data::Vector2Vec(Vector2Vec(v)) => {
-                v.len().hash(state);
-                v.iter().for_each(|v| {
-                    crate::math::vec2_as_slice(v)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state))
-                });
-            }
+            Data::Vector2Vec(value) => value.hash(state),
             #[cfg(all(feature = "vector3", feature = "vec_variants"))]
-            Data::Vector3Vec(Vector3Vec(v)) => {
-                v.len().hash(state);
-                v.iter().for_each(|v| {
-                    crate::math::vec3_as_slice(v)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state))
-                });
-            }
+            Data::Vector3Vec(value) => value.hash(state),
             #[cfg(all(feature = "matrix3", feature = "vec_variants"))]
-            Data::Matrix3Vec(Matrix3Vec(v)) => {
-                v.len().hash(state);
-                v.iter()
-                    .for_each(|m| crate::math::mat3_iter(m).for_each(|v| v.to_bits().hash(state)));
-            }
+            Data::Matrix3Vec(value) => value.hash(state),
             #[cfg(all(feature = "normal3", feature = "vec_variants"))]
-            Data::Normal3Vec(Normal3Vec(v)) => {
-                v.len().hash(state);
-                v.iter().for_each(|v| {
-                    crate::math::vec3_as_slice(v)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state))
-                });
-            }
+            Data::Normal3Vec(value) => value.hash(state),
             #[cfg(all(feature = "point3", feature = "vec_variants"))]
-            Data::Point3Vec(Point3Vec(v)) => {
-                v.len().hash(state);
-                v.iter().for_each(|p| {
-                    crate::math::point3_as_slice(p)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state))
-                });
-            }
+            Data::Point3Vec(value) => value.hash(state),
             #[cfg(all(feature = "matrix4", feature = "vec_variants"))]
-            Data::Matrix4Vec(Matrix4Vec(v)) => {
-                v.len().hash(state);
-                v.iter()
-                    .for_each(|m| crate::math::mat4_iter(m).for_each(|v| v.to_bits().hash(state)));
-            }
+            Data::Matrix4Vec(value) => value.hash(state),
             #[cfg(feature = "curves")]
-            Data::RealCurve(c) => c.hash(state),
+            Data::RealCurve(value) => value.hash(state),
             #[cfg(feature = "curves")]
-            Data::ColorCurve(c) => c.hash(state),
+            Data::ColorCurve(value) => value.hash(state),
         }
     }
 }
