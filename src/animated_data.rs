@@ -737,6 +737,8 @@ impl AnimatedData {
     }
 }
 
+// Values hash through their wrapper types, which treat `-0.0` as `0.0` the
+// way `==` does: equal values must hash equally.
 impl Hash for AnimatedData {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
@@ -774,12 +776,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.to_bits().hash(state);
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.to_bits().hash(state);
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -802,12 +804,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -817,16 +819,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec2_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec2_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -836,16 +834,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -855,12 +849,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::mat3_iter(&value.0).for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -870,16 +864,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::vec3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -889,16 +879,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::point3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::point3_as_slice(&value.0)
-                        .iter()
-                        .for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -908,12 +894,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    crate::math::mat4_iter(&value.0).for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -950,14 +936,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| v.to_bits().hash(state));
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -966,18 +950,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|c| {
-                        c.iter().for_each(|v| v.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|c| {
-                        c.iter().for_each(|v| v.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1001,22 +979,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec2_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec2_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1026,22 +994,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec3_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec3_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1051,18 +1009,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|m| {
-                        crate::math::mat3_iter(m).for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|m| {
-                        crate::math::mat3_iter(m).for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1072,22 +1024,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec3_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|v| {
-                        crate::math::vec3_as_slice(v)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1097,22 +1039,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|p| {
-                        crate::math::point3_as_slice(p)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|p| {
-                        crate::math::point3_as_slice(p)
-                            .iter()
-                            .for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
@@ -1122,18 +1054,12 @@ impl Hash for AnimatedData {
                 #[cfg(not(feature = "interpolation"))]
                 for (time, value) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|m| {
-                        crate::math::mat4_iter(m).for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                 }
                 #[cfg(feature = "interpolation")]
                 for (time, (value, spec)) in map.values.as_btree_map() {
                     time.hash(state);
-                    value.0.len().hash(state);
-                    value.0.iter().for_each(|m| {
-                        crate::math::mat4_iter(m).for_each(|f| f.to_bits().hash(state));
-                    });
+                    value.hash(state);
                     spec.hash(state);
                 }
             }
