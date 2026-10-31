@@ -628,12 +628,60 @@ impl Value {
     }
 }
 
-// From implementations for Value
-impl<V: Into<Data>> From<V> for Value {
-    fn from(value: V) -> Self {
-        Value::uniform(value)
+// From implementations for Value.
+//
+// This must stay an enumerated list rather than the blanket
+// `impl<V: Into<Data>> From<V> for Value` it replaced: `smallvec` 2 implements
+// `From<SmallVec<Item, INLINE, Heap>> for <Vec<Item, Global> as Like>::Type`,
+// an associated-type self type that coherence cannot prove disjoint from a
+// local type, so the blanket impl fails with `E0119` as soon as anything in
+// the dependency graph pulls in `smallvec` 2 -- `facet-reflect` does. The
+// types below mirror every `From<T> for Data` in `data.rs`; keep the two
+// lists in sync.
+macro_rules! impl_from_into_value {
+    ($($ty:ty),+ $(,)?) => {
+        $(
+            impl From<$ty> for Value {
+                fn from(value: $ty) -> Self {
+                    Value::Uniform(Data::from(value))
+                }
+            }
+        )+
+    };
+}
+
+impl From<Data> for Value {
+    fn from(value: Data) -> Self {
+        Value::Uniform(value)
     }
 }
+
+impl_from_into_value!(
+    i8,
+    i16,
+    i32,
+    i64,
+    u8,
+    u16,
+    u32,
+    f32,
+    f64,
+    bool,
+    std::string::String,
+    &str,
+    [f32; 4],
+    Vec<u32>,
+    Vec<f32>,
+);
+
+#[cfg(feature = "vector2")]
+impl_from_into_value!([f32; 2], crate::math::Vec2Impl);
+
+#[cfg(feature = "vector3")]
+impl_from_into_value!([f32; 3], crate::math::Vec3Impl);
+
+#[cfg(feature = "matrix3")]
+impl_from_into_value!([[f32; 3]; 3], [f32; 9], crate::math::Mat3Impl);
 
 // Sample trait implementations for Value using macro
 #[cfg(feature = "vector2")]
